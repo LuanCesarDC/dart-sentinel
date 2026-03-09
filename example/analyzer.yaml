@@ -1,0 +1,105 @@
+# Dart Linter — Configuration
+# Place this file in your project root as `analyzer.yaml`
+
+# Files to exclude from analysis (globs)
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.g2.dart"
+  - "**/*.mocks.dart"
+  - "**/*.config.dart"
+  - "**/*.mapper.dart"
+
+# Entrypoints (auto-detected if not specified — looks for main*.dart in lib/)
+# entrypoints:
+#   - lib/main.dart
+#   - lib/main_partner_mobile.dart
+#   - lib/main_training_mobile.dart
+
+# Extra directories to scan (beyond lib/)
+# extra_scan_dirs:
+#   - integration_test
+#   - bin
+
+# Rule severity overrides (info | warning | error)
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: error
+  import-cycles: warning
+  complexity: warning
+  build-complexity: warning
+  dispose-check: error
+  async-safety: warning
+
+# Architecture enforcement
+architecture:
+  # Banned imports — prevent specific imports in specific paths
+  banned_imports:
+    - paths: ["lib/features/**/viewmodel/**", "lib/apps/**/viewmodel/**"]
+      deny: ["package:cloud_firestore/**", "package:firebase_auth/**"]
+      message: "ViewModels must not access Firebase directly — use Services."
+    # - paths: ["lib/features/**/viewmodel/**"]
+    #   deny: ["**/repositories/**"]
+    #   message: "ViewModels must use Services, not Repositories."
+    # - paths: ["lib/services/**"]
+    #   deny: ["package:flutter/**"]
+    #   message: "Services must not depend on Flutter."
+
+  # Layer dependencies — define which layers can depend on which
+  layers:
+    ui:
+      paths: ["lib/features/**", "lib/apps/**"]
+      can_depend_on: ["service", "core", "domain"]
+    service:
+      paths: ["lib/services/**"]
+      can_depend_on: ["repository", "core", "domain"]
+    repository:
+      paths: ["lib/repositories/**"]
+      can_depend_on: ["data", "core", "domain"]
+    data:
+      paths: ["lib/data/**"]
+      can_depend_on: ["core"]
+    core:
+      paths: ["lib/core/**", "lib/domain/**"]
+      can_depend_on: []
+
+  # Feature isolation — prevent horizontal coupling between features
+  feature_isolation:
+    enabled: true
+    paths: ["lib/features/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/domain/**"
+      - "lib/services/**"
+      - "lib/packages/**"
+    # exceptions:
+    #   - from: "lib/features/booking/"
+    #     allow: ["lib/features/shared_widgets/"]
+
+# Metrics thresholds
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_loc:
+    warning: 30
+    error: 60
+  build_method_branches:
+    warning: 3
+    error: 6

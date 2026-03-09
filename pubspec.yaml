@@ -1,0 +1,21 @@
+name: dart_linter
+description: >
+  Ferramenta interna de análise estática e métricas para Dart/Flutter.
+  Detecta dead files, enforça arquitetura, calcula métricas e aplica lint rules customizadas.
+version: 1.0.0
+
+executables:
+  dart_linter: analyze
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  analyzer: ^6.0.0
+  args: ^2.4.0
+  glob: ^2.1.0
+  path: ^1.8.0
+  yaml: ^3.1.0
+
+dev_dependencies:
+  test: ^1.24.0
