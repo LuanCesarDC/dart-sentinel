@@ -32,7 +32,7 @@ rules:
   import-cycles: warning
   complexity: warning
   build-complexity: warning
-  dispose-check: error
+  dispose-check: warning
   async-safety: warning
 
 # Architecture enforcement

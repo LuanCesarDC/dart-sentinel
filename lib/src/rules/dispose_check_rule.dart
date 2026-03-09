@@ -17,7 +17,7 @@ class DisposeCheckRule extends AnalyzerRule {
   String get name => 'dispose-check';
 
   @override
-  Severity get defaultSeverity => Severity.error;
+  Severity get defaultSeverity => Severity.warning;
 
   @override
   List<Issue> run(ProjectContext context) {
@@ -108,7 +108,7 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
               '.$requiredMethod() in dispose()',
           file: filePath,
           line: line,
-          severity: Severity.error,
+          severity: Severity.warning,
         ));
       }
     }

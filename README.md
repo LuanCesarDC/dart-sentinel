@@ -81,7 +81,7 @@ rules:
   dead-files: warning
   banned-imports: error
   complexity: warning
-  dispose-check: error
+  dispose-check: warning
 
 # Architecture rules
 architecture:
