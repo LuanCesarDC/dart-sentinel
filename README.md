@@ -10,7 +10,7 @@ Add to your project's `pubspec.yaml`:
 dev_dependencies:
   dart_sentinel:
     git:
-      url: https://github.com/LuanCesarDC/dart-linter-and-metrics.git
+      url: https://github.com/LuanCesarDC/dart-sentinel
 ```
 
 Or via local path (for development):
