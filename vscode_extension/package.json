@@ -1,0 +1,88 @@
+{
+  "name": "dart-sentinel",
+  "displayName": "Dart Sentinel",
+  "description": "Static analysis dashboard for Dart/Flutter — shows issues in the Problems tab and provides a visual dashboard.",
+  "version": "0.1.0",
+  "publisher": "dart-sentinel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LuanCesarDC/dart-sentinel.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:pubspec.yaml",
+    "workspaceContains:.dart_sentinel/report.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "dartSentinel.analyze",
+        "title": "Dart Sentinel: Run Analysis",
+        "icon": "$(search)"
+      },
+      {
+        "command": "dartSentinel.dashboard",
+        "title": "Dart Sentinel: Open Dashboard",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "dartSentinel.clear",
+        "title": "Dart Sentinel: Clear Diagnostics"
+      }
+    ],
+    "configuration": {
+      "title": "Dart Sentinel",
+      "properties": {
+        "dartSentinel.autoAnalyze": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically load diagnostics when a report.json is found or updated."
+        },
+        "dartSentinel.reportPath": {
+          "type": "string",
+          "default": ".dart_sentinel/report.json",
+          "description": "Path to the analysis report file, relative to workspace root."
+        },
+        "dartSentinel.analyzeOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run analysis automatically when a Dart file is saved."
+        },
+        "dartSentinel.category": {
+          "type": "string",
+          "default": "all",
+          "enum": ["all", "arch", "dead", "metrics", "lint"],
+          "description": "Which rule category to run by default."
+        }
+      }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "dartSentinel.analyze",
+          "when": "resourceLangId == dart",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.0"
+  }
+}
