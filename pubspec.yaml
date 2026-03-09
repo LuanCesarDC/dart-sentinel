@@ -5,7 +5,7 @@ description: >
 version: 1.0.0
 
 executables:
-  dart_sentinel: analyze
+  dart_sentinel: dart_sentinel
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

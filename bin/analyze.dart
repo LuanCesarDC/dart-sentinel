@@ -179,6 +179,7 @@ void _printUsage(ArgParser parser) {
   print('');
   print('Usage: dart run dart_sentinel [options]');
   print('       dart run dart_sentinel:analyze [options]');
+  print('       dart run bin/dart_sentinel.dart [options]  (from source)');
   print('');
   print('Options:');
   print(parser.usage);
@@ -195,4 +196,5 @@ void _printUsage(ArgParser parser) {
   print('  dart run dart_sentinel -o arch                  # architecture only');
   print('  dart run dart_sentinel -o metrics -f json       # metrics as JSON');
   print('  dart run dart_sentinel -p /path/to/project      # specify project');
+  print('  dart run dart_sentinel:analyze                  # explicit script');
 }

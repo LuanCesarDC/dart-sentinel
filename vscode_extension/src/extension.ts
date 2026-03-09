@@ -115,7 +115,7 @@ async function runAnalysis(context: vscode.ExtensionContext): Promise<void> {
 
   const isSentinelProject = pubspec.includes("name: dart_sentinel");
   const baseCmd = isSentinelProject
-    ? "dart run bin/analyze.dart"
+    ? "dart run bin/dart_sentinel.dart"
     : "dart run dart_sentinel";
 
   const cmd =
