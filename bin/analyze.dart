@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -24,6 +25,10 @@ Future<void> main(List<String> args) async {
       abbr: 'p',
       help: 'Path to the project root (defaults to current directory).',
     )
+    ..addOption(
+      'output',
+      help: 'Write JSON report to file (default: .dart_sentinel/report.json).',
+    )
     ..addFlag(
       'help',
       abbr: 'h',
@@ -41,6 +46,7 @@ Future<void> main(List<String> args) async {
   final projectRoot = results['project'] as String? ?? Directory.current.path;
   final category = results['only'] as String;
   final format = results['format'] as String;
+  final outputPath = results['output'] as String?;
 
   // Validate project
   if (!File('$projectRoot/pubspec.yaml').existsSync()) {
@@ -101,12 +107,71 @@ Future<void> main(List<String> args) async {
       print(ConsoleOutput.format(issues, elapsed: stopwatch.elapsed));
   }
 
+  // Write report to file (always, or when --output is specified)
+  final reportPath = outputPath ?? '$projectRoot/.dart_sentinel/report.json';
+  _writeReport(
+    reportPath,
+    issues: issues,
+    projectRoot: projectRoot,
+    elapsed: stopwatch.elapsed,
+    category: category,
+  );
+  print('  Report saved to: $reportPath');
+  print('');
+
   // Exit with error code if there are errors
   final hasErrors =
       issues.any((i) => i.severity == Severity.error);
   if (hasErrors) {
     exit(1);
   }
+}
+
+void _writeReport(
+  String path, {
+  required List<Issue> issues,
+  required String projectRoot,
+  required Duration elapsed,
+  required String category,
+}) {
+  final dir = Directory(path).parent;
+  if (!dir.existsSync()) dir.createSync(recursive: true);
+
+  final absRoot = Directory(projectRoot).absolute.path;
+
+  final report = {
+    'version': 1,
+    'timestamp': DateTime.now().toIso8601String(),
+    'projectRoot': absRoot,
+    'elapsedMs': elapsed.inMilliseconds,
+    'category': category,
+    'summary': {
+      'total': issues.length,
+      'errors': issues.where((i) => i.severity == Severity.error).length,
+      'warnings': issues.where((i) => i.severity == Severity.warning).length,
+      'infos': issues.where((i) => i.severity == Severity.info).length,
+      'files': issues.map((i) => i.file).toSet().length,
+    },
+    'issues': issues.map((i) {
+      // Build absolute path for VS Code to resolve
+      var filePath = i.file;
+      if (!filePath.startsWith('/')) {
+        filePath = '$absRoot/${i.file}';
+      }
+      return {
+        'rule': i.rule,
+        'message': i.message,
+        'file': filePath,
+        'relativeFile': i.file,
+        'line': i.line,
+        'severity': i.severity.toString(),
+      };
+    }).toList(),
+  };
+
+  File(path).writeAsStringSync(
+    const JsonEncoder.withIndent('  ').convert(report),
+  );
 }
 
 void _printUsage(ArgParser parser) {
