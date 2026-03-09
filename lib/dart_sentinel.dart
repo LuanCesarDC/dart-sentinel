@@ -1,4 +1,4 @@
-/// Dart Linter — Static analysis & metrics for Dart/Flutter projects.
+/// Dart Sentinel — Static analysis & metrics for Dart/Flutter projects.
 ///
 /// A comprehensive tool for detecting dead code, enforcing architecture rules,
 /// calculating code metrics, and applying custom lint rules.
@@ -9,20 +9,20 @@
 ///
 /// ```yaml
 /// dev_dependencies:
-///   dart_linter:
+///   dart_sentinel:
 ///     git:
-///       url: https://github.com/your-org/dart_linter.git
+///       url: https://github.com/LuanCesarDC/dart-linter-and-metrics.git
 /// ```
 ///
 /// Run:
 ///
 /// ```bash
-/// dart run dart_linter              # all rules
-/// dart run dart_linter -o arch      # architecture only
-/// dart run dart_linter -o metrics   # metrics only
-/// dart run dart_linter -f json      # JSON output
+/// dart run dart_sentinel              # all rules
+/// dart run dart_sentinel -o arch      # architecture only
+/// dart run dart_sentinel -o metrics   # metrics only
+/// dart run dart_sentinel -f json      # JSON output
 /// ```
-library dart_linter;
+library dart_sentinel;
 
 // Core
 export 'src/core/issue.dart';

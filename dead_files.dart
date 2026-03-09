@@ -10,14 +10,14 @@ Future<void> main() async {
 
   final pubspec = File(p.join(projectRoot, 'pubspec.yaml'));
   if (!pubspec.existsSync()) {
-    print('pubspec.yaml não encontrado');
+    print('pubspec.yaml not found');
     exit(1);
   }
 
   final packageName = _extractPackageName(pubspec.readAsStringSync());
 
   if (packageName == null) {
-    print('Não foi possível determinar o nome do package');
+    print('Could not determine the package name');
     exit(1);
   }
 
@@ -28,7 +28,7 @@ Future<void> main() async {
   final entrypoints = await _findEntrypoints(libDir);
 
   if (entrypoints.isEmpty) {
-    print('Nenhum entrypoint encontrado');
+    print('No entrypoint found');
     exit(1);
   }
 
@@ -55,7 +55,7 @@ Future<void> main() async {
 
   final deadFiles = allFiles.where((f) => !reachable.contains(f)).toList();
 
-  print('\nArquivos mortos encontrados:\n');
+  print('\nDead files found:\n');
 
   for (final file in deadFiles) {
     print(p.relative(file, from: projectRoot));

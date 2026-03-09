@@ -1,10 +1,10 @@
 {
   "roots": [
-    "dart_linter"
+    "dart_sentinel"
   ],
   "packages": [
     {
-      "name": "dart_linter",
+      "name": "dart_sentinel",
       "version": "1.0.0",
       "dependencies": [
         "analyzer",

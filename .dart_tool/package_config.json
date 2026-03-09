@@ -290,7 +290,7 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "dart_linter",
+      "name": "dart_sentinel",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.0"

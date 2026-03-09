@@ -1,4 +1,4 @@
-# Dart Linter — Configuration
+# Dart Sentinel — Configuration
 # Place this file in your project root as `analyzer.yaml`
 
 # Files to exclude from analysis (globs)

@@ -1,11 +1,11 @@
-name: dart_linter
+name: dart_sentinel
 description: >
-  Ferramenta interna de análise estática e métricas para Dart/Flutter.
-  Detecta dead files, enforça arquitetura, calcula métricas e aplica lint rules customizadas.
+  Static analysis and metrics tool for Dart/Flutter projects.
+  Detects dead files, enforces architecture rules, computes metrics, and applies custom lint rules.
 version: 1.0.0
 
 executables:
-  dart_linter: analyze
+  dart_sentinel: analyze
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

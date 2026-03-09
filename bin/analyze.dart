@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:dart_linter/dart_linter.dart';
+import 'package:dart_sentinel/dart_sentinel.dart';
 
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
@@ -50,7 +50,7 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  print('🔍 Dart Linter — analyzing project...');
+  print('🔍 Dart Sentinel — analyzing project...');
   print('');
 
   final stopwatch = Stopwatch()..start();
@@ -110,10 +110,10 @@ Future<void> main(List<String> args) async {
 }
 
 void _printUsage(ArgParser parser) {
-  print('Dart Linter — Static analysis & metrics for Dart/Flutter');
+  print('Dart Sentinel — Static analysis & metrics for Dart/Flutter');
   print('');
-  print('Usage: dart run dart_linter [options]');
-  print('       dart run dart_linter:analyze [options]');
+  print('Usage: dart run dart_sentinel [options]');
+  print('       dart run dart_sentinel:analyze [options]');
   print('');
   print('Options:');
   print(parser.usage);
@@ -126,8 +126,8 @@ void _printUsage(ArgParser parser) {
   print('  lint     Lint: dispose checks, async safety');
   print('');
   print('Examples:');
-  print('  dart run dart_linter                          # run all rules');
-  print('  dart run dart_linter -o arch                  # architecture only');
-  print('  dart run dart_linter -o metrics -f json       # metrics as JSON');
-  print('  dart run dart_linter -p /path/to/project      # specify project');
+  print('  dart run dart_sentinel                          # run all rules');
+  print('  dart run dart_sentinel -o arch                  # architecture only');
+  print('  dart run dart_sentinel -o metrics -f json       # metrics as JSON');
+  print('  dart run dart_sentinel -p /path/to/project      # specify project');
 }

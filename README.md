@@ -1,6 +1,6 @@
-# Dart Linter
+# Dart Sentinel
 
-Ferramenta interna de análise estática e métricas para projetos Dart/Flutter. Alternativa gratuita ao Dart Code Metrics (DCM).
+Ferramenta de análise estática, métricas e enforcement de arquitetura para projetos Dart/Flutter.
 
 ## Instalação
 
@@ -8,17 +8,17 @@ Adicione ao `pubspec.yaml` do seu projeto:
 
 ```yaml
 dev_dependencies:
-  dart_linter:
+  dart_sentinel:
     git:
-      url: https://github.com/your-org/dart_linter.git
+      url: https://github.com/LuanCesarDC/dart-linter-and-metrics.git
 ```
 
 Ou via path local (para desenvolvimento):
 
 ```yaml
 dev_dependencies:
-  dart_linter:
-    path: ../dart_linter
+  dart_sentinel:
+    path: ../dart_sentinel
 ```
 
 Depois:
@@ -31,28 +31,28 @@ dart pub get
 
 ```bash
 # Rodar todas as regras
-dart run dart_linter
+dart run dart_sentinel
 
 # Apenas regras de arquitetura
-dart run dart_linter -o arch
+dart run dart_sentinel -o arch
 
 # Apenas dead code
-dart run dart_linter -o dead
+dart run dart_sentinel -o dead
 
 # Apenas métricas
-dart run dart_linter -o metrics
+dart run dart_sentinel -o metrics
 
 # Apenas lint rules
-dart run dart_linter -o lint
+dart run dart_sentinel -o lint
 
 # Output em JSON (para CI)
-dart run dart_linter -f json
+dart run dart_sentinel -f json
 
 # Output em Markdown (para PR comments)
-dart run dart_linter -f markdown
+dart run dart_sentinel -f markdown
 
 # Especificar projeto
-dart run dart_linter -p /path/to/project
+dart run dart_sentinel -p /path/to/project
 ```
 
 ## Configuração
@@ -167,11 +167,11 @@ metrics:
 ### GitHub Actions
 
 ```yaml
-- name: Run Dart Linter
-  run: dart run dart_linter -f json > lint_report.json
+- name: Run Dart Sentinel
+  run: dart run dart_sentinel -f json > lint_report.json
 
 - name: Check for errors
-  run: dart run dart_linter  # exit code 1 se houver errors
+  run: dart run dart_sentinel  # exit code 1 se houver errors
 ```
 
 ### Pre-commit hook
@@ -180,13 +180,13 @@ Adicione ao `.githooks/pre-commit`:
 
 ```bash
 #!/bin/sh
-dart run dart_linter -o arch
+dart run dart_sentinel -o arch
 ```
 
 ## Uso programático
 
 ```dart
-import 'package:dart_linter/dart_linter.dart';
+import 'package:dart_sentinel/dart_sentinel.dart';
 
 void main() async {
   final context = await ProjectContext.build('/path/to/project');
@@ -207,11 +207,11 @@ void main() async {
 ## Estrutura do package
 
 ```
-dart_linter/
+dart_sentinel/
   bin/
     analyze.dart              # CLI entry point
   lib/
-    dart_linter.dart          # Package exports
+    dart_sentinel.dart        # Package exports
     src/
       config/
         analyzer_config.dart  # Configuração YAML
