@@ -1,10 +1,10 @@
 # Dart Sentinel
 
-Ferramenta de análise estática, métricas e enforcement de arquitetura para projetos Dart/Flutter.
+Static analysis, metrics, and architecture enforcement tool for Dart/Flutter projects.
 
-## Instalação
+## Installation
 
-Adicione ao `pubspec.yaml` do seu projeto:
+Add to your project's `pubspec.yaml`:
 
 ```yaml
 dev_dependencies:
@@ -13,7 +13,7 @@ dev_dependencies:
       url: https://github.com/LuanCesarDC/dart-linter-and-metrics.git
 ```
 
-Ou via path local (para desenvolvimento):
+Or via local path (for development):
 
 ```yaml
 dev_dependencies:
@@ -21,74 +21,74 @@ dev_dependencies:
     path: ../dart_sentinel
 ```
 
-Depois:
+Then:
 
 ```bash
 dart pub get
 ```
 
-## Uso
+## Usage
 
 ```bash
-# Rodar todas as regras
+# Run all rules
 dart run dart_sentinel
 
-# Apenas regras de arquitetura
+# Architecture rules only
 dart run dart_sentinel -o arch
 
-# Apenas dead code
+# Dead code only
 dart run dart_sentinel -o dead
 
-# Apenas métricas
+# Metrics only
 dart run dart_sentinel -o metrics
 
-# Apenas lint rules
+# Lint rules only
 dart run dart_sentinel -o lint
 
-# Output em JSON (para CI)
+# JSON output (for CI)
 dart run dart_sentinel -f json
 
-# Output em Markdown (para PR comments)
+# Markdown output (for PR comments)
 dart run dart_sentinel -f markdown
 
-# Especificar projeto
+# Specify project path
 dart run dart_sentinel -p /path/to/project
 ```
 
-## Configuração
+## Configuration
 
-Crie um arquivo `analyzer.yaml` na raiz do seu projeto:
+Create an `analyzer.yaml` file at the root of your project:
 
 ```yaml
-# Arquivos a excluir (globs)
+# Files to exclude (globs)
 exclude:
   - "**/*.g.dart"
   - "**/*.freezed.dart"
   - "**/*.gr.dart"
 
-# Entrypoints (auto-detectados se não especificados)
+# Entrypoints (auto-detected if not specified)
 entrypoints:
   - lib/main.dart
   - lib/main_partner_mobile.dart
 
-# Diretórios extras para scan
+# Extra directories to scan
 extra_scan_dirs:
   - integration_test
   - bin
 
-# Severidade por regra
+# Severity per rule
 rules:
   dead-files: warning
   banned-imports: error
   complexity: warning
   dispose-check: error
 
-# Regras de arquitetura
+# Architecture rules
 architecture:
   banned_imports:
     - paths: ["lib/features/**/viewmodel/**"]
       deny: ["package:cloud_firestore/**"]
-      message: "ViewModels não devem acessar Firestore — use Services."
+      message: "ViewModels must not access Firestore directly -- use Services."
 
   layers:
     ui:
@@ -109,7 +109,7 @@ architecture:
       - "lib/domain/**"
       - "lib/services/**"
 
-# Thresholds de métricas
+# Metrics thresholds
 metrics:
   cyclomatic_complexity:
     warning: 10
@@ -134,33 +134,33 @@ metrics:
     error: 6
 ```
 
-## Regras
+## Rules
 
 ### Dead Code
-| Regra | Descrição |
-|-------|-----------|
-| `dead-files` | Detecta arquivos não alcançáveis a partir de nenhum entrypoint |
-| `dead-exports` | Detecta exports que ninguém importa |
+| Rule | Description |
+|------|-------------|
+| `dead-files` | Detects files unreachable from any entrypoint |
+| `dead-exports` | Detects exports that no file imports |
 
 ### Architecture
-| Regra | Descrição |
-|-------|-----------|
-| `banned-imports` | Impede imports proibidos em paths específicos |
-| `layer-dependency` | Valida que imports respeitam as camadas definidas |
-| `feature-isolation` | Impede acoplamento horizontal entre features |
-| `import-cycles` | Detecta ciclos no grafo de imports |
+| Rule | Description |
+|------|-------------|
+| `banned-imports` | Prevents forbidden imports in specific paths |
+| `layer-dependency` | Validates imports respect defined layer boundaries |
+| `feature-isolation` | Prevents horizontal coupling between features |
+| `import-cycles` | Detects cycles in the import graph |
 
 ### Metrics
-| Regra | Descrição |
-|-------|-----------|
-| `complexity` | LOC, complexidade ciclomática, parâmetros, nesting |
-| `build-complexity` | LOC e branches do método `build()` em Widgets |
+| Rule | Description |
+|------|-------------|
+| `complexity` | LOC, cyclomatic complexity, parameters, nesting depth |
+| `build-complexity` | LOC and branches in Widget `build()` methods |
 
 ### Lint
-| Regra | Descrição |
-|-------|-----------|
-| `dispose-check` | Verifica que recursos são disposed corretamente |
-| `async-safety` | Detecta `setState`/`context` após `await` sem `mounted` check |
+| Rule | Description |
+|------|-------------|
+| `dispose-check` | Verifies resources are disposed correctly |
+| `async-safety` | Detects `setState`/`context` usage after `await` without `mounted` check |
 
 ## CI Integration
 
@@ -171,19 +171,19 @@ metrics:
   run: dart run dart_sentinel -f json > lint_report.json
 
 - name: Check for errors
-  run: dart run dart_sentinel  # exit code 1 se houver errors
+  run: dart run dart_sentinel  # exit code 1 if there are errors
 ```
 
 ### Pre-commit hook
 
-Adicione ao `.githooks/pre-commit`:
+Add to `.githooks/pre-commit`:
 
 ```bash
 #!/bin/sh
 dart run dart_sentinel -o arch
 ```
 
-## Uso programático
+## Programmatic Usage
 
 ```dart
 import 'package:dart_sentinel/dart_sentinel.dart';
@@ -204,7 +204,7 @@ void main() async {
 }
 ```
 
-## Estrutura do package
+## Package Structure
 
 ```
 dart_sentinel/
@@ -214,11 +214,11 @@ dart_sentinel/
     dart_sentinel.dart        # Package exports
     src/
       config/
-        analyzer_config.dart  # Configuração YAML
+        analyzer_config.dart  # YAML configuration
       core/
         issue.dart            # Issue model + Severity
-        project_context.dart  # Contexto compartilhado (grafo, AST cache)
-        rule.dart             # Base class para regras
+        project_context.dart  # Shared context (graph, AST cache)
+        rule.dart             # Base class for rules
         runner.dart           # Rule runner
       rules/
         async_safety_rule.dart
@@ -237,5 +237,5 @@ dart_sentinel/
         glob_matcher.dart     # Glob pattern matching
         graph_utils.dart      # Graph algorithms (DFS, Tarjan)
   example/
-    analyzer.yaml             # Exemplo de configuração
+    analyzer.yaml             # Example configuration
 ```
