@@ -34,6 +34,11 @@ Future<void> main(List<String> args) async {
       abbr: 'h',
       negatable: false,
       help: 'Show help.',
+    )
+    ..addFlag(
+      'no-report',
+      negatable: false,
+      help: 'Skip writing the JSON report file (terminal output only).',
     );
 
   final results = parser.parse(args);
@@ -47,6 +52,7 @@ Future<void> main(List<String> args) async {
   final category = results['only'] as String;
   final format = results['format'] as String;
   final outputPath = results['output'] as String?;
+  final noReport = results['no-report'] as bool;
 
   // Validate project
   if (!File('$projectRoot/pubspec.yaml').existsSync()) {
@@ -107,16 +113,18 @@ Future<void> main(List<String> args) async {
       print(ConsoleOutput.format(issues, elapsed: stopwatch.elapsed));
   }
 
-  // Write report to file (always, or when --output is specified)
-  final reportPath = outputPath ?? '$projectRoot/.dart_sentinel/report.json';
-  _writeReport(
-    reportPath,
-    issues: issues,
-    projectRoot: projectRoot,
-    elapsed: stopwatch.elapsed,
-    category: category,
-  );
-  print('  Report saved to: $reportPath');
+  // Write report to file (unless --no-report is set)
+  if (!noReport) {
+    final reportPath = outputPath ?? '$projectRoot/.dart_sentinel/report.json';
+    _writeReport(
+      reportPath,
+      issues: issues,
+      projectRoot: projectRoot,
+      elapsed: stopwatch.elapsed,
+      category: category,
+    );
+    print('  Report saved to: $reportPath');
+  }
   print('');
 
   // Exit with error code if there are errors
