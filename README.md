@@ -2,6 +2,12 @@
 
 Static analysis, metrics, and architecture enforcement tool for Dart/Flutter projects.
 
+## VS Code Extension
+
+Install the companion extension for inline diagnostics, quick navigation, and a summary dashboard directly in your editor:
+
+**[Dart Sentinel — VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=LuanCesar.dart-sentinel)**
+
 ## Installation
 
 Add to your project's `pubspec.yaml`:
