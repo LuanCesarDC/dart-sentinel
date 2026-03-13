@@ -11,6 +11,9 @@ import '../utils/glob_matcher.dart';
 import '../core/project_context.dart';
 import '../core/rule.dart';
 import '../core/runner.dart';
+import '../analysis/impact_analyzer.dart';
+import '../analysis/dependency_mapper.dart';
+import '../analysis/migration_tracker.dart';
 import '../rules/async_safety_rule.dart';
 import '../rules/banned_imports_rule.dart';
 import '../rules/banned_symbols_rule.dart';
@@ -62,6 +65,9 @@ base class SentinelMCPServer extends MCPServer
     registerTool(_analyzeFileTool, _handleAnalyzeFile);
     registerTool(_checkImportTool, _handleCheckImport);
     registerTool(_getArchitectureTool, _handleGetArchitecture);
+    registerTool(_impactAnalysisTool, _handleImpactAnalysis);
+    registerTool(_dependencyMapTool, _handleDependencyMap);
+    registerTool(_migrationsTool, _handleMigrations);
   }
 
   // ── analyze ──
@@ -244,6 +250,152 @@ base class SentinelMCPServer extends MCPServer
   }
 
   // ── Resources ──────────────────────────────────────────────────────
+
+  // ── impact_analysis ──
+
+  static final _impactAnalysisTool = Tool(
+    name: 'impact_analysis',
+    description:
+        'Analyze the blast radius of changing specific files. '
+        'Shows all files affected transitively. '
+        'If no files are provided, returns hot spots (files with most dependents).',
+    inputSchema: ObjectSchema(
+      properties: {
+        'files': Schema.list(
+          items: Schema.string(
+            description: 'Relative file path to analyze.',
+          ),
+          description: 'List of changed file paths to analyze impact for.',
+        ),
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+      },
+    ),
+    annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
+  );
+
+  Future<CallToolResult> _handleImpactAnalysis(
+      CallToolRequest request) async {
+    final args = request.arguments ?? {};
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+    final filesList = args['files'] as List<dynamic>?;
+
+    final pubspec = File('$projectRoot/pubspec.yaml');
+    if (!pubspec.existsSync()) {
+      return _errorResult('No pubspec.yaml found at $projectRoot');
+    }
+
+    final context = await ProjectContext.build(projectRoot);
+    final analyzer = ImpactAnalyzer(context);
+
+    if (filesList == null || filesList.isEmpty) {
+      final spots = analyzer.hotSpots();
+      return CallToolResult(content: [
+        TextContent(text: _prettyJson.convert(
+          spots.map((s) => {
+            'file': s.file,
+            'directDependents': s.directDependents,
+            'transitiveDependents': s.transitiveDependents,
+          }).toList(),
+        )),
+      ]);
+    }
+
+    final files = filesList.cast<String>();
+    final report = analyzer.analyze(files);
+    return CallToolResult(content: [
+      TextContent(text: _prettyJson.convert({
+        'changedFiles': report.changedFiles,
+        'totalAffected': report.totalAffected,
+        'totalFiles': report.totalFiles,
+        'impactPercent': report.impactPercent.toStringAsFixed(1),
+        'affectedByCategory': report.affectedByCategory,
+        'affectedFiles': report.affectedFiles,
+      })),
+    ]);
+  }
+
+  // ── dependency_map ──
+
+  static final _dependencyMapTool = Tool(
+    name: 'dependency_map',
+    description:
+        'Generate a dependency map of the project. '
+        'Returns a Mermaid diagram or text summary of the module structure.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'format': Schema.string(
+          description:
+              'Output format: "mermaid" for Mermaid diagram, '
+              '"text" for text summary (default: text).',
+        ),
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+      },
+    ),
+    annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
+  );
+
+  Future<CallToolResult> _handleDependencyMap(
+      CallToolRequest request) async {
+    final args = request.arguments ?? {};
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+    final format = args['format'] as String? ?? 'text';
+
+    final pubspec = File('$projectRoot/pubspec.yaml');
+    if (!pubspec.existsSync()) {
+      return _errorResult('No pubspec.yaml found at $projectRoot');
+    }
+
+    final context = await ProjectContext.build(projectRoot);
+    final mapper = DependencyMapper(context);
+
+    final mapText = format == 'mermaid' ? mapper.toMermaid() : mapper.toTextSummary();
+    return CallToolResult(content: [TextContent(text: mapText)]);
+  }
+
+  // ── migrations ──
+
+  static final _migrationsTool = Tool(
+    name: 'migrations',
+    description:
+        'Track migration progress for banned-symbols rules. '
+        'Shows remaining usages and completion percentage.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+      },
+    ),
+    annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
+  );
+
+  Future<CallToolResult> _handleMigrations(CallToolRequest request) async {
+    final args = request.arguments ?? {};
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+
+    final pubspec = File('$projectRoot/pubspec.yaml');
+    if (!pubspec.existsSync()) {
+      return _errorResult('No pubspec.yaml found at $projectRoot');
+    }
+
+    final context = await ProjectContext.build(projectRoot);
+    final tracker = MigrationTracker(context);
+    final report = tracker.track();
+
+    return CallToolResult(content: [
+      TextContent(text: _prettyJson.convert(report.toJson())),
+    ]);
+  }
 
   void _registerResources() {
     addResource(

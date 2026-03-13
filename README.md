@@ -45,6 +45,9 @@ dart run dart_sentinel -o metrics
 # Lint rules only
 dart run dart_sentinel -o lint
 
+# AI slop detection
+dart run dart_sentinel -o slop
+
 # JSON output (for CI)
 dart run dart_sentinel -f json
 
@@ -53,6 +56,27 @@ dart run dart_sentinel -f markdown
 
 # Specify project path
 dart run dart_sentinel -p /path/to/project
+
+# Change impact analysis — hot spots
+dart run dart_sentinel -o impact
+
+# Blast radius of specific files
+dart run dart_sentinel -o impact --files lib/src/core/issue.dart
+
+# Dependency map (text summary)
+dart run dart_sentinel -o map
+
+# Dependency map (Mermaid diagram)
+dart run dart_sentinel -o map -f mermaid
+
+# Migration progress for banned-symbols
+dart run dart_sentinel -o migrations
+
+# Ratchet mode — save baseline
+dart run dart_sentinel --save-baseline
+
+# Ratchet mode — CI check (fails if regressions)
+dart run dart_sentinel --check-baseline
 ```
 
 ## Configuration
@@ -189,6 +213,104 @@ metrics:
 | `single-method-class` | Suggests plain functions for classes with a single public method |
 | `passthrough-function` | Detects functions that only delegate to another with the same arguments |
 
+## Analysis Tools
+
+### Change Impact Analysis (`-o impact`)
+
+Analyze the blast radius of file changes — how many files are affected transitively.
+
+```bash
+# Show hot spots (files with the most dependents)
+dart run dart_sentinel -o impact
+
+# Blast radius of a specific file
+dart run dart_sentinel -o impact --files lib/src/core/issue.dart
+
+# JSON output
+dart run dart_sentinel -o impact --files lib/src/core/issue.dart -f json
+```
+
+Example output:
+```
+  Hot Spots (highest blast radius):
+
+   32 transitive (25 direct)  lib/src/core/issue.dart
+   29 transitive (7 direct)   lib/src/utils/glob_matcher.dart
+   28 transitive (15 direct)  lib/src/config/analyzer_config.dart
+```
+
+### Dependency Map (`-o map`)
+
+Visualize the module structure and dependencies of your project.
+
+```bash
+# Text summary
+dart run dart_sentinel -o map
+
+# Mermaid diagram (paste into GitHub PR, Notion, etc.)
+dart run dart_sentinel -o map -f mermaid
+```
+
+The Mermaid output generates a valid diagram you can render anywhere:
+
+```mermaid
+graph TD
+    M0["lib/src/core\n(4 files)"]
+    M1["lib/src/rules\n(18 files)"]
+    M2["lib/src/utils\n(2 files)"]
+    M1 --> M0
+    M0 --> M2
+```
+
+### Migration Tracker (`-o migrations`)
+
+Track gradual migration progress for `banned-symbols` rules. Shows remaining usages per symbol and which files still need updating.
+
+```bash
+dart run dart_sentinel -o migrations
+dart run dart_sentinel -o migrations -f json
+```
+
+Example output:
+```
+Migration Progress
+════════════════════════════════════════════════════════════
+
+ElevatedButton, TextButton → AppButton
+  Remaining: 12 usages in 5 files
+    ElevatedButton: 8
+    TextButton: 4
+
+showDialog → AppDialog.show
+  Remaining: 0 usages in 0 files
+  ✅ Migration complete!
+
+Total remaining: 12
+```
+
+### Ratchet Mode (CI Baseline Enforcement)
+
+Ensure code quality only improves over time. Save a baseline of issue counts and fail CI if any count increases.
+
+```bash
+# Save current state as baseline (commit this file)
+dart run dart_sentinel --save-baseline
+
+# CI step: fail if any rule regressed
+dart run dart_sentinel --check-baseline
+```
+
+The baseline is saved to `.dart_sentinel/baseline.json`. Commit this file to your repo. On each CI run, `--check-baseline` compares current issues against the baseline:
+
+- **Pass**: No rule has more issues than the baseline (improvements are fine)
+- **Fail** (exit code 1): Any rule has more issues → regression detected
+
+```yaml
+# GitHub Actions
+- name: Ratchet check
+  run: dart run dart_sentinel --check-baseline
+```
+
 ## CI Integration
 
 ### GitHub Actions
@@ -199,6 +321,9 @@ metrics:
 
 - name: Check for errors
   run: dart run dart_sentinel  # exit code 1 if there are errors
+
+- name: Ratchet check
+  run: dart run dart_sentinel --check-baseline
 ```
 
 ### Pre-commit hook
@@ -245,10 +370,13 @@ That's it. The AI agent will automatically discover the server and use it.
 
 | Tool | Description |
 |------|-------------|
-| `analyze` | Run full analysis or filter by category (`arch`, `dead`, `metrics`, `lint`) |
+| `analyze` | Run full analysis or filter by category (`arch`, `dead`, `metrics`, `lint`, `slop`) |
 | `analyze_file` | Analyze a single file |
 | `check_import` | Check if a specific import is allowed by your architecture rules |
 | `get_architecture` | Get the full architecture definition (layers, banned imports) |
+| `impact_analysis` | Compute blast radius of file changes, or list hot spots |
+| `dependency_map` | Generate dependency map (text or Mermaid format) |
+| `migrations` | Track migration progress for banned-symbols rules |
 
 ### Available Resources
 
@@ -266,6 +394,8 @@ When an AI agent generates code in your project, it can:
 2. Call `analyze_file` after generating a file to check for violations
 3. Read `sentinel://architecture` to understand your layer boundaries before writing code
 4. Call `analyze` to run a full project scan
+5. Call `impact_analysis` to understand the blast radius before refactoring a file
+6. Call `dependency_map` to visualize module dependencies
 
 ### CLI
 
@@ -304,9 +434,15 @@ void main() async {
 dart_sentinel/
   bin/
     analyze.dart              # CLI entry point
+    mcp_server.dart           # MCP server entry point
   lib/
     dart_sentinel.dart        # Package exports
     src/
+      analysis/
+        impact_analyzer.dart  # Change impact & hot spots
+        dependency_mapper.dart # Module graph & Mermaid diagrams
+        ratchet.dart          # Baseline save/compare for CI
+        migration_tracker.dart # Banned-symbols migration progress
       config/
         analyzer_config.dart  # YAML configuration
       core/
@@ -314,17 +450,27 @@ dart_sentinel/
         project_context.dart  # Shared context (graph, AST cache)
         rule.dart             # Base class for rules
         runner.dart           # Rule runner
+      mcp/
+        sentinel_server.dart  # MCP server (7 tools, 3 resources)
       rules/
         async_safety_rule.dart
         banned_imports_rule.dart
+        banned_symbols_rule.dart
         build_complexity_rule.dart
         complexity_rule.dart
         dead_exports_rule.dart
         dead_files_rule.dart
+        dead_todos_rule.dart
         dispose_check_rule.dart
+        empty_catch_rule.dart
         feature_isolation_rule.dart
+        generic_naming_rule.dart
         import_cycle_rule.dart
         layer_dependency_rule.dart
+        passthrough_function_rule.dart
+        redundant_comments_rule.dart
+        single_method_class_rule.dart
+        verbose_logging_rule.dart
       output/
         output.dart           # Console, JSON, Markdown formatters
       utils/
