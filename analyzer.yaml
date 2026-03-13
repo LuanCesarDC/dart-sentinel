@@ -1,0 +1,177 @@
+# ──────────────────────────────────────────────────────────────
+# Dart Sentinel — Self-Analysis Configuration
+# ──────────────────────────────────────────────────────────────
+#
+# This file defines the architecture of the dart_sentinel project itself.
+# Run `dart run dart_sentinel` to enforce these rules.
+#
+# Architecture (4 layers, bottom → top):
+#
+#   ┌──────────────┐   ┌──────────────┐
+#   │    output     │   │    rules      │   ← siblings (don't see each other)
+#   └──────┬───────┘   └──────┬───────┘
+#          │                  │
+#          └────────┬─────────┘
+#                   ▼
+#            ┌──────────────┐
+#            │     core      │   ← models, config, context, orchestration
+#            └──────┬───────┘
+#                   ▼
+#            ┌──────────────┐
+#            │    utils      │   ← pure algorithms (zero internal deps)
+#            └──────────────┘
+#
+# Entry points (bin/, future mcp/) live outside the layers
+# and wire everything together.
+#
+# ──────────────────────────────────────────────────────────────
+
+# Entrypoint for dead-file reachability analysis.
+# The barrel file re-exports everything that should be reachable.
+entrypoints:
+  - lib/dart_sentinel.dart
+
+# Include bin/ in scan for metrics/complexity checks.
+extra_scan_dirs:
+  - bin
+
+# Generated files — not applicable now, but ready for codegen.
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+
+# ──────────────────────────────────────────────────────────────
+# Rule severities
+# ──────────────────────────────────────────────────────────────
+
+rules:
+  # Architecture — hard errors, these are structural violations
+  banned-imports: error
+  layer-dependency: error
+  import-cycles: warning
+
+  # Dead code — warnings, useful but not blocking
+  dead-files: warning
+  dead-exports: warning
+
+  # Metrics — keep methods small and readable
+  complexity: warning
+  build-complexity: warning
+
+  # Lint — catch real bugs
+  dispose-check: warning
+  async-safety: warning
+
+# ──────────────────────────────────────────────────────────────
+# Architecture — Layer Dependencies
+# ──────────────────────────────────────────────────────────────
+#
+# Each layer declares which other layers it can depend on.
+# Anything not listed is forbidden.
+#
+# Same-layer imports are always allowed (e.g. core → core).
+# External packages (package:analyzer, dart:io) are not checked by layers.
+
+architecture:
+  layers:
+    # Pure algorithms: glob matching, graph traversal.
+    # No project-specific knowledge. No internal dependencies.
+    utils:
+      paths: ["lib/src/utils/**"]
+      can_depend_on: []
+
+    # Foundation: data models (Issue, Severity), configuration parsing
+    # (AnalyzerConfig), project scanning (ProjectContext), rule interface
+    # (AnalyzerRule), and orchestration (RuleRunner).
+    #
+    # Groups core/ and config/ into one layer because they form a
+    # cohesive unit — config uses Severity from issue.dart, and
+    # project_context uses AnalyzerConfig.
+    core:
+      paths: ["lib/src/core/**", "lib/src/config/**"]
+      can_depend_on: [utils]
+
+    # Analysis rules. Each rule receives a ProjectContext and returns Issues.
+    # Rules depend on core (for the models + context) and utils (for
+    # algorithms like glob matching and graph traversal).
+    rules:
+      paths: ["lib/src/rules/**"]
+      can_depend_on: [core, utils]
+
+    # Output formatters (console, JSON, markdown).
+    # Only needs the Issue model to format results.
+    # Must not know about rules or how analysis works.
+    output:
+      paths: ["lib/src/output/**"]
+      can_depend_on: [core]
+
+    # MCP server — exposes tools and resources for AI agents.
+    # Sits at the top: wires together core, rules and config.
+    # Analogous to bin/ but lives inside lib/ so it can be exported.
+    mcp:
+      paths: ["lib/src/mcp/**"]
+      can_depend_on: [core, rules, utils]
+
+  # ────────────────────────────────────────────────────────────
+  # Banned imports — fine-grained constraints beyond layers
+  # ────────────────────────────────────────────────────────────
+
+  banned_imports:
+    # Rules must be independent — no rule imports another rule.
+    # This ensures each rule is self-contained and testable in isolation.
+    - paths: ["lib/src/rules/**"]
+      deny: ["*_rule.dart", "package:dart_sentinel/src/rules/**"]
+      message: "Rules must be independent — don't import other rule files."
+
+    # Output must not reach into rules.
+    # (Layers already enforce this, but being explicit aids readability.)
+    - paths: ["lib/src/output/**"]
+      deny: ["**/rules/**", "*_rule.dart"]
+      message: "Output formatters must not depend on rule implementations."
+
+    # Utils must stay pure — no dart:io, no internal imports.
+    # They should be portable, testable, and side-effect free.
+    - paths: ["lib/src/utils/**"]
+      deny:
+        - "dart:io"
+        - "**/core/**"
+        - "**/config/**"
+        - "**/rules/**"
+        - "**/output/**"
+      message: "Utils must be pure algorithms — no I/O or internal dependencies."
+
+    # Rules work with parsed ASTs via ProjectContext.
+    # They must not touch the filesystem directly.
+    - paths: ["lib/src/rules/**"]
+      deny: ["dart:io"]
+      message: "Rules must not use dart:io — use ProjectContext for file data."
+
+# ──────────────────────────────────────────────────────────────
+# Metrics thresholds
+# ──────────────────────────────────────────────────────────────
+#
+# These values match what dart_sentinel's own codebase passes today.
+# Tighten them over time as the codebase matures.
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_loc:
+    warning: 30
+    error: 60
+  build_method_branches:
+    warning: 3
+    error: 6

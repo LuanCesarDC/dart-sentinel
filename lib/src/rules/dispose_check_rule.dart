@@ -65,94 +65,148 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   }
 
   void _analyzeClass(AstNode node, NodeList<ClassMember> members) {
-    // ── 1. Collect fields that came from constructor parameters ──
-    final constructorParamFields = <String>{};
+    final constructorParams = _collectConstructorParamFields(members);
+    final disposableFields = _collectDisposableFields(members, constructorParams);
+    final methodBodies = _collectMethodBodies(members);
+    final disposeCleanups = _collectDisposeCleanups(members, methodBodies);
+    final addListenerCalls = _collectAddListenerCalls(members);
+
+    _reportMissingDispose(disposableFields, disposeCleanups, members);
+    _reportMissingRemoveListener(addListenerCalls, disposeCleanups);
+  }
+
+  // ── Data collection helpers ──
+
+  Set<String> _collectConstructorParamFields(NodeList<ClassMember> members) {
+    final result = <String>{};
     for (final member in members) {
-      if (member is ConstructorDeclaration) {
-        _collectConstructorParamFields(member, constructorParamFields);
+      if (member is! ConstructorDeclaration) continue;
+      result.addAll(_formalParamFields(member));
+      result.addAll(_initializerParamFields(member));
+    }
+    return result;
+  }
+
+  Set<String> _formalParamFields(ConstructorDeclaration constructor) {
+    final result = <String>{};
+    for (final param in constructor.parameters.parameters) {
+      final actual =
+          param is DefaultFormalParameter ? param.parameter : param;
+      if (actual is FieldFormalParameter) {
+        result.add(actual.name.lexeme);
+      } else if (actual is SuperFormalParameter) {
+        result.add(actual.name.lexeme);
       }
     }
+    return result;
+  }
 
-    // ── 2. Collect disposable fields, excluding constructor params ──
-    final disposableFields = <String, _DisposableType>{};
-
-    for (final member in members) {
-      if (member is FieldDeclaration) {
-        for (final variable in member.fields.variables) {
-          final typeName = member.fields.type?.toSource() ?? '';
-          final fieldName = variable.name.lexeme;
-
-          // Skip fields that come from constructor (not owned by this class)
-          if (constructorParamFields.contains(fieldName)) continue;
-
-          final disposableType = _classifyDisposableType(typeName);
-          if (disposableType != null) {
-            disposableFields[fieldName] = disposableType;
-          }
-        }
+  Set<String> _initializerParamFields(ConstructorDeclaration constructor) {
+    final result = <String>{};
+    final paramNames = _constructorParamNames(constructor);
+    for (final init in constructor.initializers) {
+      if (init is! ConstructorFieldInitializer) continue;
+      if (init.expression is! SimpleIdentifier) continue;
+      final expr = init.expression as SimpleIdentifier;
+      if (paramNames.contains(expr.name)) {
+        result.add(init.fieldName.name);
       }
     }
+    return result;
+  }
 
-    // ── 3. Build a map of all methods in this class (for indirect cleanup) ──
-    final methodBodies = <String, FunctionBody>{};
+  Set<String> _constructorParamNames(ConstructorDeclaration constructor) {
+    return constructor.parameters.parameters
+        .map((p) {
+          final actual =
+              p is DefaultFormalParameter ? p.parameter : p;
+          return actual.name?.lexeme;
+        })
+        .whereType<String>()
+        .toSet();
+  }
+
+  Map<String, _DisposableType> _collectDisposableFields(
+      NodeList<ClassMember> members, Set<String> constructorParams) {
+    final fields = <String, _DisposableType>{};
     for (final member in members) {
-      if (member is MethodDeclaration && member.body is! EmptyFunctionBody) {
-        methodBodies[member.name.lexeme] = member.body;
+      if (member is! FieldDeclaration) continue;
+      for (final variable in member.fields.variables) {
+        final typeName = member.fields.type?.toSource() ?? '';
+        final fieldName = variable.name.lexeme;
+        if (constructorParams.contains(fieldName)) continue;
+        final type = _classifyDisposableType(typeName);
+        if (type != null) fields[fieldName] = type;
       }
     }
+    return fields;
+  }
 
-    // ── 4. Collect addListener calls (outside dispose) ──
-    final addListenerCalls = <String>{};
-
-    // ── 5. Collect cleanups from dispose() — following indirect calls ──
-    final disposeCleanups = <String, Set<String>>{};
-
+  Map<String, FunctionBody> _collectMethodBodies(
+      NodeList<ClassMember> members) {
+    final bodies = <String, FunctionBody>{};
     for (final member in members) {
-      if (member is MethodDeclaration) {
-        if (member.name.lexeme == 'dispose') {
-          // Scan dispose body + any methods it calls (transitively)
-          _collectCleanupsRecursive(
-            member.body,
-            methodBodies,
-            disposeCleanups,
-            visited: {},
-          );
-        } else {
-          // Scan for addListener calls in non-dispose methods
-          final listenerVisitor = _AddListenerVisitor();
-          member.body.visitChildren(listenerVisitor);
-          addListenerCalls.addAll(listenerVisitor.targets);
-        }
-      }
+      if (member is! MethodDeclaration) continue;
+      if (member.body is EmptyFunctionBody) continue;
+      bodies[member.name.lexeme] = member.body;
     }
+    return bodies;
+  }
 
-    // ── 6. Check disposable fields ──
+  Map<String, Set<String>> _collectDisposeCleanups(
+      NodeList<ClassMember> members,
+      Map<String, FunctionBody> methodBodies) {
+    for (final member in members) {
+      if (member is! MethodDeclaration) continue;
+      if (member.name.lexeme != 'dispose') continue;
+      final collector = _CleanupCollector(methodBodies);
+      collector.collectFrom(member.body);
+      return collector.cleanups;
+    }
+    return {};
+  }
+
+  Set<String> _collectAddListenerCalls(NodeList<ClassMember> members) {
+    final calls = <String>{};
+    for (final member in members) {
+      if (member is! MethodDeclaration) continue;
+      if (member.name.lexeme == 'dispose') continue;
+      final visitor = _AddListenerVisitor();
+      member.body.visitChildren(visitor);
+      calls.addAll(visitor.targets);
+    }
+    return calls;
+  }
+
+  // ── Reporting helpers ──
+
+  void _reportMissingDispose(
+      Map<String, _DisposableType> disposableFields,
+      Map<String, Set<String>> disposeCleanups,
+      NodeList<ClassMember> members) {
     for (final entry in disposableFields.entries) {
-      final fieldName = entry.key;
-      final disposableType = entry.value;
-      final cleanups = disposeCleanups[fieldName] ?? {};
+      final cleanups = disposeCleanups[entry.key] ?? {};
+      if (cleanups.contains(entry.value.requiredCleanup)) continue;
 
-      final requiredMethod = disposableType.requiredCleanup;
-      if (!cleanups.contains(requiredMethod)) {
-        final fieldDecl = _findFieldDeclaration(members, fieldName);
-        final line = fieldDecl != null
-            ? unit.lineInfo.getLocation(fieldDecl.offset).lineNumber
-            : 0;
-
-        issues.add(Issue(
-          rule: 'dispose-check',
-          message:
-              '${disposableType.typeName} "$fieldName" must call '
-              '.$requiredMethod() in dispose()',
-          file: filePath,
-          line: line,
-          severity: Severity.warning,
-        ));
-      }
+      final fieldDecl = _findFieldDeclaration(members, entry.key);
+      final line = fieldDecl != null
+          ? unit.lineInfo.getLocation(fieldDecl.offset).lineNumber
+          : 0;
+      issues.add(Issue(
+        rule: 'dispose-check',
+        message:
+            '${entry.value.typeName} "${entry.key}" must call '
+            '.${entry.value.requiredCleanup}() in dispose()',
+        file: filePath,
+        line: line,
+        severity: Severity.warning,
+      ));
     }
+  }
 
-    // ── 7. Check addListener / removeListener pairs ──
-    // Normalize both sides to simple field names for comparison
+  void _reportMissingRemoveListener(
+      Set<String> addListenerCalls,
+      Map<String, Set<String>> disposeCleanups) {
     final normalizedCleanups = <String, Set<String>>{};
     for (final entry in disposeCleanups.entries) {
       final normalized = _normalizeTarget(entry.key);
@@ -164,144 +218,30 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
     for (final target in addListenerCalls) {
       final normalized = _normalizeTarget(target);
       final cleanups = normalizedCleanups[normalized] ?? {};
-      if (!cleanups.contains('removeListener')) {
-        issues.add(Issue(
-          rule: 'dispose-check',
-          message:
-              '"$target.addListener()" called but '
-              '"removeListener()" not found in dispose()',
-          file: filePath,
-          severity: Severity.warning,
-        ));
-      }
+      if (cleanups.contains('removeListener')) continue;
+      issues.add(Issue(
+        rule: 'dispose-check',
+        message:
+            '"$target.addListener()" called but '
+            '"removeListener()" not found in dispose()',
+        file: filePath,
+        severity: Severity.warning,
+      ));
     }
-  }
-
-  /// Collects field names that are assigned via constructor parameters.
-  /// Handles: `this.controller`, `this.focusNode`, etc.
-  /// Also handles constructors that assign `controller = controller` from a
-  /// named/positional parameter.
-  void _collectConstructorParamFields(
-    ConstructorDeclaration constructor,
-    Set<String> out,
-  ) {
-    // Formal parameters with `this.x` syntax
-    for (final param in constructor.parameters.parameters) {
-      final actualParam =
-          param is DefaultFormalParameter ? param.parameter : param;
-      if (actualParam is FieldFormalParameter) {
-        out.add(actualParam.name.lexeme);
-      }
-      // Also handle super.x formal parameters (rare but possible)
-      if (actualParam is SuperFormalParameter) {
-        out.add(actualParam.name.lexeme);
-      }
-    }
-
-    // Initializer list assignments: `field = paramName`
-    for (final init in constructor.initializers) {
-      if (init is ConstructorFieldInitializer) {
-        // If the field is initialized from a constructor parameter,
-        // it's externally owned
-        final expr = init.expression;
-        if (expr is SimpleIdentifier) {
-          // Check if the right side is one of the constructor's params
-          final paramNames = constructor.parameters.parameters
-              .map((p) {
-                final actual =
-                    p is DefaultFormalParameter ? p.parameter : p;
-                return actual.name?.lexeme;
-              })
-              .whereType<String>()
-              .toSet();
-          if (paramNames.contains(expr.name)) {
-            out.add(init.fieldName.name);
-          }
-        }
-      }
-    }
-  }
-
-  /// Recursively collect cleanup calls from a method body, following calls
-  /// to other methods defined in the same class.
-  void _collectCleanupsRecursive(
-    FunctionBody body,
-    Map<String, FunctionBody> methodBodies,
-    Map<String, Set<String>> disposeCleanups, {
-    required Set<String> visited,
-  }) {
-    // Scan this body for direct cleanup calls
-    final cleanupVisitor = _CleanupVisitor();
-    body.visitChildren(cleanupVisitor);
-    for (final cleanup in cleanupVisitor.cleanups) {
-      disposeCleanups
-          .putIfAbsent(cleanup.target, () => {})
-          .add(cleanup.method);
-    }
-
-    // Find calls to other methods in this class and follow them
-    final callVisitor = _MethodCallCollector();
-    body.visitChildren(callVisitor);
-
-    for (final calledMethod in callVisitor.calledMethods) {
-      if (visited.contains(calledMethod)) continue; // avoid infinite loops
-      visited.add(calledMethod);
-
-      final calledBody = methodBodies[calledMethod];
-      if (calledBody != null) {
-        _collectCleanupsRecursive(
-          calledBody,
-          methodBodies,
-          disposeCleanups,
-          visited: visited,
-        );
-      }
-    }
-  }
-
-  /// Normalize a target expression to its trailing simple identifier.
-  ///
-  /// Examples:
-  /// - `gymService` → `gymService`
-  /// - `this.gymService` → `gymService`
-  /// - `_gymService` → `_gymService`
-  /// - `locator<GymService>()` → `locator` (won't match field, harmless)
-  /// - `widget.controller` → `controller`
-  ///
-  /// For listener matching, we also strip underscores prefix and compare
-  /// case-insensitively to handle `_studentService` vs `studentService`.
-  static String _normalizeTarget(String target) {
-    // Remove `this.` prefix
-    var normalized = target.startsWith('this.') ? target.substring(5) : target;
-
-    // If it contains `.`, take the last segment (e.g., `widget.controller` → `controller`)
-    if (normalized.contains('.')) {
-      normalized = normalized.split('.').last;
-    }
-
-    // Remove null-aware operator suffix
-    normalized = normalized.replaceAll('?', '');
-
-    // Strip leading underscores for comparison
-    normalized = normalized.replaceFirst(RegExp(r'^_+'), '');
-
-    return normalized.toLowerCase();
   }
 
   FieldDeclaration? _findFieldDeclaration(
       NodeList<ClassMember> members, String fieldName) {
     for (final member in members) {
-      if (member is FieldDeclaration) {
-        for (final variable in member.fields.variables) {
-          if (variable.name.lexeme == fieldName) return member;
-        }
+      if (member is! FieldDeclaration) continue;
+      for (final variable in member.fields.variables) {
+        if (variable.name.lexeme == fieldName) return member;
       }
     }
     return null;
   }
 
   _DisposableType? _classifyDisposableType(String typeName) {
-    // Strip nullable and generic parameters
     final cleaned =
         typeName.replaceAll('?', '').replaceAll(RegExp(r'<.*>'), '').trim();
 
@@ -328,20 +268,57 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
         return null;
     }
   }
+
+  static String _normalizeTarget(String target) {
+    var normalized = target.startsWith('this.') ? target.substring(5) : target;
+    if (normalized.contains('.')) {
+      normalized = normalized.split('.').last;
+    }
+    normalized = normalized.replaceAll('?', '');
+    normalized = normalized.replaceFirst(RegExp(r'^_+'), '');
+    return normalized.toLowerCase();
+  }
 }
+
+// ── Helper classes ──
 
 class _DisposableType {
   final String typeName;
   final String requiredCleanup;
-
   _DisposableType(this.typeName, this.requiredCleanup);
 }
 
 class _CleanupCall {
   final String target;
   final String method;
-
   _CleanupCall(this.target, this.method);
+}
+
+/// Recursively collects cleanup calls from dispose(), following calls
+/// to other methods defined in the same class.
+class _CleanupCollector {
+  final Map<String, FunctionBody> _methodBodies;
+  final Map<String, Set<String>> cleanups = {};
+  final Set<String> _visited = {};
+
+  _CleanupCollector(this._methodBodies);
+
+  void collectFrom(FunctionBody body) {
+    final visitor = _CleanupVisitor();
+    body.visitChildren(visitor);
+    for (final cleanup in visitor.cleanups) {
+      cleanups.putIfAbsent(cleanup.target, () => {}).add(cleanup.method);
+    }
+
+    final callVisitor = _MethodCallCollector();
+    body.visitChildren(callVisitor);
+    for (final calledMethod in callVisitor.calledMethods) {
+      if (_visited.contains(calledMethod)) continue;
+      _visited.add(calledMethod);
+      final calledBody = _methodBodies[calledMethod];
+      if (calledBody != null) collectFrom(calledBody);
+    }
+  }
 }
 
 /// Collects direct cleanup calls (dispose/cancel/close/removeListener)

@@ -80,6 +80,7 @@ extra_scan_dirs:
 rules:
   dead-files: warning
   banned-imports: error
+  banned-symbols: warning
   complexity: warning
   dispose-check: warning
 
@@ -89,6 +90,16 @@ architecture:
     - paths: ["lib/features/**/viewmodel/**"]
       deny: ["package:cloud_firestore/**"]
       message: "ViewModels must not access Firestore directly -- use Services."
+
+  banned_symbols:
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["ElevatedButton", "TextButton", "OutlinedButton"]
+      suggest: "MoovzButton"
+      message: "Use MoovzButton from ui_lib instead of raw Flutter buttons."
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["showDialog", "AlertDialog"]
+      suggest: "showMoovzDialog"
+      message: "Use showMoovzDialog from ui_lib."
 
   layers:
     ui:
@@ -146,6 +157,7 @@ metrics:
 | Rule | Description |
 |------|-------------|
 | `banned-imports` | Prevents forbidden imports in specific paths |
+| `banned-symbols` | Prevents usage of specific symbols/constructors (e.g. enforce Design System) |
 | `layer-dependency` | Validates imports respect defined layer boundaries |
 | `feature-isolation` | Prevents horizontal coupling between features |
 | `import-cycles` | Detects cycles in the import graph |
@@ -181,6 +193,73 @@ Add to `.githooks/pre-commit`:
 ```bash
 #!/bin/sh
 dart run dart_sentinel -o arch
+```
+
+## MCP Server (AI Agent Integration)
+
+Dart Sentinel exposes an MCP (Model Context Protocol) server so AI coding assistants like GitHub Copilot, Cursor, and Claude Code can query your architecture rules in real time.
+
+### Setup
+
+**1. Add dart_sentinel as a dev dependency** (if not already):
+
+```yaml
+dev_dependencies:
+  dart_sentinel:
+    git:
+      url: https://github.com/LuanCesarDC/dart-sentinel
+```
+
+**2. Create `.vscode/mcp.json`** in your project root:
+
+```json
+{
+  "servers": {
+    "dart-sentinel": {
+      "type": "stdio",
+      "command": "dart",
+      "args": ["run", "dart_sentinel:mcp_server"]
+    }
+  }
+}
+```
+
+That's it. The AI agent will automatically discover the server and use it.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `analyze` | Run full analysis or filter by category (`arch`, `dead`, `metrics`, `lint`) |
+| `analyze_file` | Analyze a single file |
+| `check_import` | Check if a specific import is allowed by your architecture rules |
+| `get_architecture` | Get the full architecture definition (layers, banned imports) |
+
+### Available Resources
+
+| Resource | Description |
+|----------|-------------|
+| `sentinel://config` | Current `analyzer.yaml` configuration |
+| `sentinel://report` | Latest analysis report (JSON) |
+| `sentinel://architecture` | Architecture definition summary |
+
+### How it works
+
+When an AI agent generates code in your project, it can:
+
+1. Call `check_import` before adding an import to verify it doesn't violate architecture rules
+2. Call `analyze_file` after generating a file to check for violations
+3. Read `sentinel://architecture` to understand your layer boundaries before writing code
+4. Call `analyze` to run a full project scan
+
+### CLI
+
+You can also start the MCP server manually:
+
+```bash
+dart run dart_sentinel --mcp
+# or
+dart run dart_sentinel:mcp_server
 ```
 
 ## Programmatic Usage

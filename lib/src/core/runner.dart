@@ -57,6 +57,7 @@ class RuleRunner {
     final categoryMap = <String, Set<String>>{
       'arch': {
         'banned-imports',
+        'banned-symbols',
         'layer-dependency',
         'feature-isolation',
         'import-cycles',

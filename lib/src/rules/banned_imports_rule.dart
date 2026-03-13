@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 
+import '../config/analyzer_config.dart';
 import '../core/issue.dart';
 import '../core/project_context.dart';
 import '../core/rule.dart';
@@ -21,42 +22,39 @@ class BannedImportsRule extends AnalyzerRule {
     if (bannedConfigs.isEmpty) return [];
 
     final issues = <Issue>[];
-
     for (final file in context.allFiles) {
-      final relativePath = context.relativePath(file);
-      final unit = context.parsedUnits[file];
-      if (unit == null) continue;
+      issues.addAll(_checkFile(file, bannedConfigs, context));
+    }
+    return issues;
+  }
 
-      for (final config in bannedConfigs) {
-        // Check if this file matches any of the rule's path patterns
-        if (!_matchesAnyPath(relativePath, config.paths)) continue;
+  List<Issue> _checkFile(String file, List<BannedImportConfig> configs,
+      ProjectContext context) {
+    final relativePath = context.relativePath(file);
+    final unit = context.parsedUnits[file];
+    if (unit == null) return [];
 
-        // Check each import in the file
-        for (final directive in unit.directives) {
-          if (directive is! ImportDirective) continue;
+    final issues = <Issue>[];
+    for (final config in configs) {
+      if (!_matchesAnyPath(relativePath, config.paths)) continue;
+      for (final directive in unit.directives) {
+        if (directive is! ImportDirective) continue;
+        final uri = directive.uri.stringValue;
+        if (uri == null) continue;
+        if (!_matchesDeny(uri, config.deny, context)) continue;
 
-          final uri = directive.uri.stringValue;
-          if (uri == null) continue;
-
-          // Check if this import matches any denied pattern
-          if (_matchesDeny(uri, config.deny, context)) {
-            final line =
-                unit.lineInfo.getLocation(directive.offset).lineNumber;
-
-            issues.add(Issue(
-              rule: name,
-              message: config.message.isNotEmpty
-                  ? '${config.message} (import: $uri)'
-                  : 'Banned import: $uri',
-              file: relativePath,
-              line: line,
-              severity: defaultSeverity,
-            ));
-          }
-        }
+        final line = unit.lineInfo.getLocation(directive.offset).lineNumber;
+        issues.add(Issue(
+          rule: name,
+          message: config.message.isNotEmpty
+              ? '${config.message} (import: $uri)'
+              : 'Banned import: $uri',
+          file: relativePath,
+          line: line,
+          severity: defaultSeverity,
+        ));
       }
     }
-
     return issues;
   }
 

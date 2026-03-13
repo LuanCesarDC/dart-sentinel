@@ -17,63 +17,54 @@ class DeadExportsRule extends AnalyzerRule {
 
   @override
   List<Issue> run(ProjectContext context) {
+    final reverseImports = reverseGraph(context.importGraph);
+    final issues = <Issue>[];
+    for (final file in context.allFiles) {
+      if (context.parsedUnits[file] == null) continue;
+      issues.addAll(_findDeadExports(file, context, reverseImports));
+    }
+    return issues;
+  }
+
+  List<Issue> _findDeadExports(
+      String file,
+      ProjectContext context,
+      Map<String, Set<String>> reverseImports) {
+    final unit = context.parsedUnits[file]!;
     final issues = <Issue>[];
 
-    // Build a reverse graph to see who imports each file
-    final reverseImports = reverseGraph(context.importGraph);
+    for (final directive in unit.directives) {
+      if (directive is! ExportDirective) continue;
+      final uri = directive.uri.stringValue;
+      if (uri == null) continue;
 
-    for (final file in context.allFiles) {
-      final unit = context.parsedUnits[file];
-      if (unit == null) continue;
+      final resolved = _resolveUri(uri, context.projectRoot, context.packageName);
+      if (resolved == null) continue;
 
-      for (final directive in unit.directives) {
-        if (directive is! ExportDirective) continue;
-
-        final uri = directive.uri.stringValue;
-        if (uri == null) continue;
-
-        // Resolve the exported file
-        final resolved = _resolveUri(
-          uri,
-          file,
-          context.projectRoot,
-          context.packageName,
-        );
-        if (resolved == null) continue;
-
-        // Check if the exporting file itself is imported by anyone
-        // other than through this export chain
-        final importers = reverseImports[file] ?? {};
-
-        if (importers.isEmpty) {
-          issues.add(Issue(
-            rule: name,
-            message: 'Export of "$uri" is not used — no file imports this barrel/file',
-            file: context.relativePath(file),
-            line: directive.offset > 0
-                ? _lineNumber(context.parsedUnits[file]!, directive.offset)
-                : 0,
-            severity: defaultSeverity,
-          ));
-        }
+      final importers = reverseImports[file] ?? {};
+      if (importers.isEmpty) {
+        final line = directive.offset > 0
+            ? _lineNumber(unit, directive.offset)
+            : 0;
+        issues.add(Issue(
+          rule: name,
+          message: 'Export of "$uri" is not used — no file imports this barrel/file',
+          file: context.relativePath(file),
+          line: line,
+          severity: defaultSeverity,
+        ));
       }
     }
-
     return issues;
   }
 
   String? _resolveUri(
-    String uri,
-    String currentFile,
-    String projectRoot,
-    String packageName,
-  ) {
+      String uri, String projectRoot, String packageName) {
     if (uri.startsWith('dart:')) return null;
     if (uri.startsWith('package:')) {
       final parts = uri.substring(8).split('/');
       if (parts.isEmpty || parts.first != packageName) return null;
-      final relative = parts.skip(1).join('/');
-      return '$projectRoot/lib/$relative';
+      return '$projectRoot/lib/${parts.skip(1).join('/')}';
     }
     return null;
   }

@@ -80,6 +80,33 @@ architecture:
     #   - from: "lib/features/booking/"
     #     allow: ["lib/features/shared_widgets/"]
 
+  # Banned symbols — enforce Design System / UI Lib usage
+  banned_symbols:
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["ElevatedButton", "TextButton", "OutlinedButton"]
+      suggest: "MoovzButton"
+      message: "Use MoovzButton from ui_lib instead of raw Flutter buttons."
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["TextField"]
+      suggest: "MoovzTextFormField"
+      message: "Use MoovzTextFormField from ui_lib instead of raw TextField."
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["showDialog", "AlertDialog"]
+      suggest: "showMoovzDialog"
+      message: "Use showMoovzDialog from ui_lib instead of raw showDialog/AlertDialog."
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["CircularProgressIndicator"]
+      suggest: "MoovzCircularProgressIndicator"
+      message: "Use MoovzCircularProgressIndicator from ui_lib."
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["showModalBottomSheet"]
+      suggest: "MoovzModalBottomSheet.show"
+      message: "Use MoovzModalBottomSheet.show from ui_lib."
+    - paths: ["lib/apps/**", "lib/features/**"]
+      deny: ["AppBar"]
+      suggest: "MoovzTopAppBar"
+      message: "Use MoovzTopAppBar from ui_lib instead of raw AppBar."
+
 # Metrics thresholds
 metrics:
   cyclomatic_complexity:

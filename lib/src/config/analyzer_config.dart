@@ -19,6 +19,9 @@ class AnalyzerConfig {
   /// Banned imports configuration.
   final List<BannedImportConfig> bannedImports;
 
+  /// Banned symbols configuration.
+  final List<BannedSymbolConfig> bannedSymbols;
+
   /// Layer dependency configuration.
   final LayerConfig? layerConfig;
 
@@ -36,6 +39,7 @@ class AnalyzerConfig {
     this.entrypoints = const [],
     this.ruleSeverities = const {},
     this.bannedImports = const [],
+    this.bannedSymbols = const [],
     this.layerConfig,
     this.featureIsolation,
     this.metrics = const MetricsConfig(),
@@ -128,6 +132,19 @@ class AnalyzerConfig {
         for (final item in bannedNode) {
           if (item is YamlMap) {
             bannedImports.add(parseBannedImport(item));
+          }
+        }
+      }
+    }
+
+    // Banned symbols
+    final bannedSymbols = <BannedSymbolConfig>[];
+    if (archNode is YamlMap) {
+      final symbolsNode = archNode['banned_symbols'];
+      if (symbolsNode is YamlList) {
+        for (final item in symbolsNode) {
+          if (item is YamlMap) {
+            bannedSymbols.add(BannedSymbolConfig.fromYaml(item));
           }
         }
       }
@@ -253,6 +270,7 @@ class AnalyzerConfig {
       entrypoints: entrypoints,
       ruleSeverities: ruleSeverities,
       bannedImports: bannedImports,
+      bannedSymbols: bannedSymbols,
       layerConfig: layerConfig,
       featureIsolation: featureIsolation,
       metrics: metrics,
@@ -265,6 +283,49 @@ class AnalyzerConfig {
       return int.tryParse(node[key].toString()) ?? defaultValue;
     }
     return defaultValue;
+  }
+}
+
+/// Configuration for a single banned-symbol rule.
+class BannedSymbolConfig {
+  /// Glob patterns for files this rule applies to.
+  final List<String> paths;
+
+  /// Symbol names that are banned (e.g. 'ElevatedButton', 'showDialog').
+  final List<String> deny;
+
+  /// Suggested replacement symbol (informational).
+  final String suggest;
+
+  /// Message to display when the rule is violated.
+  final String message;
+
+  const BannedSymbolConfig({
+    required this.paths,
+    required this.deny,
+    this.suggest = '',
+    this.message = '',
+  });
+
+  factory BannedSymbolConfig.fromYaml(YamlMap m) {
+    final paths = <String>[];
+    if (m['paths'] is YamlList) {
+      for (final p in m['paths'] as YamlList) {
+        paths.add(p.toString());
+      }
+    }
+    final deny = <String>[];
+    if (m['deny'] is YamlList) {
+      for (final d in m['deny'] as YamlList) {
+        deny.add(d.toString());
+      }
+    }
+    return BannedSymbolConfig(
+      paths: paths,
+      deny: deny,
+      suggest: m['suggest']?.toString() ?? '',
+      message: m['message']?.toString() ?? '',
+    );
   }
 }
 

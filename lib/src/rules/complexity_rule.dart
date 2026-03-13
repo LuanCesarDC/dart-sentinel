@@ -89,130 +89,130 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodDeclaration(MethodDeclaration node) {
-    _analyzeCallable(
+    _analyzeCallable(_CallableInfo(
       name: node.name.lexeme,
+      kind: 'Method',
       body: node.body,
       parameters: node.parameters,
-      offset: node.offset,
-      isMethod: true,
-    );
+      line: unit.lineInfo.getLocation(node.offset).lineNumber,
+    ));
     super.visitMethodDeclaration(node);
   }
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
-    _analyzeCallable(
+    _analyzeCallable(_CallableInfo(
       name: node.name.lexeme,
+      kind: 'Function',
       body: node.functionExpression.body,
       parameters: node.functionExpression.parameters,
-      offset: node.offset,
-      isMethod: false,
-    );
+      line: unit.lineInfo.getLocation(node.offset).lineNumber,
+    ));
     super.visitFunctionDeclaration(node);
   }
 
-  void _analyzeCallable({
-    required String name,
-    required FunctionBody body,
-    required FormalParameterList? parameters,
-    required int offset,
-    required bool isMethod,
-  }) {
-    final line = unit.lineInfo.getLocation(offset).lineNumber;
-    final kind = isMethod ? 'Method' : 'Function';
+  void _analyzeCallable(_CallableInfo info) {
+    _checkCyclomaticComplexity(info);
+    _checkLinesPerMethod(info);
+    _checkParameterCount(info);
+    _checkNestingDepth(info);
+  }
 
-    // Cyclomatic complexity
-    final cc = _cyclomaticComplexity(body);
+  void _checkCyclomaticComplexity(_CallableInfo info) {
+    final cc = _cyclomaticComplexity(info.body);
     if (cc >= metrics.cyclomaticComplexityError) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has cyclomatic complexity of $cc '
+            '${info.kind} "${info.name}" has cyclomatic complexity of $cc '
             '(limit: ${metrics.cyclomaticComplexityError})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.error,
       ));
     } else if (cc >= metrics.cyclomaticComplexityWarning) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has cyclomatic complexity of $cc '
+            '${info.kind} "${info.name}" has cyclomatic complexity of $cc '
             '(limit: ${metrics.cyclomaticComplexityWarning})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.warning,
       ));
     }
+  }
 
-    // Lines per method
-    final methodLoc = _bodyLineCount(body);
+  void _checkLinesPerMethod(_CallableInfo info) {
+    final methodLoc = _bodyLineCount(info.body);
     if (methodLoc >= metrics.linesPerMethodError) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has $methodLoc lines '
+            '${info.kind} "${info.name}" has $methodLoc lines '
             '(limit: ${metrics.linesPerMethodError})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.error,
       ));
     } else if (methodLoc >= metrics.linesPerMethodWarning) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has $methodLoc lines '
+            '${info.kind} "${info.name}" has $methodLoc lines '
             '(limit: ${metrics.linesPerMethodWarning})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.warning,
       ));
     }
+  }
 
-    // Number of parameters
-    final paramCount = parameters?.parameters.length ?? 0;
+  void _checkParameterCount(_CallableInfo info) {
+    final paramCount = info.parameters?.parameters.length ?? 0;
     if (paramCount >= metrics.maxParametersError) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has $paramCount parameters '
+            '${info.kind} "${info.name}" has $paramCount parameters '
             '(limit: ${metrics.maxParametersError})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.error,
       ));
     } else if (paramCount >= metrics.maxParametersWarning) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has $paramCount parameters '
+            '${info.kind} "${info.name}" has $paramCount parameters '
             '(limit: ${metrics.maxParametersWarning})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.warning,
       ));
     }
+  }
 
-    // Maximum nesting depth
-    final nesting = _maxNestingDepth(body);
+  void _checkNestingDepth(_CallableInfo info) {
+    final nesting = _maxNestingDepth(info.body);
     if (nesting >= metrics.maxNestingError) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has nesting depth of $nesting '
+            '${info.kind} "${info.name}" has nesting depth of $nesting '
             '(limit: ${metrics.maxNestingError})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.error,
       ));
     } else if (nesting >= metrics.maxNestingWarning) {
       issues.add(Issue(
         rule: 'complexity',
         message:
-            '$kind "$name" has nesting depth of $nesting '
+            '${info.kind} "${info.name}" has nesting depth of $nesting '
             '(limit: ${metrics.maxNestingWarning})',
         file: filePath,
-        line: line,
+        line: info.line,
         severity: Severity.warning,
       ));
     }
@@ -354,4 +354,20 @@ class _NestingDepthVisitor extends RecursiveAstVisitor<void> {
     super.visitTryStatement(node);
     _exit();
   }
+}
+
+class _CallableInfo {
+  final String name;
+  final String kind;
+  final FunctionBody body;
+  final FormalParameterList? parameters;
+  final int line;
+
+  _CallableInfo({
+    required this.name,
+    required this.kind,
+    required this.body,
+    required this.parameters,
+    required this.line,
+  });
 }

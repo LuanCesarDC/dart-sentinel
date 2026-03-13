@@ -23,53 +23,62 @@ class LayerDependencyRule extends AnalyzerRule {
     if (layerConfig == null) return [];
 
     final issues = <Issue>[];
-
     for (final file in context.allFiles) {
-      final relativePath = context.relativePath(file);
-      final unit = context.parsedUnits[file];
-      if (unit == null) continue;
-
-      // Determine which layer this file belongs to
-      final sourceLayer = _findLayer(relativePath, layerConfig);
-      if (sourceLayer == null) continue;
-
-      // Check each import
-      for (final directive in unit.directives) {
-        if (directive is! ImportDirective) continue;
-
-        final uri = directive.uri.stringValue;
-        if (uri == null || uri.startsWith('dart:')) continue;
-
-        // Resolve the import to a relative path
-        final importRelative = _resolveToRelative(uri, context);
-        if (importRelative == null) continue;
-
-        // Determine which layer the imported file belongs to
-        final targetLayer = _findLayer(importRelative, layerConfig);
-        if (targetLayer == null) continue;
-
-        // Same layer is always OK
-        if (sourceLayer.name == targetLayer.name) continue;
-
-        // Check if the source layer is allowed to depend on the target layer
-        if (!sourceLayer.canDependOn.contains(targetLayer.name)) {
-          final line =
-              unit.lineInfo.getLocation(directive.offset).lineNumber;
-
-          issues.add(Issue(
-            rule: name,
-            message:
-                'Layer "${sourceLayer.name}" cannot depend on "${targetLayer.name}" '
-                '(import: $uri)',
-            file: relativePath,
-            line: line,
-            severity: defaultSeverity,
-          ));
-        }
-      }
+      issues.addAll(_checkFile(file, context));
     }
-
     return issues;
+  }
+
+  List<Issue> _checkFile(String file, ProjectContext context) {
+    final layerConfig = context.config.layerConfig!;
+    final relativePath = context.relativePath(file);
+    final unit = context.parsedUnits[file];
+    if (unit == null) return [];
+
+    final sourceLayer = _findLayer(relativePath, layerConfig);
+    if (sourceLayer == null) return [];
+
+    final source = (
+      relativePath: relativePath,
+      unit: unit,
+      layer: sourceLayer,
+    );
+    final issues = <Issue>[];
+    for (final directive in unit.directives) {
+      if (directive is! ImportDirective) continue;
+      final issue = _checkLayerImport(directive, source, context);
+      if (issue != null) issues.add(issue);
+    }
+    return issues;
+  }
+
+  Issue? _checkLayerImport(
+      ImportDirective directive,
+      ({String relativePath, CompilationUnit unit, LayerDefinition layer}) source,
+      ProjectContext context) {
+    final layerConfig = context.config.layerConfig!;
+    final uri = directive.uri.stringValue;
+    if (uri == null) return null;
+    if (uri.startsWith('dart:')) return null;
+
+    final importRelative = _resolveToRelative(uri, context);
+    if (importRelative == null) return null;
+
+    final targetLayer = _findLayer(importRelative, layerConfig);
+    if (targetLayer == null) return null;
+    if (source.layer.name == targetLayer.name) return null;
+    if (source.layer.canDependOn.contains(targetLayer.name)) return null;
+
+    final line = source.unit.lineInfo.getLocation(directive.offset).lineNumber;
+    return Issue(
+      rule: name,
+      message:
+          'Layer "${source.layer.name}" cannot depend on "${targetLayer.name}" '
+          '(import: $uri)',
+      file: source.relativePath,
+      line: line,
+      severity: defaultSeverity,
+    );
   }
 
   LayerDefinition? _findLayer(String relativePath, LayerConfig config) {

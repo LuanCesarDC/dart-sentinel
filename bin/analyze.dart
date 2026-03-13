@@ -80,6 +80,7 @@ Future<void> main(List<String> args) async {
     DeadExportsRule(),
     // Architecture
     BannedImportsRule(),
+    BannedSymbolsRule(),
     LayerDependencyRule(),
     FeatureIsolationRule(),
     ImportCycleRule(),
@@ -116,13 +117,12 @@ Future<void> main(List<String> args) async {
   // Write report to file (unless --no-report is set)
   if (!noReport) {
     final reportPath = outputPath ?? '$projectRoot/.dart_sentinel/report.json';
-    _writeReport(
-      reportPath,
-      issues: issues,
+    final meta = (
       projectRoot: projectRoot,
       elapsed: stopwatch.elapsed,
       category: category,
     );
+    _writeReport(reportPath, issues, meta);
     print('  Report saved to: $reportPath');
   }
   print('');
@@ -136,23 +136,21 @@ Future<void> main(List<String> args) async {
 }
 
 void _writeReport(
-  String path, {
-  required List<Issue> issues,
-  required String projectRoot,
-  required Duration elapsed,
-  required String category,
-}) {
+  String path,
+  List<Issue> issues,
+  ({String projectRoot, Duration elapsed, String category}) meta,
+) {
   final dir = Directory(path).parent;
   if (!dir.existsSync()) dir.createSync(recursive: true);
 
-  final absRoot = Directory(projectRoot).absolute.path;
+  final absRoot = Directory(meta.projectRoot).absolute.path;
 
   final report = {
     'version': 1,
     'timestamp': DateTime.now().toIso8601String(),
     'projectRoot': absRoot,
-    'elapsedMs': elapsed.inMilliseconds,
-    'category': category,
+    'elapsedMs': meta.elapsed.inMilliseconds,
+    'category': meta.category,
     'summary': {
       'total': issues.length,
       'errors': issues.where((i) => i.severity == Severity.error).length,

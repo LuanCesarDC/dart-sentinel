@@ -23,57 +23,64 @@ class FeatureIsolationRule extends AnalyzerRule {
     if (featureConfig == null || !featureConfig.enabled) return [];
 
     final issues = <Issue>[];
-
     for (final file in context.allFiles) {
-      final relativePath = context.relativePath(file);
-      final unit = context.parsedUnits[file];
-      if (unit == null) continue;
-
-      // Determine which feature this file belongs to
-      final sourceFeature = _extractFeature(relativePath, featureConfig);
-      if (sourceFeature == null) continue;
-
-      // Check each import
-      for (final directive in unit.directives) {
-        if (directive is! ImportDirective) continue;
-
-        final uri = directive.uri.stringValue;
-        if (uri == null || uri.startsWith('dart:')) continue;
-
-        // Resolve to relative path
-        final importRelative = _resolveToRelative(uri, file, context);
-        if (importRelative == null) continue;
-
-        // Check if import goes to a shared/allowed path
-        if (_isSharedImport(importRelative, featureConfig)) continue;
-
-        // Check if import goes to a different feature
-        final targetFeature =
-            _extractFeature(importRelative, featureConfig);
-        if (targetFeature == null) continue;
-
-        if (targetFeature != sourceFeature) {
-          // Check exceptions
-          if (_isException(
-              sourceFeature, importRelative, featureConfig)) continue;
-
-          final line =
-              unit.lineInfo.getLocation(directive.offset).lineNumber;
-
-          issues.add(Issue(
-            rule: name,
-            message:
-                'Feature "$sourceFeature" cannot import from feature "$targetFeature". '
-                'Use shared layers instead. (import: $uri)',
-            file: relativePath,
-            line: line,
-            severity: defaultSeverity,
-          ));
-        }
-      }
+      issues.addAll(_checkFile(file, context));
     }
-
     return issues;
+  }
+
+  List<Issue> _checkFile(String file, ProjectContext context) {
+    final config = context.config.featureIsolation!;
+    final relativePath = context.relativePath(file);
+    final unit = context.parsedUnits[file];
+    if (unit == null) return [];
+
+    final sourceFeature = _extractFeature(relativePath, config);
+    if (sourceFeature == null) return [];
+
+    final source = (
+      relativePath: relativePath,
+      absolutePath: file,
+      feature: sourceFeature,
+      unit: unit,
+    );
+    final issues = <Issue>[];
+    for (final directive in unit.directives) {
+      if (directive is! ImportDirective) continue;
+      final issue = _checkImportDirective(directive, source, context);
+      if (issue != null) issues.add(issue);
+    }
+    return issues;
+  }
+
+  Issue? _checkImportDirective(
+      ImportDirective directive,
+      ({String relativePath, String absolutePath, String feature, CompilationUnit unit}) source,
+      ProjectContext context) {
+    final config = context.config.featureIsolation!;
+    final uri = directive.uri.stringValue;
+    if (uri == null) return null;
+    if (uri.startsWith('dart:')) return null;
+
+    final importRelative = _resolveToRelative(uri, source.absolutePath, context);
+    if (importRelative == null) return null;
+    if (_isSharedImport(importRelative, config)) return null;
+
+    final targetFeature = _extractFeature(importRelative, config);
+    if (targetFeature == null) return null;
+    if (targetFeature == source.feature) return null;
+    if (_isException(source.feature, importRelative, config)) return null;
+
+    final line = source.unit.lineInfo.getLocation(directive.offset).lineNumber;
+    return Issue(
+      rule: name,
+      message:
+          'Feature "${source.feature}" cannot import from feature "$targetFeature". '
+          'Use shared layers instead. (import: $uri)',
+      file: source.relativePath,
+      line: line,
+      severity: defaultSeverity,
+    );
   }
 
   /// Extract the feature name from a file path.

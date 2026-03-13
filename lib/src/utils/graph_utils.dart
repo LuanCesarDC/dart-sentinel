@@ -38,57 +38,65 @@ Set<String> reachableFromAll(
 /// Returns a list of strongly connected components with more than one node
 /// (i.e., actual cycles).
 List<List<String>> findCycles(Map<String, Set<String>> graph) {
-  final index = <String, int>{};
-  final lowlink = <String, int>{};
-  final onStack = <String>{};
-  final stack = <String>[];
-  var currentIndex = 0;
-  final sccs = <List<String>>[];
+  return _TarjanScc(graph).run();
+}
 
-  void strongConnect(String v) {
-    index[v] = currentIndex;
-    lowlink[v] = currentIndex;
-    currentIndex++;
-    stack.add(v);
-    onStack.add(v);
+class _TarjanScc {
+  final Map<String, Set<String>> _graph;
+  final _index = <String, int>{};
+  final _lowlink = <String, int>{};
+  final _onStack = <String>{};
+  final _stack = <String>[];
+  var _currentIndex = 0;
+  final _sccs = <List<String>>[];
 
-    final neighbors = graph[v] ?? {};
-    for (final w in neighbors) {
-      if (!index.containsKey(w)) {
-        strongConnect(w);
-        lowlink[v] = _min(lowlink[v]!, lowlink[w]!);
-      } else if (onStack.contains(w)) {
-        lowlink[v] = _min(lowlink[v]!, index[w]!);
-      }
+  _TarjanScc(this._graph);
+
+  List<List<String>> run() {
+    for (final v in _graph.keys) {
+      if (!_index.containsKey(v)) _strongConnect(v);
     }
+    return _sccs;
+  }
 
-    if (lowlink[v] == index[v]) {
-      final scc = <String>[];
-      String w;
-      do {
-        w = stack.removeLast();
-        onStack.remove(w);
-        scc.add(w);
-      } while (w != v);
+  void _strongConnect(String v) {
+    _index[v] = _currentIndex;
+    _lowlink[v] = _currentIndex;
+    _currentIndex++;
+    _stack.add(v);
+    _onStack.add(v);
+    _visitNeighbors(v);
+    _emitSccIfRoot(v);
+  }
 
-      // Only report SCCs with more than one node (actual cycles)
-      // or self-loops
-      if (scc.length > 1) {
-        sccs.add(scc.reversed.toList());
-      } else if (scc.length == 1 &&
-          (graph[scc.first]?.contains(scc.first) ?? false)) {
-        sccs.add(scc);
+  void _visitNeighbors(String v) {
+    for (final w in _graph[v] ?? {}) {
+      if (!_index.containsKey(w)) {
+        _strongConnect(w);
+        _lowlink[v] = _min(_lowlink[v]!, _lowlink[w]!);
+      } else if (_onStack.contains(w)) {
+        _lowlink[v] = _min(_lowlink[v]!, _index[w]!);
       }
     }
   }
 
-  for (final v in graph.keys) {
-    if (!index.containsKey(v)) {
-      strongConnect(v);
+  void _emitSccIfRoot(String v) {
+    if (_lowlink[v] != _index[v]) return;
+
+    final scc = <String>[];
+    String w;
+    do {
+      w = _stack.removeLast();
+      _onStack.remove(w);
+      scc.add(w);
+    } while (w != v);
+
+    if (scc.length > 1) {
+      _sccs.add(scc.reversed.toList());
+    } else if (_graph[scc.first]?.contains(scc.first) ?? false) {
+      _sccs.add(scc);
     }
   }
-
-  return sccs;
 }
 
 int _min(int a, int b) => a < b ? a : b;

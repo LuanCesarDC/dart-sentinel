@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "dart-sentinel": {
+      "type": "stdio",
+      "command": "dart",
+      "args": [
+        "run",
+        "dart_sentinel:mcp_server"
+      ]
+    }
+  }
+}

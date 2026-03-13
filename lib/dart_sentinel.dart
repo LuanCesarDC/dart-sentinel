@@ -36,6 +36,7 @@ export 'src/config/analyzer_config.dart';
 // Rules
 export 'src/rules/async_safety_rule.dart';
 export 'src/rules/banned_imports_rule.dart';
+export 'src/rules/banned_symbols_rule.dart';
 export 'src/rules/build_complexity_rule.dart';
 export 'src/rules/complexity_rule.dart';
 export 'src/rules/dead_exports_rule.dart';
@@ -47,6 +48,9 @@ export 'src/rules/layer_dependency_rule.dart';
 
 // Output
 export 'src/output/output.dart';
+
+// MCP
+export 'src/mcp/sentinel_server.dart';
 
 // Utils
 export 'src/utils/glob_matcher.dart';

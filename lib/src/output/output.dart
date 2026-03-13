@@ -7,26 +7,39 @@ import '../core/issue.dart';
 class ConsoleOutput {
   /// Print issues to console with colored severity indicators.
   static String format(List<Issue> issues, {Duration? elapsed}) {
-    if (issues.isEmpty) {
-      final buffer = StringBuffer();
-      buffer.writeln('');
-      buffer.writeln('  ✅ No issues found!');
-      if (elapsed != null) {
-        buffer.writeln('  ⏱  ${elapsed.inMilliseconds}ms');
-      }
-      buffer.writeln('');
-      return buffer.toString();
-    }
+    if (issues.isEmpty) return _formatEmpty(elapsed);
 
     final buffer = StringBuffer();
     buffer.writeln('');
 
-    // Group by file
+    final grouped = _groupByFile(issues);
+    _appendIssueGroups(grouped, buffer);
+    _appendSummary(buffer, issues, elapsed);
+
+    return buffer.toString();
+  }
+
+  static String _formatEmpty(Duration? elapsed) {
+    final buffer = StringBuffer();
+    buffer.writeln('');
+    buffer.writeln('  ✅ No issues found!');
+    if (elapsed != null) {
+      buffer.writeln('  ⏱  ${elapsed.inMilliseconds}ms');
+    }
+    buffer.writeln('');
+    return buffer.toString();
+  }
+
+  static Map<String, List<Issue>> _groupByFile(List<Issue> issues) {
     final grouped = <String, List<Issue>>{};
     for (final issue in issues) {
       grouped.putIfAbsent(issue.file, () => []).add(issue);
     }
+    return grouped;
+  }
 
+  static void _appendIssueGroups(
+      Map<String, List<Issue>> grouped, StringBuffer buffer) {
     for (final entry in grouped.entries) {
       buffer.writeln('  ${entry.key}');
       for (final issue in entry.value) {
@@ -35,15 +48,16 @@ class ConsoleOutput {
           Severity.warning => '  ⚠',
           Severity.info => '  ℹ',
         };
-
         final loc = issue.line > 0 ? ':${issue.line}' : '';
-        buffer.writeln(
-            '$icon  ${issue.rule}$loc — ${issue.message}');
+        buffer.writeln('$icon  ${issue.rule}$loc — ${issue.message}');
       }
       buffer.writeln('');
     }
+  }
 
-    // Summary
+  static void _appendSummary(
+      StringBuffer buffer, List<Issue> issues, Duration? elapsed) {
+    final fileCount = issues.map((i) => i.file).toSet().length;
     final errors = issues.where((i) => i.severity == Severity.error).length;
     final warnings =
         issues.where((i) => i.severity == Severity.warning).length;
@@ -54,13 +68,12 @@ class ConsoleOutput {
     if (warnings > 0) parts.add('$warnings warning${warnings > 1 ? 's' : ''}');
     if (infos > 0) parts.add('$infos info${infos > 1 ? 's' : ''}');
 
-    buffer.writeln('  ${parts.join(', ')} in ${grouped.length} file${grouped.length > 1 ? 's' : ''}');
+    buffer.writeln(
+        '  ${parts.join(', ')} in $fileCount file${fileCount > 1 ? 's' : ''}');
     if (elapsed != null) {
       buffer.writeln('  ⏱  ${elapsed.inMilliseconds}ms');
     }
     buffer.writeln('');
-
-    return buffer.toString();
   }
 
   /// Format metrics as a table (top N worst files).

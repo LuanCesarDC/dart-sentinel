@@ -20,49 +20,55 @@ class GlobMatcher {
   static RegExp _compileGlob(String pattern) {
     final normalized = pattern.replaceAll(r'\', '/');
     final buffer = StringBuffer('^');
-
     int i = 0;
     while (i < normalized.length) {
-      final char = normalized[i];
-
-      if (char == '*') {
-        if (i + 1 < normalized.length && normalized[i + 1] == '*') {
-          // ** matches zero or more path segments
-          if (i + 2 < normalized.length && normalized[i + 2] == '/') {
-            buffer.write('(?:.+/)?');
-            i += 3;
-          } else {
-            buffer.write('.*');
-            i += 2;
-          }
-        } else {
-          // * matches anything except /
-          buffer.write('[^/]*');
-          i++;
-        }
-      } else if (char == '?') {
-        buffer.write('[^/]');
-        i++;
-      } else if (char == '.') {
-        buffer.write(r'\.');
-        i++;
-      } else if (char == '{') {
-        buffer.write('(?:');
-        i++;
-      } else if (char == '}') {
-        buffer.write(')');
-        i++;
-      } else if (char == ',') {
-        buffer.write('|');
-        i++;
-      } else {
-        buffer.write(char);
-        i++;
-      }
+      i += _appendGlobToken(normalized, i, buffer);
     }
-
     buffer.write(r'$');
     return RegExp(buffer.toString());
+  }
+
+  static int _appendGlobToken(String pattern, int i, StringBuffer buffer) {
+    final char = pattern[i];
+    switch (char) {
+      case '*':
+        return _appendStarToken(pattern, i, buffer);
+      case '?':
+        buffer.write('[^/]');
+        return 1;
+      case '.':
+        buffer.write(r'\.');
+        return 1;
+      case '{':
+        buffer.write('(?:');
+        return 1;
+      case '}':
+        buffer.write(')');
+        return 1;
+      case ',':
+        buffer.write('|');
+        return 1;
+      default:
+        buffer.write(char);
+        return 1;
+    }
+  }
+
+  static int _appendStarToken(String pattern, int i, StringBuffer buffer) {
+    final isDoubleStar =
+        i + 1 < pattern.length && pattern[i + 1] == '*';
+    if (!isDoubleStar) {
+      buffer.write('[^/]*');
+      return 1;
+    }
+    final hasTrailingSlash =
+        i + 2 < pattern.length && pattern[i + 2] == '/';
+    if (hasTrailingSlash) {
+      buffer.write('(?:.+/)?');
+      return 3;
+    }
+    buffer.write('.*');
+    return 2;
   }
 
   @override
