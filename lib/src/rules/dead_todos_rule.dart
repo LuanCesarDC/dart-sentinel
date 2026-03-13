@@ -66,7 +66,7 @@ class DeadTodosRule extends AnalyzerRule {
   bool _isActionable(String body, DeadTodosConfig config) {
     if (body.isEmpty) return false;
 
-    // Has issue reference (#123) or author tag (luan)
+    // Has issue reference (#123) or author tag (author)
     if (_issueRef.hasMatch(body) || _authorTag.hasMatch(body)) return true;
 
     // Check minimum word count

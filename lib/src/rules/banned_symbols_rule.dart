@@ -13,7 +13,7 @@ import '../utils/glob_matcher.dart';
 /// actual symbol usage — class constructors, function calls, and type
 /// references — within source code. This is useful when the banned and
 /// preferred symbols come from the same import (e.g. `ElevatedButton`
-/// vs `MoovzButton` both from `package:flutter/material.dart`).
+/// vs `AppButton` both from `package:flutter/material.dart`).
 class BannedSymbolsRule extends AnalyzerRule {
   @override
   String get name => 'banned-symbols';

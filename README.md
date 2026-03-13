@@ -98,12 +98,12 @@ architecture:
   banned_symbols:
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["ElevatedButton", "TextButton", "OutlinedButton"]
-      suggest: "MoovzButton"
-      message: "Use MoovzButton from ui_lib instead of raw Flutter buttons."
+      suggest: "AppButton"
+      message: "Use AppButton from your design system instead of raw Flutter buttons."
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["showDialog", "AlertDialog"]
-      suggest: "showMoovzDialog"
-      message: "Use showMoovzDialog from ui_lib."
+      suggest: "AppDialog.show"
+      message: "Use AppDialog.show from your design system."
 
   layers:
     ui:

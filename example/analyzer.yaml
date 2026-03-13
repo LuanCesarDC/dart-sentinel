@@ -92,28 +92,28 @@ architecture:
   banned_symbols:
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["ElevatedButton", "TextButton", "OutlinedButton"]
-      suggest: "MoovzButton"
-      message: "Use MoovzButton from ui_lib instead of raw Flutter buttons."
+      suggest: "AppButton"
+      message: "Use AppButton from your design system instead of raw Flutter buttons."
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["TextField"]
-      suggest: "MoovzTextFormField"
-      message: "Use MoovzTextFormField from ui_lib instead of raw TextField."
+      suggest: "AppTextField"
+      message: "Use AppTextField from your design system instead of raw TextField."
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["showDialog", "AlertDialog"]
-      suggest: "showMoovzDialog"
-      message: "Use showMoovzDialog from ui_lib instead of raw showDialog/AlertDialog."
+      suggest: "AppDialog.show"
+      message: "Use AppDialog.show from your design system instead of raw showDialog/AlertDialog."
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["CircularProgressIndicator"]
-      suggest: "MoovzCircularProgressIndicator"
-      message: "Use MoovzCircularProgressIndicator from ui_lib."
+      suggest: "AppLoadingIndicator"
+      message: "Use AppLoadingIndicator from your design system."
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["showModalBottomSheet"]
-      suggest: "MoovzModalBottomSheet.show"
-      message: "Use MoovzModalBottomSheet.show from ui_lib."
+      suggest: "AppBottomSheet.show"
+      message: "Use AppBottomSheet.show from your design system."
     - paths: ["lib/apps/**", "lib/features/**"]
       deny: ["AppBar"]
-      suggest: "MoovzTopAppBar"
-      message: "Use MoovzTopAppBar from ui_lib instead of raw AppBar."
+      suggest: "AppTopBar"
+      message: "Use AppTopBar from your design system instead of raw AppBar."
 
 # Metrics thresholds
 metrics:
