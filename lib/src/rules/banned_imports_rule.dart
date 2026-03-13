@@ -36,7 +36,7 @@ class BannedImportsRule extends AnalyzerRule {
 
     final issues = <Issue>[];
     for (final config in configs) {
-      if (!_matchesAnyPath(relativePath, config.paths)) continue;
+      if (!matchesAnyGlob(relativePath, config.paths)) continue;
       for (final directive in unit.directives) {
         if (directive is! ImportDirective) continue;
         final uri = directive.uri.stringValue;
@@ -56,10 +56,6 @@ class BannedImportsRule extends AnalyzerRule {
       }
     }
     return issues;
-  }
-
-  bool _matchesAnyPath(String filePath, List<String> patterns) {
-    return matchesAnyGlob(filePath, patterns);
   }
 
   bool _matchesDeny(

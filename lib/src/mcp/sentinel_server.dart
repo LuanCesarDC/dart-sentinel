@@ -198,7 +198,7 @@ base class SentinelMCPServer extends MCPServer
     final allowed = violations.isEmpty;
     return CallToolResult(content: [
       TextContent(
-        text: _jsonEncode({
+        text: _prettyJson.convert({
           'allowed': allowed,
           'from': fromFile,
           'import': importUri,
@@ -239,7 +239,7 @@ base class SentinelMCPServer extends MCPServer
 
     final config = AnalyzerConfig.load(projectRoot);
     return CallToolResult(content: [
-      TextContent(text: _jsonEncode(_architectureToJson(config))),
+      TextContent(text: _prettyJson.convert(_architectureToJson(config))),
     ]);
   }
 
@@ -321,7 +321,7 @@ base class SentinelMCPServer extends MCPServer
     return ReadResourceResult(contents: [
       TextResourceContents(
         uri: request.uri,
-        text: _jsonEncode(_architectureToJson(config)),
+        text: _prettyJson.convert(_architectureToJson(config)),
         mimeType: 'application/json',
       ),
     ]);
@@ -357,14 +357,14 @@ base class SentinelMCPServer extends MCPServer
 
   String _formatIssues(List<Issue> issues) {
     if (issues.isEmpty) {
-      return _jsonEncode({
+      return _prettyJson.convert({
         'status': 'clean',
         'issues': <Object>[],
         'summary': {'total': 0, 'errors': 0, 'warnings': 0, 'infos': 0},
       });
     }
 
-    return _jsonEncode({
+    return _prettyJson.convert({
       'status': 'issues_found',
       'issues': issues
           .map((i) => {
@@ -414,8 +414,7 @@ base class SentinelMCPServer extends MCPServer
     };
   }
 
-  String _jsonEncode(Object value) =>
-      const JsonEncoder.withIndent('  ').convert(value);
+  static const _prettyJson = JsonEncoder.withIndent('  ');
 
   List<Map<String, String>> _checkBannedImports(
     AnalyzerConfig config, String fromFile, String importUri,

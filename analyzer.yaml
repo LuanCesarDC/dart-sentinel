@@ -173,7 +173,7 @@ metrics:
     warning: 50
     error: 100
   max_parameters:
-    warning: 4
+    warning: 5
     error: 7
   max_nesting:
     warning: 4
@@ -189,6 +189,8 @@ metrics:
 # ──────────────────────────────────────────────────────────────
 
 ai_slop:
+  verbose_logging:
+    max_consecutive_logs: 25
   generic_naming:
     deny_variable_names:
       - data
