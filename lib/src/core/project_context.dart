@@ -248,7 +248,9 @@ class ProjectContext {
       if (yaml is YamlMap && yaml['name'] != null) {
         return yaml['name'].toString();
       }
-    } catch (_) {}
+    } catch (_) {
+      // Fallback to regex below if YAML parsing fails.
+    }
 
     final regex = RegExp(r'^name:\s*([a-zA-Z0-9_]+)', multiLine: true);
     final match = regex.firstMatch(pubspecContent);

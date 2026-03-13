@@ -10,7 +10,7 @@ Future<void> main(List<String> args) async {
       'only',
       abbr: 'o',
       help: 'Run only a specific category of rules.',
-      allowed: ['arch', 'dead', 'metrics', 'lint', 'all'],
+      allowed: ['arch', 'dead', 'metrics', 'lint', 'slop', 'all'],
       defaultsTo: 'all',
     )
     ..addOption(
@@ -90,6 +90,14 @@ Future<void> main(List<String> args) async {
     // Lint
     DisposeCheckRule(),
     AsyncSafetyRule(),
+    // AI Slop Detection
+    EmptyCatchRule(),
+    DeadTodosRule(),
+    GenericNamingRule(),
+    RedundantCommentsRule(),
+    VerboseLoggingRule(),
+    SingleMethodClassRule(),
+    PassthroughFunctionRule(),
   ];
 
   final runner = RuleRunner(rules: allRules, config: context.config);
@@ -196,6 +204,7 @@ void _printUsage(ArgParser parser) {
   print('  dead     Dead code: unreachable files, unused exports');
   print('  metrics  Metrics: complexity, LOC, nesting, build method');
   print('  lint     Lint: dispose checks, async safety');
+  print('  slop     AI Slop: empty catch, dead todos, generic names, verbose logs, etc.');
   print('');
   print('Examples:');
   print('  dart run dart_sentinel                          # run all rules');

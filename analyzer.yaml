@@ -62,6 +62,15 @@ rules:
   dispose-check: warning
   async-safety: warning
 
+  # AI Slop Detection — catch low-quality patterns
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
 # ──────────────────────────────────────────────────────────────
 # Architecture — Layer Dependencies
 # ──────────────────────────────────────────────────────────────
@@ -175,3 +184,30 @@ metrics:
   build_method_branches:
     warning: 3
     error: 6
+# ──────────────────────────────────────────────────────────────
+# AI Slop Detection — tunables
+# ──────────────────────────────────────────────────────────────
+
+ai_slop:
+  generic_naming:
+    deny_variable_names:
+      - data
+      - item
+      - element
+      - obj
+      - temp
+      - tmp
+      - output
+      - input
+      - res
+      - ret
+      - val
+    deny_function_names:
+      - processData
+      - handleData
+      - getData
+      - processItems
+      - handleResult
+      - executeTask
+      - doWork
+      - runProcess

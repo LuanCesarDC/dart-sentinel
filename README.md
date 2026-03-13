@@ -83,6 +83,10 @@ rules:
   banned-symbols: warning
   complexity: warning
   dispose-check: warning
+  empty-catch: warning
+  generic-naming: warning
+  dead-todos: info
+  verbose-logging: info
 
 # Architecture rules
 architecture:
@@ -173,6 +177,17 @@ metrics:
 |------|-------------|
 | `dispose-check` | Verifies resources are disposed correctly |
 | `async-safety` | Detects `setState`/`context` usage after `await` without `mounted` check |
+
+### AI Slop Detection (`-o slop`)
+| Rule | Description |
+|------|-------------|
+| `empty-catch` | Detects swallowed exceptions: empty catch blocks and catch-and-print-only |
+| `dead-todos` | Flags TODO/FIXME/HACK comments without actionable context |
+| `generic-naming` | Catches variables/functions with low semantic specificity (`data`, `result`, `handleData`) |
+| `redundant-comments` | Detects comments that restate what the code already says |
+| `verbose-logging` | Flags excessive consecutive log/print statements |
+| `single-method-class` | Suggests plain functions for classes with a single public method |
+| `passthrough-function` | Detects functions that only delegate to another with the same arguments |
 
 ## CI Integration
 

@@ -31,6 +31,9 @@ class AnalyzerConfig {
   /// Metrics thresholds.
   final MetricsConfig metrics;
 
+  /// AI slop detection configuration.
+  final AiSlopConfig aiSlop;
+
   /// Extra directories to scan beyond `lib/` (e.g., `integration_test/`, `bin/`).
   final List<String> extraScanDirs;
 
@@ -43,6 +46,7 @@ class AnalyzerConfig {
     this.layerConfig,
     this.featureIsolation,
     this.metrics = const MetricsConfig(),
+    this.aiSlop = const AiSlopConfig(),
     this.extraScanDirs = const [],
   });
 
@@ -274,6 +278,7 @@ class AnalyzerConfig {
       layerConfig: layerConfig,
       featureIsolation: featureIsolation,
       metrics: metrics,
+      aiSlop: AiSlopConfig.fromYaml(yaml['ai_slop']),
       extraScanDirs: extraScanDirs,
     );
   }
@@ -423,4 +428,177 @@ class MetricsConfig {
     this.buildMethodBranchesWarning = 3,
     this.buildMethodBranchesError = 6,
   });
+}
+
+/// Configuration for AI slop detection rules.
+class AiSlopConfig {
+  final EmptyCatchConfig emptyCatch;
+  final GenericNamingConfig genericNaming;
+  final DeadTodosConfig deadTodos;
+  final VerboseLoggingConfig verboseLogging;
+  final SingleMethodClassConfig singleMethodClass;
+
+  const AiSlopConfig({
+    this.emptyCatch = const EmptyCatchConfig(),
+    this.genericNaming = const GenericNamingConfig(),
+    this.deadTodos = const DeadTodosConfig(),
+    this.verboseLogging = const VerboseLoggingConfig(),
+    this.singleMethodClass = const SingleMethodClassConfig(),
+  });
+
+  factory AiSlopConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const AiSlopConfig();
+    return AiSlopConfig(
+      emptyCatch: EmptyCatchConfig.fromYaml(node['empty_catch']),
+      genericNaming: GenericNamingConfig.fromYaml(node['generic_naming']),
+      deadTodos: DeadTodosConfig.fromYaml(node['dead_todos']),
+      verboseLogging: VerboseLoggingConfig.fromYaml(node['verbose_logging']),
+      singleMethodClass:
+          SingleMethodClassConfig.fromYaml(node['single_method_class']),
+    );
+  }
+}
+
+class EmptyCatchConfig {
+  final bool allowEmptyWithComment;
+  final bool flagPrintOnly;
+
+  const EmptyCatchConfig({
+    this.allowEmptyWithComment = true,
+    this.flagPrintOnly = true,
+  });
+
+  factory EmptyCatchConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const EmptyCatchConfig();
+    return EmptyCatchConfig(
+      allowEmptyWithComment: node['allow_empty_with_comment'] as bool? ?? true,
+      flagPrintOnly: node['flag_print_only'] as bool? ?? true,
+    );
+  }
+}
+
+class GenericNamingConfig {
+  final Set<String> denyVariableNames;
+  final Set<String> denyFunctionNames;
+  final bool allowInLoops;
+  final bool allowInLambdas;
+
+  static const _defaultDenyVars = {
+    'data', 'result', 'value', 'item', 'element', 'obj',
+    'temp', 'tmp', 'output', 'input', 'response', 'res', 'ret', 'val',
+  };
+
+  static const _defaultDenyFuncs = {
+    'processData', 'handleData', 'getData', 'processItems',
+    'handleResult', 'executeTask', 'doWork', 'runProcess',
+  };
+
+  const GenericNamingConfig({
+    this.denyVariableNames = _defaultDenyVars,
+    this.denyFunctionNames = _defaultDenyFuncs,
+    this.allowInLoops = true,
+    this.allowInLambdas = true,
+  });
+
+  factory GenericNamingConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const GenericNamingConfig();
+    return GenericNamingConfig(
+      denyVariableNames: _readStringSet(
+        node['deny_variable_names'],
+        GenericNamingConfig._defaultDenyVars,
+      ),
+      denyFunctionNames: _readStringSet(
+        node['deny_function_names'],
+        GenericNamingConfig._defaultDenyFuncs,
+      ),
+      allowInLoops: node['allow_in_loops'] as bool? ?? true,
+      allowInLambdas: node['allow_in_lambdas'] as bool? ?? true,
+    );
+  }
+
+  static Set<String> _readStringSet(dynamic node, Set<String> defaults) {
+    if (node is! YamlList) return defaults;
+    return node.map((e) => e.toString()).toSet();
+  }
+}
+
+class DeadTodosConfig {
+  final int minContextWords;
+  final bool requireReference;
+  final List<String> vaguePhrases;
+
+  static const _defaultVaguePhrases = [
+    'fix later', 'improve', 'clean up', 'refactor',
+    'handle edge cases', 'add more', 'make better', 'temporary',
+  ];
+
+  const DeadTodosConfig({
+    this.minContextWords = 5,
+    this.requireReference = false,
+    this.vaguePhrases = _defaultVaguePhrases,
+  });
+
+  factory DeadTodosConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const DeadTodosConfig();
+    return DeadTodosConfig(
+      minContextWords: int.tryParse(
+            node['min_context_words']?.toString() ?? '',
+          ) ?? 5,
+      requireReference: node['require_reference'] as bool? ?? false,
+      vaguePhrases: node['vague_phrases'] is YamlList
+          ? (node['vague_phrases'] as YamlList)
+              .map((e) => e.toString())
+              .toList()
+          : _defaultVaguePhrases,
+    );
+  }
+}
+
+class VerboseLoggingConfig {
+  final int maxConsecutiveLogs;
+  final Set<String> logFunctions;
+
+  static const _defaultLogFunctions = {
+    'log', 'print', 'debugPrint',
+    'logger.info', 'logger.warning', 'logger.error',
+    'logger.fine', 'logger.severe', 'logger.shout',
+  };
+
+  const VerboseLoggingConfig({
+    this.maxConsecutiveLogs = 3,
+    this.logFunctions = _defaultLogFunctions,
+  });
+
+  factory VerboseLoggingConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const VerboseLoggingConfig();
+    return VerboseLoggingConfig(
+      maxConsecutiveLogs: int.tryParse(
+            node['max_consecutive_logs']?.toString() ?? '',
+          ) ?? 3,
+      logFunctions: node['log_functions'] is YamlList
+          ? (node['log_functions'] as YamlList)
+              .map((e) => e.toString())
+              .toSet()
+          : _defaultLogFunctions,
+    );
+  }
+}
+
+class SingleMethodClassConfig {
+  final bool ignoreIfExtends;
+  final bool ignoreIfHasConstructorParams;
+
+  const SingleMethodClassConfig({
+    this.ignoreIfExtends = true,
+    this.ignoreIfHasConstructorParams = true,
+  });
+
+  factory SingleMethodClassConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const SingleMethodClassConfig();
+    return SingleMethodClassConfig(
+      ignoreIfExtends: node['ignore_if_extends'] as bool? ?? true,
+      ignoreIfHasConstructorParams:
+          node['ignore_if_has_constructor_params'] as bool? ?? true,
+    );
+  }
 }

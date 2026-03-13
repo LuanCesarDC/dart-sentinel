@@ -46,7 +46,7 @@ class RuleRunner {
 
   /// Run only rules matching the given [category].
   ///
-  /// Categories: 'arch', 'dead', 'metrics', 'lint'
+  /// Categories: 'arch', 'dead', 'metrics', 'lint', 'slop'
   List<Issue> runCategory(ProjectContext context, String category) {
     final categoryRules = _filterByCategory(category);
     final runner = RuleRunner(rules: categoryRules, config: config);
@@ -73,6 +73,15 @@ class RuleRunner {
       'lint': {
         'dispose-check',
         'async-safety',
+      },
+      'slop': {
+        'empty-catch',
+        'dead-todos',
+        'generic-naming',
+        'redundant-comments',
+        'verbose-logging',
+        'single-method-class',
+        'passthrough-function',
       },
     };
 

@@ -45,6 +45,13 @@ export 'src/rules/dispose_check_rule.dart';
 export 'src/rules/feature_isolation_rule.dart';
 export 'src/rules/import_cycle_rule.dart';
 export 'src/rules/layer_dependency_rule.dart';
+export 'src/rules/empty_catch_rule.dart';
+export 'src/rules/dead_todos_rule.dart';
+export 'src/rules/generic_naming_rule.dart';
+export 'src/rules/redundant_comments_rule.dart';
+export 'src/rules/verbose_logging_rule.dart';
+export 'src/rules/single_method_class_rule.dart';
+export 'src/rules/passthrough_function_rule.dart';
 
 // Output
 export 'src/output/output.dart';

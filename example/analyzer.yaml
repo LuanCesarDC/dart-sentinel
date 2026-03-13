@@ -34,6 +34,14 @@ rules:
   build-complexity: warning
   dispose-check: warning
   async-safety: warning
+  # AI Slop Detection
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
 
 # Architecture enforcement
 architecture:
@@ -130,3 +138,49 @@ metrics:
   build_method_branches:
     warning: 3
     error: 6
+
+# AI Slop Detection — tunables (all optional, sensible defaults built-in)
+ai_slop:
+  empty_catch:
+    allow_empty_with_comment: true   # skip if catch body has a comment
+    flag_print_only: true            # flag catch blocks that only print()
+
+  generic_naming:
+    deny_variable_names:
+      - data
+      - result
+      - value
+      - item
+      - element
+      - obj
+      - temp
+      - tmp
+    deny_function_names:
+      - processData
+      - handleData
+      - getData
+      - processItems
+    allow_in_loops: true
+    allow_in_lambdas: true
+
+  dead_todos:
+    min_context_words: 5
+    require_reference: false
+    # vague_phrases:
+    #   - "fix later"
+    #   - "improve"
+    #   - "clean up"
+
+  verbose_logging:
+    max_consecutive_logs: 3
+    # log_functions:
+    #   - print
+    #   - debugPrint
+    #   - log
+    #   - logger.info
+    #   - logger.warning
+    #   - logger.error
+
+  single_method_class:
+    ignore_if_extends: true
+    ignore_if_has_constructor_params: true

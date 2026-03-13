@@ -22,6 +22,13 @@ import '../rules/dispose_check_rule.dart';
 import '../rules/feature_isolation_rule.dart';
 import '../rules/import_cycle_rule.dart';
 import '../rules/layer_dependency_rule.dart';
+import '../rules/empty_catch_rule.dart';
+import '../rules/dead_todos_rule.dart';
+import '../rules/generic_naming_rule.dart';
+import '../rules/redundant_comments_rule.dart';
+import '../rules/verbose_logging_rule.dart';
+import '../rules/single_method_class_rule.dart';
+import '../rules/passthrough_function_rule.dart';
 
 /// MCP Server for Dart Sentinel.
 ///
@@ -335,6 +342,13 @@ base class SentinelMCPServer extends MCPServer
       BuildComplexityRule(),
       DisposeCheckRule(),
       AsyncSafetyRule(),
+      EmptyCatchRule(),
+      DeadTodosRule(),
+      GenericNamingRule(),
+      RedundantCommentsRule(),
+      VerboseLoggingRule(),
+      SingleMethodClassRule(),
+      PassthroughFunctionRule(),
     ];
     final runner = RuleRunner(rules: allRules, config: context.config);
     if (category == 'all') return runner.runAll(context);
