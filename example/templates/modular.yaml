@@ -1,0 +1,123 @@
+# ============================================================
+# Dart Sentinel — Modular (flutter_modular / micro-frontends)
+# ============================================================
+# Arquitetura modular com módulos independentes e injeção.
+# Cada módulo é auto-contido com suas próprias camadas.
+#
+# Estrutura esperada:
+#   lib/
+#     app/                       ← AppModule, AppWidget, routes
+#     core/                      ← DI, theme, network, extensions
+#     modules/
+#       auth/
+#         domain/                ← Entidades, interfaces, usecases
+#         data/                  ← Repositórios, datasources
+#         presentation/          ← Pages, widgets, controllers
+#         auth_module.dart       ← Configuração do módulo
+#       home/
+#         domain/
+#         data/
+#         presentation/
+#         home_module.dart
+#       shared/                  ← Módulo compartilhado
+#         widgets/
+#         models/
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.mocks.dart"
+  - "**/*.config.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: error
+  import-cycles: error           # Ciclos entre módulos são críticos
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    presentation:
+      paths: ["lib/modules/**/presentation/**"]
+      can_depend_on: ["domain", "core", "shared"]
+    domain:
+      paths: ["lib/modules/**/domain/**"]
+      can_depend_on: ["core"]
+    data:
+      paths: ["lib/modules/**/data/**"]
+      can_depend_on: ["domain", "core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+    shared:
+      paths: ["lib/modules/shared/**"]
+      can_depend_on: ["core"]
+    app:
+      paths: ["lib/app/**"]
+      can_depend_on: ["core", "domain", "presentation", "shared"]
+
+  banned_imports:
+    # Domain de módulo é puro
+    - paths: ["lib/modules/**/domain/**"]
+      deny:
+        - "package:flutter/**"
+        - "package:dio/**"
+        - "package:http/**"
+        - "package:cloud_firestore/**"
+      message: "Domain do módulo deve ser puro — sem Flutter ou pacotes de infra."
+    # Data não acessa Presentation
+    - paths: ["lib/modules/**/data/**"]
+      deny: ["**/presentation/**", "package:flutter/**"]
+      message: "Data não deve depender de Presentation nem Flutter."
+    # Presentation não acessa Data diretamente
+    - paths: ["lib/modules/**/presentation/**"]
+      deny: ["**/data/**", "**/datasources/**"]
+      message: "Presentation acessa Domain — não Data diretamente."
+
+  # ── Isolamento entre módulos ─────────────────────────
+  feature_isolation:
+    enabled: true
+    paths: ["lib/modules/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/modules/shared/**"
+      - "lib/app/**"
+    # Exceções (descomente se precisar):
+    # exceptions:
+    #   - from: "lib/modules/checkout/"
+    #     allow: ["lib/modules/cart/"]
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 40
+    error: 80
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6

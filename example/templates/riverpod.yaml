@@ -1,0 +1,119 @@
+# ============================================================
+# Dart Sentinel — Riverpod
+# ============================================================
+# Arquitetura com Riverpod (providers imutáveis / code-gen).
+#
+# Estrutura esperada:
+#   lib/
+#     core/                    ← Router, theme, constants
+#     domain/
+#       entities/              ← Entidades de negócio
+#       repositories/          ← Interfaces de repositório
+#     data/
+#       repositories/          ← Implementações
+#       datasources/           ← API clients, local storage
+#       models/                ← DTOs / JSON models
+#     features/
+#       feature_a/
+#         providers/           ← Riverpod providers (@riverpod)
+#         screens/             ← Telas
+#         widgets/             ← Widgets locais
+#     shared/
+#       providers/             ← Providers compartilhados
+#       widgets/               ← Widgets globais
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.mocks.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: error
+  import-cycles: warning
+  complexity: warning
+  build-complexity: warning
+  dispose-check: info            # Riverpod gerencia lifecycle via autoDispose
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    presentation:
+      paths: ["lib/features/**/screens/**", "lib/features/**/widgets/**", "lib/shared/widgets/**"]
+      can_depend_on: ["provider", "domain", "core", "shared"]
+    provider:
+      paths: ["lib/features/**/providers/**", "lib/shared/providers/**"]
+      can_depend_on: ["domain", "data", "core"]
+    data:
+      paths: ["lib/data/**"]
+      can_depend_on: ["domain", "core"]
+    domain:
+      paths: ["lib/domain/**"]
+      can_depend_on: ["core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+    shared:
+      paths: ["lib/shared/**"]
+      can_depend_on: ["domain", "core"]
+
+  banned_imports:
+    # Domain puro — sem pacotes de infra
+    - paths: ["lib/domain/**"]
+      deny:
+        - "package:dio/**"
+        - "package:http/**"
+        - "package:cloud_firestore/**"
+        - "package:flutter/**"
+        - "package:flutter_riverpod/**"
+        - "package:riverpod/**"
+      message: "Domain deve ser puro — sem Flutter, Riverpod ou pacotes de infra."
+    # Providers não importam widgets
+    - paths: ["lib/features/**/providers/**", "lib/shared/providers/**"]
+      deny: ["package:flutter/material.dart", "package:flutter/widgets.dart"]
+      message: "Providers Riverpod não devem importar widgets Flutter."
+    # Data não acessa Presentation
+    - paths: ["lib/data/**"]
+      deny: ["**/screens/**", "**/widgets/**", "package:flutter/**"]
+      message: "Data não deve depender de Presentation nem Flutter."
+
+  feature_isolation:
+    enabled: true
+    paths: ["lib/features/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/domain/**"
+      - "lib/shared/**"
+      - "lib/data/**"
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6

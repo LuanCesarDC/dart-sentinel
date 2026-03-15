@@ -1,0 +1,147 @@
+# ============================================================
+# Dart Sentinel — DDD (Domain-Driven Design)
+# ============================================================
+# Arquitetura DDD com camadas: Domain, Application, Infrastructure, Presentation.
+# Foco em entidades ricas, value objects, aggregates e eventos.
+#
+# Estrutura esperada:
+#   lib/
+#     core/
+#       errors/                ← Failures, ValueFailure
+#       value_objects/         ← Primitivos validados (EmailAddress, etc.)
+#     domain/
+#       auth/
+#         auth_facade.dart     ← Interface (port)
+#         user.dart            ← Entity / Aggregate Root
+#         value_objects.dart   ← VOs do domínio Auth
+#       notes/
+#         note.dart
+#         note_body.dart
+#         i_note_repository.dart
+#     application/
+#       auth/
+#         auth_bloc.dart       ← Orquestração (BLoC ou UseCase)
+#         sign_in_form/
+#       notes/
+#         note_watcher/
+#         note_actor/
+#     infrastructure/
+#       auth/
+#         firebase_auth_facade.dart
+#       notes/
+#         note_repository.dart
+#         note_dtos.dart       ← Data Transfer Objects
+#       core/
+#         firestore_helpers.dart
+#     presentation/
+#       routes/
+#       pages/
+#       widgets/
+#     injection.dart           ← get_it / injectable setup
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.mocks.dart"
+  - "**/*.config.dart"
+  - "**/*.inject.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: warning
+  import-cycles: error
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    domain:
+      paths: ["lib/domain/**"]
+      can_depend_on: ["core"]
+    application:
+      paths: ["lib/application/**"]
+      can_depend_on: ["domain", "core"]
+    infrastructure:
+      paths: ["lib/infrastructure/**"]
+      can_depend_on: ["domain", "core"]
+    presentation:
+      paths: ["lib/presentation/**"]
+      can_depend_on: ["application", "domain", "core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+
+  banned_imports:
+    # Domain é completamente puro — sem pacotes externos
+    - paths: ["lib/domain/**"]
+      deny:
+        - "package:flutter/**"
+        - "package:cloud_firestore/**"
+        - "package:firebase_auth/**"
+        - "package:dio/**"
+        - "package:http/**"
+        - "package:hive/**"
+        - "package:sqflite/**"
+        - "package:flutter_bloc/**"
+        - "package:injectable/**"
+      message: "Domain puro — apenas Dart core e Value Objects."
+    # Application sem infra (usa interfaces do Domain)
+    - paths: ["lib/application/**"]
+      deny:
+        - "package:cloud_firestore/**"
+        - "package:firebase_auth/**"
+        - "package:dio/**"
+        - "package:http/**"
+        - "package:hive/**"
+        - "package:sqflite/**"
+        - "package:flutter/material.dart"
+      message: "Application orquestra o Domain — sem pacotes de infra."
+    # Infrastructure sem Flutter UI
+    - paths: ["lib/infrastructure/**"]
+      deny: ["package:flutter/material.dart", "package:flutter/widgets.dart"]
+      message: "Infrastructure não deve usar Flutter widgets."
+    # Presentation sem infraestrutura direta
+    - paths: ["lib/presentation/**"]
+      deny:
+        - "package:cloud_firestore/**"
+        - "package:firebase_auth/**"
+        - "package:dio/**"
+        - "package:http/**"
+      message: "Presentation não acessa infraestrutura diretamente."
+
+  feature_isolation:
+    enabled: false  # DDD usa bounded contexts no Domain — a separação é por aggregate
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 40
+    error: 80
+  max_parameters:
+    warning: 5
+    error: 8
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6

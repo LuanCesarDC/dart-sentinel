@@ -1,0 +1,115 @@
+# ============================================================
+# Dart Sentinel — MVVM + Repository + Service
+# ============================================================
+# Arquitetura usada com ChangeNotifier/ValueNotifier, GetX, Mobx, etc.
+#
+# Estrutura esperada:
+#   lib/
+#     core/             ← Utilitários, constantes, extensions
+#     domain/           ← Entidades, DTOs, interfaces
+#     data/             ← Data sources (API clients, local DB)
+#     repositories/     ← Implementações de repositório
+#     services/         ← Lógica de negócio / orquestração
+#     features/
+#       feature_a/
+#         view/         ← Widgets / Screens
+#         viewmodel/    ← ViewModels (estado + lógica de tela)
+#         widgets/      ← Widgets locais reutilizáveis
+#     apps/             ← Entry points por sabor (opcional)
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.mocks.dart"
+  - "**/*.config.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: error
+  import-cycles: warning
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  # ── Camadas ──────────────────────────────────────────
+  layers:
+    ui:
+      paths: ["lib/features/**", "lib/apps/**"]
+      can_depend_on: ["service", "core", "domain"]
+    service:
+      paths: ["lib/services/**"]
+      can_depend_on: ["repository", "core", "domain"]
+    repository:
+      paths: ["lib/repositories/**"]
+      can_depend_on: ["data", "core", "domain"]
+    data:
+      paths: ["lib/data/**"]
+      can_depend_on: ["core", "domain"]
+    core:
+      paths: ["lib/core/**", "lib/domain/**"]
+      can_depend_on: []
+
+  # ── Imports proibidos ────────────────────────────────
+  banned_imports:
+    - paths: ["lib/features/**/viewmodel/**", "lib/apps/**/viewmodel/**"]
+      deny: ["package:cloud_firestore/**", "package:firebase_auth/**", "package:firebase_storage/**"]
+      message: "ViewModels não devem acessar Firebase diretamente — use Services."
+    - paths: ["lib/features/**/viewmodel/**"]
+      deny: ["**/repositories/**", "**/data/**"]
+      message: "ViewModels devem usar Services, não Repositories/Data."
+    - paths: ["lib/services/**"]
+      deny: ["package:flutter/**"]
+      message: "Services não devem depender de Flutter."
+    - paths: ["lib/repositories/**"]
+      deny: ["package:flutter/**"]
+      message: "Repositories não devem depender de Flutter."
+
+  # ── Isolamento de features ──────────────────────────
+  feature_isolation:
+    enabled: true
+    paths: ["lib/features/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/domain/**"
+      - "lib/services/**"
+
+  # ── Design System (opcional — descomente) ────────────
+  # banned_symbols:
+  #   - paths: ["lib/features/**"]
+  #     deny: ["ElevatedButton", "TextButton", "OutlinedButton"]
+  #     suggest: "AppButton"
+  #     message: "Use AppButton do design system."
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6

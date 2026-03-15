@@ -1,0 +1,116 @@
+# ============================================================
+# Dart Sentinel — GetX
+# ============================================================
+# Arquitetura com GetX para estado, rotas e DI.
+#
+# Estrutura esperada:
+#   lib/
+#     core/                    ← Theme, constants, translations
+#     data/
+#       models/                ← Data classes
+#       providers/             ← API clients (GetConnect)
+#       repositories/          ← Repository implementations
+#     modules/
+#       home/
+#         bindings/            ← GetX Bindings (DI)
+#         controllers/         ← GetxController
+#         views/               ← Telas (GetView)
+#         widgets/             ← Widgets locais
+#       auth/
+#         bindings/
+#         controllers/
+#         views/
+#     routes/                  ← AppPages, AppRoutes
+#     global_bindings/         ← Bindings globais
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.mocks.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: error
+  import-cycles: warning
+  complexity: warning
+  build-complexity: warning
+  dispose-check: info            # GetX gerencia lifecycle via onClose()
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    view:
+      paths: ["lib/modules/**/views/**", "lib/modules/**/widgets/**"]
+      can_depend_on: ["controller", "model", "core", "route"]
+    controller:
+      paths: ["lib/modules/**/controllers/**"]
+      can_depend_on: ["data", "model", "core"]
+    binding:
+      paths: ["lib/modules/**/bindings/**", "lib/global_bindings/**"]
+      can_depend_on: ["controller", "data", "core"]
+    data:
+      paths: ["lib/data/**"]
+      can_depend_on: ["model", "core"]
+    model:
+      paths: ["lib/data/models/**"]
+      can_depend_on: ["core"]
+    route:
+      paths: ["lib/routes/**"]
+      can_depend_on: ["view", "binding", "core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+
+  banned_imports:
+    # Controllers não usam widgets Flutter diretamente
+    - paths: ["lib/modules/**/controllers/**"]
+      deny: ["package:flutter/material.dart", "package:flutter/widgets.dart"]
+      message: "GetxControllers não devem importar widgets Flutter — use Get.snackbar, Get.dialog, etc."
+    # Data é puro
+    - paths: ["lib/data/**"]
+      deny: ["package:flutter/**"]
+      message: "Data layer não deve depender de Flutter."
+    # Models são puros
+    - paths: ["lib/data/models/**"]
+      deny: ["package:flutter/**", "package:get/**"]
+      message: "Models devem ser puros — sem Flutter ou GetX."
+
+  feature_isolation:
+    enabled: true
+    paths: ["lib/modules/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/data/**"
+      - "lib/routes/**"
+      - "lib/global_bindings/**"
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 5
+    error: 8
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 4
+    error: 8

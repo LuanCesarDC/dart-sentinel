@@ -1,0 +1,123 @@
+# ============================================================
+# Dart Sentinel — Clean Architecture (Uncle Bob)
+# ============================================================
+# Arquitetura com separação rígida em camadas concêntricas.
+#
+# Estrutura esperada:
+#   lib/
+#     core/                  ← Constantes, errors, extensions
+#     domain/
+#       entities/            ← Entidades de negócio (puros)
+#       usecases/            ← Casos de uso (1 público por arquivo)
+#       repositories/        ← Interfaces (contratos) de repositório
+#     data/
+#       models/              ← DTOs, mappers (JSON ↔ Entity)
+#       datasources/         ← Remote (API) e Local (DB/Cache)
+#       repositories/        ← Implementações dos contratos
+#     presentation/
+#       pages/               ← Telas
+#       widgets/             ← Widgets reutilizáveis
+#       controllers/         ← Controllers / Cubits / ViewModels
+#     injection/             ← Dependency injection setup
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.mocks.dart"
+  - "**/*.config.dart"
+  - "**/*.mapper.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: warning
+  import-cycles: error
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info       # UseCases SÃO single-method — ajuste a regra
+  passthrough-function: info
+
+architecture:
+  # ── Camadas concêntricas ─────────────────────────────
+  # Domain não depende de nada externo.
+  # Data depende de Domain (mas não o contrário).
+  # Presentation depende de Domain (UseCases), nunca de Data.
+  layers:
+    presentation:
+      paths: ["lib/presentation/**", "lib/features/**/presentation/**"]
+      can_depend_on: ["domain", "core", "injection"]
+    domain:
+      paths: ["lib/domain/**", "lib/features/**/domain/**"]
+      can_depend_on: ["core"]
+    data:
+      paths: ["lib/data/**", "lib/features/**/data/**"]
+      can_depend_on: ["domain", "core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+    injection:
+      paths: ["lib/injection/**"]
+      can_depend_on: ["domain", "data", "presentation", "core"]
+
+  # ── Imports proibidos ────────────────────────────────
+  banned_imports:
+    # Domain NUNCA importa pacotes externos de infra
+    - paths: ["lib/domain/**"]
+      deny:
+        - "package:dio/**"
+        - "package:http/**"
+        - "package:sqflite/**"
+        - "package:hive/**"
+        - "package:shared_preferences/**"
+        - "package:cloud_firestore/**"
+        - "package:firebase_auth/**"
+        - "package:flutter/**"
+      message: "Domain deve ser puro — sem dependências de infra ou Flutter."
+    # Presentation não acessa Data diretamente
+    - paths: ["lib/presentation/**"]
+      deny: ["**/data/**", "**/datasources/**"]
+      message: "Presentation só acessa Domain (UseCases) — nunca Data diretamente."
+    # Data não acessa Presentation
+    - paths: ["lib/data/**"]
+      deny: ["**/presentation/**", "package:flutter/**"]
+      message: "Data não deve depender de Presentation nem de Flutter."
+
+  # ── Isolamento de features (se usar feature-first) ──
+  feature_isolation:
+    enabled: true
+    paths: ["lib/features/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/domain/**"
+      - "lib/injection/**"
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 40
+    error: 80
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6

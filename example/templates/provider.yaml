@@ -1,0 +1,93 @@
+# ============================================================
+# Dart Sentinel — Provider (ChangeNotifier)
+# ============================================================
+# Arquitetura simples com Provider/ChangeNotifier para estado.
+#
+# Estrutura esperada:
+#   lib/
+#     core/              ← Constantes, theme, extensions
+#     models/            ← Data classes / entidades
+#     providers/         ← ChangeNotifier / StateNotifier
+#     services/          ← API calls, storage, auth
+#     repositories/      ← Abstração de dados (opcional)
+#     screens/           ← Telas principais
+#     widgets/           ← Widgets reutilizáveis
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.mocks.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  import-cycles: warning
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    ui:
+      paths: ["lib/screens/**", "lib/widgets/**"]
+      can_depend_on: ["provider", "model", "core"]
+    provider:
+      paths: ["lib/providers/**"]
+      can_depend_on: ["service", "repository", "model", "core"]
+    service:
+      paths: ["lib/services/**"]
+      can_depend_on: ["repository", "model", "core"]
+    repository:
+      paths: ["lib/repositories/**"]
+      can_depend_on: ["model", "core"]
+    model:
+      paths: ["lib/models/**"]
+      can_depend_on: ["core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+
+  banned_imports:
+    # Providers não usam Flutter widgets
+    - paths: ["lib/providers/**"]
+      deny: ["package:flutter/widgets.dart", "package:flutter/material.dart", "package:flutter/cupertino.dart"]
+      message: "Providers não devem importar widgets Flutter — só Foundation e ChangeNotifier."
+    # Services são puros
+    - paths: ["lib/services/**"]
+      deny: ["package:flutter/**"]
+      message: "Services devem ser puros — sem dependência de Flutter."
+    # Models são puros
+    - paths: ["lib/models/**"]
+      deny: ["package:flutter/**"]
+      message: "Models devem ser puros."
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 5
+    error: 8
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 4
+    error: 8

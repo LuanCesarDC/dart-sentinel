@@ -1,0 +1,133 @@
+# ============================================================
+# Dart Sentinel — Clean Architecture + BLoC (Feature-First)
+# ============================================================
+# Combinação popular: Clean Architecture com BLoC por feature.
+# Cada feature tem suas próprias camadas domain/data/presentation.
+#
+# Estrutura esperada:
+#   lib/
+#     core/
+#       di/                    ← Injeção de dependência (get_it)
+#       error/                 ← Failures, exceptions
+#       network/               ← Dio client, interceptors
+#       usecases/              ← UseCase base class
+#     features/
+#       auth/
+#         domain/
+#           entities/
+#           repositories/      ← Interfaces
+#           usecases/
+#         data/
+#           models/
+#           datasources/
+#           repositories/      ← Implementações
+#         presentation/
+#           bloc/              ← AuthBloc, AuthEvent, AuthState
+#           pages/
+#           widgets/
+#       home/
+#         domain/
+#         data/
+#         presentation/
+#     shared/                  ← Widgets e helpers compartilhados
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.mocks.dart"
+  - "**/*.config.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: error
+  import-cycles: error
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    presentation:
+      paths: ["lib/features/**/presentation/**"]
+      can_depend_on: ["domain", "core", "shared"]
+    bloc:
+      paths: ["lib/features/**/presentation/bloc/**", "lib/features/**/presentation/cubit/**"]
+      can_depend_on: ["domain", "core"]
+    domain:
+      paths: ["lib/features/**/domain/**"]
+      can_depend_on: ["core"]
+    data:
+      paths: ["lib/features/**/data/**"]
+      can_depend_on: ["domain", "core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+    shared:
+      paths: ["lib/shared/**"]
+      can_depend_on: ["core"]
+
+  banned_imports:
+    # Domain de cada feature é puro
+    - paths: ["lib/features/**/domain/**"]
+      deny:
+        - "package:flutter/**"
+        - "package:flutter_bloc/**"
+        - "package:dio/**"
+        - "package:http/**"
+        - "package:cloud_firestore/**"
+        - "package:firebase_auth/**"
+        - "package:hive/**"
+        - "package:sqflite/**"
+      message: "Domain deve ser puro — sem Flutter, BLoC ou pacotes de infra."
+    # BLoCs usam UseCases, não Data
+    - paths: ["lib/features/**/presentation/bloc/**", "lib/features/**/presentation/cubit/**"]
+      deny: ["**/data/**", "**/datasources/**"]
+      message: "BLoCs devem usar UseCases/Repositories do Domain — não Data."
+    # BLoCs sem widgets
+    - paths: ["lib/features/**/presentation/bloc/**"]
+      deny: ["package:flutter/material.dart", "package:flutter/widgets.dart"]
+      message: "BLoCs não devem importar widgets Flutter."
+    # Data sem Flutter
+    - paths: ["lib/features/**/data/**"]
+      deny: ["package:flutter/**"]
+      message: "Data não deve depender de Flutter."
+
+  feature_isolation:
+    enabled: true
+    paths: ["lib/features/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/shared/**"
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 40
+    error: 80
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6

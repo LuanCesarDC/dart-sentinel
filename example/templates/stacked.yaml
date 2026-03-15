@@ -1,0 +1,129 @@
+# ============================================================
+# Dart Sentinel — Stacked (FilledStacks MVVM)
+# ============================================================
+# Framework Stacked — MVVM com serviços injetados.
+# Usa stacked_services, stacked_generator.
+#
+# Estrutura esperada:
+#   lib/
+#     app/
+#       app.dart              ← @StackedApp (router + DI)
+#       app.router.dart       ← Gerado
+#       app.locator.dart      ← Gerado (get_it)
+#     ui/
+#       common/
+#         app_colors.dart
+#         shared_styles.dart
+#       views/
+#         home/
+#           home_view.dart
+#           home_viewmodel.dart
+#         startup/
+#           startup_view.dart
+#           startup_viewmodel.dart
+#       widgets/
+#         dumb/              ← Widgets sem lógica (stateless)
+#         smart/             ← Widgets com ViewModel
+#     services/
+#       authentication_service.dart
+#       api_service.dart
+#     models/
+#       user.dart
+#     enums/
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.router.dart"
+  - "**/*.locator.dart"
+  - "**/*.mocks.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  import-cycles: error
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    views:
+      paths: ["lib/ui/views/**"]
+      can_depend_on: ["viewmodels", "widgets", "common", "models", "enums", "app"]
+    viewmodels:
+      paths: ["lib/ui/views/**/*_viewmodel.dart"]
+      can_depend_on: ["services", "models", "enums", "app"]
+    widgets:
+      paths: ["lib/ui/widgets/**"]
+      can_depend_on: ["common", "models", "enums"]
+    services:
+      paths: ["lib/services/**"]
+      can_depend_on: ["models", "enums"]
+    models:
+      paths: ["lib/models/**"]
+      can_depend_on: ["enums"]
+    common:
+      paths: ["lib/ui/common/**"]
+      can_depend_on: []
+    enums:
+      paths: ["lib/enums/**"]
+      can_depend_on: []
+    app:
+      paths: ["lib/app/**"]
+      can_depend_on: ["views", "services", "models"]
+
+  banned_imports:
+    # ViewModels não devem importar Flutter UI
+    - paths: ["lib/ui/views/**/*_viewmodel.dart"]
+      deny:
+        - "package:flutter/material.dart"
+        - "package:flutter/widgets.dart"
+        - "package:flutter/cupertino.dart"
+      message: "ViewModels não devem depender de Flutter widgets."
+    # Services são puros — sem Flutter
+    - paths: ["lib/services/**"]
+      deny:
+        - "package:flutter/**"
+      message: "Services não devem depender de Flutter."
+    # Models são puros
+    - paths: ["lib/models/**"]
+      deny:
+        - "package:flutter/**"
+        - "package:stacked/**"
+      message: "Models devem ser puros — sem Flutter ou Stacked."
+    # Dumb widgets sem serviços
+    - paths: ["lib/ui/widgets/dumb/**"]
+      deny: ["lib/services/**"]
+      message: "Dumb widgets não devem acessar serviços diretamente."
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 500
+  lines_per_method:
+    warning: 40
+    error: 80
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6

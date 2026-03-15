@@ -526,5 +526,39 @@ dart_sentinel/
         glob_matcher.dart     # Glob pattern matching
         graph_utils.dart      # Graph algorithms (DFS, Tarjan)
   example/
-    analyzer.yaml             # Example configuration
+    analyzer.yaml             # Full configuration reference
+    templates/                # Ready-to-use architecture templates
 ```
+
+## Architecture Templates
+
+Ready-to-use `analyzer.yaml` templates for popular Flutter architectures. Copy the one that matches your project:
+
+```bash
+cp example/templates/bloc.yaml analyzer.yaml
+```
+
+| Template | Pattern | Description |
+|----------|---------|-------------|
+| [`starter.yaml`](example/templates/starter.yaml) | Starter / Simples | Métricas e boas práticas básicas, sem regras de arquitetura |
+| [`mvvm_repository_service.yaml`](example/templates/mvvm_repository_service.yaml) | MVVM + Repository + Service | View/ViewModel/Service/Repository com features |
+| [`clean_architecture.yaml`](example/templates/clean_architecture.yaml) | Clean Architecture | Camadas concêntricas: Domain → Data → Presentation |
+| [`bloc.yaml`](example/templates/bloc.yaml) | BLoC / Cubit | flutter_bloc com features, domain e data separados |
+| [`clean_bloc.yaml`](example/templates/clean_bloc.yaml) | Clean + BLoC (Feature-First) | Clean Architecture com BLoC por feature |
+| [`provider.yaml`](example/templates/provider.yaml) | Provider | ChangeNotifier com screens/providers/services |
+| [`riverpod.yaml`](example/templates/riverpod.yaml) | Riverpod | Feature-first com Riverpod providers |
+| [`mvc.yaml`](example/templates/mvc.yaml) | MVC | Views/Controllers/Services/Models |
+| [`ddd.yaml`](example/templates/ddd.yaml) | DDD | Domain/Application/Infrastructure/Presentation |
+| [`stacked.yaml`](example/templates/stacked.yaml) | Stacked (MVVM) | FilledStacks MVVM com Views/ViewModels/Services |
+| [`modular.yaml`](example/templates/modular.yaml) | Flutter Modular | Micro-frontends com módulos isolados |
+| [`getx.yaml`](example/templates/getx.yaml) | GetX | Módulos com Bindings/Controllers/Views |
+
+Each template includes:
+- **Layer definitions** matching the architecture pattern
+- **Banned imports** enforcing layer boundaries
+- **Feature isolation** where applicable
+- **Metrics thresholds** tuned for the pattern
+
+---
+
+> ⚠️ **Disclaimer:** Most of this project was _vibecoded_ — it was born out of a quick need and built iteratively with AI assistance. It works, but the internal design isn't always the most intentional. I plan to revisit the architecture and do a more careful refactor when I have more time.

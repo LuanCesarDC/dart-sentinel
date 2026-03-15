@@ -1,0 +1,58 @@
+# ============================================================
+# Dart Sentinel — Starter / Simples
+# ============================================================
+# Template mínimo para projetos pequenos ou iniciantes.
+# Sem camadas rígidas — foco em métricas e boas práticas.
+#
+# Estrutura flexível:
+#   lib/
+#     main.dart
+#     screens/               ← Telas
+#     widgets/               ← Widgets reutilizáveis
+#     models/                ← Classes de dados
+#     services/              ← API calls, storage
+#     utils/                 ← Helpers, extensions
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.mocks.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: info
+  import-cycles: warning
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: info
+  redundant-comments: info
+  verbose-logging: info
+  # Regras de arquitetura desligadas — projeto simples
+  banned-imports: off
+  layer-dependency: off
+  feature-isolation: off
+
+metrics:
+  cyclomatic_complexity:
+    warning: 15
+    error: 25
+  lines_per_file:
+    warning: 400
+    error: 800
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 5
+    error: 8
+  max_nesting:
+    warning: 4
+    error: 7
+  build_method_branches:
+    warning: 4
+    error: 8

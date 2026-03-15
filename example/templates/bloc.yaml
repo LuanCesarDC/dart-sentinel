@@ -1,0 +1,126 @@
+# ============================================================
+# Dart Sentinel — BLoC / Cubit
+# ============================================================
+# Arquitetura com flutter_bloc para gerenciamento de estado.
+#
+# Estrutura esperada:
+#   lib/
+#     core/                    ← Router, theme, DI, constants
+#     domain/
+#       entities/              ← Entidades de negócio
+#       repositories/          ← Interfaces de repositório
+#       usecases/              ← Casos de uso (opcional)
+#     data/
+#       models/                ← DTOs / JSON models
+#       datasources/           ← API clients, local DB
+#       repositories/          ← Implementações
+#     features/
+#       feature_a/
+#         bloc/                ← Bloc + Events + States
+#         cubit/               ← Cubit (alternativa simples)
+#         pages/               ← Telas
+#         widgets/             ← Widgets locais
+#     shared/
+#       blocs/                 ← BLoCs globais (auth, theme)
+#       widgets/               ← Widgets compartilhados
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.gr.dart"
+  - "**/*.mocks.dart"
+  - "**/*.config.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: warning
+  banned-imports: error
+  layer-dependency: error
+  feature-isolation: error
+  import-cycles: warning
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: warning
+  redundant-comments: info
+  verbose-logging: info
+  single-method-class: info
+  passthrough-function: info
+
+architecture:
+  layers:
+    presentation:
+      paths: ["lib/features/**/pages/**", "lib/features/**/widgets/**", "lib/shared/widgets/**"]
+      can_depend_on: ["bloc", "domain", "core", "shared"]
+    bloc:
+      paths: ["lib/features/**/bloc/**", "lib/features/**/cubit/**", "lib/shared/blocs/**"]
+      can_depend_on: ["domain", "core"]
+    domain:
+      paths: ["lib/domain/**"]
+      can_depend_on: ["core"]
+    data:
+      paths: ["lib/data/**"]
+      can_depend_on: ["domain", "core"]
+    core:
+      paths: ["lib/core/**"]
+      can_depend_on: []
+    shared:
+      paths: ["lib/shared/**"]
+      can_depend_on: ["domain", "core"]
+
+  banned_imports:
+    # Domain puro
+    - paths: ["lib/domain/**"]
+      deny:
+        - "package:flutter/**"
+        - "package:flutter_bloc/**"
+        - "package:bloc/**"
+        - "package:dio/**"
+        - "package:http/**"
+        - "package:cloud_firestore/**"
+      message: "Domain deve ser puro — sem Flutter, BLoC ou pacotes de infra."
+    # BLoCs não acessam Data diretamente (usam UseCases/Repositories do Domain)
+    - paths: ["lib/features/**/bloc/**", "lib/features/**/cubit/**"]
+      deny: ["**/data/**", "**/datasources/**"]
+      message: "BLoCs/Cubits devem usar Domain (UseCases/Repositories) — não Data diretamente."
+    # BLoCs não importam widgets
+    - paths: ["lib/features/**/bloc/**", "lib/features/**/cubit/**"]
+      deny: ["package:flutter/material.dart", "package:flutter/widgets.dart"]
+      message: "BLoCs/Cubits não devem importar widgets Flutter."
+    # Data sem Flutter
+    - paths: ["lib/data/**"]
+      deny: ["package:flutter/**"]
+      message: "Data não deve depender de Flutter."
+
+  feature_isolation:
+    enabled: true
+    paths: ["lib/features/*/"]
+    allow_shared:
+      - "lib/core/**"
+      - "lib/domain/**"
+      - "lib/shared/**"
+      - "lib/data/**"
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  max_parameters:
+    warning: 4
+    error: 7
+  max_nesting:
+    warning: 4
+    error: 6
+  build_method_branches:
+    warning: 3
+    error: 6
