@@ -1,0 +1,11 @@
+name: dart_sentinel_analyzer_plugin
+version: 1.0.0
+description: Bootstrap package for the dart_sentinel analyzer plugin.
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  analyzer: ^10.0.0
+  analyzer_plugin: ^0.14.4

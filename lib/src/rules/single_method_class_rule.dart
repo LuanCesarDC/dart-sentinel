@@ -54,7 +54,7 @@ class _SingleMethodClassVisitor extends RecursiveAstVisitor<void> {
       issues.add(Issue(
         rule: 'single-method-class',
         message:
-            'Class \'${node.name.lexeme}\' has only one public method '
+            'Class \'${node.namePart.typeName.lexeme}\' has only one public method '
             '\'$methodName\' — consider using a plain function instead.',
         file: filePath,
         line: line,
@@ -82,7 +82,9 @@ class _SingleMethodClassVisitor extends RecursiveAstVisitor<void> {
   static const _objectMethods = {'toString', 'hashCode', 'noSuchMethod'};
 
   Iterable<MethodDeclaration> _publicMethods(ClassDeclaration node) {
-    return node.members.whereType<MethodDeclaration>().where(
+    final body = node.body;
+    if (body is! BlockClassBody) return [];
+    return body.members.whereType<MethodDeclaration>().where(
           (m) =>
               !m.isStatic &&
               !m.name.lexeme.startsWith('_') &&
@@ -91,7 +93,9 @@ class _SingleMethodClassVisitor extends RecursiveAstVisitor<void> {
   }
 
   Iterable<FieldDeclaration> _publicFields(ClassDeclaration node) {
-    return node.members.whereType<FieldDeclaration>().where(
+    final body = node.body;
+    if (body is! BlockClassBody) return [];
+    return body.members.whereType<FieldDeclaration>().where(
           (f) =>
               !f.isStatic &&
               !f.fields.variables.first.name.lexeme.startsWith('_'),
@@ -99,7 +103,9 @@ class _SingleMethodClassVisitor extends RecursiveAstVisitor<void> {
   }
 
   bool _hasConstructorParams(ClassDeclaration node) {
-    for (final member in node.members) {
+    final body = node.body;
+    if (body is! BlockClassBody) return false;
+    for (final member in body.members) {
       if (member is ConstructorDeclaration) {
         if (member.parameters.parameters.isNotEmpty) return true;
       }

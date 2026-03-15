@@ -9,10 +9,12 @@ executables:
   mcp_server: mcp_server
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ^3.9.0
 
 dependencies:
-  analyzer: ^6.0.0
+  analysis_server_plugin: ^0.3.10
+  analyzer: ^10.0.0
+  analyzer_plugin: ^0.14.4
   args: ^2.4.0
   dart_mcp: ^0.5.0
   glob: ^2.1.0
@@ -20,4 +22,6 @@ dependencies:
   yaml: ^3.1.0
 
 dev_dependencies:
+  analyzer_testing: ^0.2.1
   test: ^1.24.0
+  test_reflective_loader: ^0.4.0

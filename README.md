@@ -8,6 +8,49 @@ Install the companion extension for inline diagnostics, quick navigation, and a 
 
 **[Dart Sentinel — VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=LuanCesar.dart-sentinel)**
 
+## IDE Plugin (Analysis Server)
+
+Dart Sentinel integrates with the Dart analysis server to show diagnostics in real-time directly in your IDE — squiggly underlines, hover messages, and **Ctrl+.** quick fixes. No CLI needed.
+
+### Setup
+
+1. Add `dart_sentinel` as a dev dependency (see [Installation](#installation)).
+
+2. Enable the plugin in your `analysis_options.yaml`:
+
+```yaml
+plugins:
+  - dart_sentinel
+```
+
+3. Restart the Dart analysis server (VS Code: `Dart: Restart Analysis Server`).
+
+### What you get
+
+- **Real-time diagnostics** — warnings and infos appear as you type, no save required
+- **Quick fixes (Ctrl+.)** — available for: empty catch blocks (add `rethrow`), dead TODOs (remove), redundant comments (remove), async safety (add `mounted` check)
+- Works in **VS Code**, **Android Studio**, **IntelliJ**, and any editor using the Dart analysis server
+
+### Plugin rules
+
+All single-file rules run as analysis server plugins:
+
+| Rule | Severity | Quick Fix |
+|------|----------|-----------|
+| `empty_catch` | warning | Add `rethrow` |
+| `dead_todo` | info | Remove comment |
+| `redundant_comment` | info | Remove comment |
+| `async_safety` | warning | Add `mounted` check |
+| `dispose_check` | warning | — |
+| `generic_naming` | warning | — |
+| `verbose_logging` | info | — |
+| `single_method_class` | info | — |
+| `passthrough_function` | info | — |
+| `sentinel_complexity` | warning | — |
+| `build_complexity` | warning | — |
+
+> **Note:** Cross-file rules (dead-files, dead-exports, import-cycles) and config-dependent rules (feature-isolation, layer-dependency, banned-imports) are only available via the CLI.
+
 ## Installation
 
 Add to your project's `pubspec.yaml`:

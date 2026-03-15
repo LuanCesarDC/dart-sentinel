@@ -84,7 +84,7 @@ class _BannedSymbolVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final typeName = node.constructorName.type.name2.lexeme;
+    final typeName = node.constructorName.type.name.lexeme;
     _check(typeName, node.constructorName.offset);
     super.visitInstanceCreationExpression(node);
   }
@@ -108,7 +108,7 @@ class _BannedSymbolVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitNamedType(NamedType node) {
-    _check(node.name2.lexeme, node.offset);
+    _check(node.name.lexeme, node.offset);
     super.visitNamedType(node);
   }
 

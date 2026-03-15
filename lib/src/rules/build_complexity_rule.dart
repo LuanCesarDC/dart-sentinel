@@ -48,9 +48,11 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitClassDeclaration(ClassDeclaration node) {
     // Find build() methods
-    for (final member in node.members) {
+    final body = node.body;
+    if (body is! BlockClassBody) return;
+    for (final member in body.members) {
       if (member is MethodDeclaration && member.name.lexeme == 'build') {
-        _analyzeBuildMethod(member, node.name.lexeme);
+        _analyzeBuildMethod(member, node.namePart.typeName.lexeme);
       }
     }
 

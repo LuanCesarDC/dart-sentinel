@@ -60,7 +60,9 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    _analyzeClass(node, node.members);
+    final body = node.body;
+    if (body is! BlockClassBody) return;
+    _analyzeClass(node, body.members);
     super.visitClassDeclaration(node);
   }
 

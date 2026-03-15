@@ -1,0 +1,26 @@
+analyzer:
+  plugins:
+    - dart_sentinel
+
+linter:
+  rules:
+    - prefer_relative_imports
+
+# The new plugin API below requires Dart 3.10+ / Flutter 3.38+.
+# Uncomment when your Dart SDK supports it:
+#
+# plugins:
+#   dart_sentinel:
+#     path: .
+#     diagnostics:
+#       empty_catch: true
+#       dead_todo: true
+#       redundant_comment: true
+#       async_safety: true
+#       dispose_check: true
+#       generic_naming: true
+#       verbose_logging: true
+#       single_method_class: true
+#       passthrough_function: true
+#       sentinel_complexity: true
+#       build_complexity: true
