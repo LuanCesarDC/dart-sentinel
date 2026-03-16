@@ -339,9 +339,11 @@ void _runL10n(ProjectContext context, String format) {
   }
 
   // Console output
-  print('  L10n Analysis');
-  print('  ${'═' * 56}');
-  print('');
+  print([
+    '  L10n Analysis',
+    '  ${'═' * 56}',
+    '',
+  ].join('\n'));
 
   if (strings.isNotEmpty) {
     print('  Hardcoded Strings (${strings.length}):');
@@ -359,11 +361,13 @@ void _runL10n(ProjectContext context, String format) {
   }
 
   if (status.languages.isNotEmpty) {
-    print('  Translation Coverage:');
-    print('');
-    print('    Base language: ${status.baseLanguage}');
-    print('    Total keys: ${status.totalKeys}');
-    print('');
+    print([
+      '  Translation Coverage:',
+      '',
+      '    Base language: ${status.baseLanguage}',
+      '    Total keys: ${status.totalKeys}',
+      '',
+    ].join('\n'));
     for (final lang in status.languages) {
       final count = status.translatedCount[lang] ?? 0;
       final pct = status.totalKeys > 0
