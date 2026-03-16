@@ -14,6 +14,7 @@ import 'src/plugin/rules/generic_naming_plugin_rule.dart';
 import 'src/plugin/rules/passthrough_function_plugin_rule.dart';
 import 'src/plugin/rules/redundant_comment_plugin_rule.dart';
 import 'src/plugin/rules/single_method_class_plugin_rule.dart';
+import 'src/plugin/rules/lazy_null_check_plugin_rule.dart';
 import 'src/plugin/rules/verbose_logging_plugin_rule.dart';
 
 // Fixes
@@ -43,6 +44,7 @@ class DartSentinelPlugin extends Plugin {
     registry.registerLintRule(PassthroughFunctionPluginRule());
     registry.registerLintRule(ComplexityPluginRule());
     registry.registerLintRule(BuildComplexityPluginRule());
+    registry.registerLintRule(LazyNullCheckPluginRule());
 
     // ── Quick fixes ──
     registry.registerFixForRule(SentinelCodes.emptyCatch, EmptyCatchFix.new);

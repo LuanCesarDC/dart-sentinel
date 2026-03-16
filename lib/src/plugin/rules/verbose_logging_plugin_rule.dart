@@ -10,10 +10,10 @@ import '../lint_codes.dart';
 /// Plugin rule: detects excessive consecutive log/print statements.
 class VerboseLoggingPluginRule extends AnalysisRule {
   VerboseLoggingPluginRule()
-      : super(
-          name: 'verbose_logging',
-          description: 'Detects excessive consecutive log/print statements.',
-        );
+    : super(
+        name: 'verbose_logging',
+        description: 'Detects excessive consecutive log/print statements.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.verboseLogging;
@@ -21,10 +21,17 @@ class VerboseLoggingPluginRule extends AnalysisRule {
   static const _defaultMax = 3;
 
   static const _logFunctions = {
-    'print', 'debugPrint', 'log',
-    'logger.info', 'logger.warning', 'logger.severe',
-    'logger.fine', 'logger.finer', 'logger.finest',
-    'logger.shout', 'logger.config',
+    'print',
+    'debugPrint',
+    'log',
+    'logger.info',
+    'logger.warning',
+    'logger.severe',
+    'logger.fine',
+    'logger.finer',
+    'logger.finest',
+    'logger.shout',
+    'logger.config',
   };
 
   @override

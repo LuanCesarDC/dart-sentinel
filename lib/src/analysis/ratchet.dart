@@ -11,28 +11,22 @@ class Ratchet {
   static const _defaultPath = '.dart_sentinel/baseline.json';
 
   /// Save a baseline from the current set of issues.
-  static void saveBaseline(
-    List<Issue> issues, {
-    String? path,
-  }) {
+  static void saveBaseline(List<Issue> issues, {String? path}) {
     final filePath = path ?? _defaultPath;
     final baseline = _buildBaseline(issues);
 
     final dir = File(filePath).parent;
     if (!dir.existsSync()) dir.createSync(recursive: true);
 
-    File(filePath).writeAsStringSync(
-      const JsonEncoder.withIndent('  ').convert(baseline),
-    );
+    File(
+      filePath,
+    ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(baseline));
   }
 
   /// Compare current issues against a saved baseline.
   ///
   /// Returns a [RatchetResult] indicating pass/fail and any regressions.
-  static RatchetResult check(
-    List<Issue> issues, {
-    String? path,
-  }) {
+  static RatchetResult check(List<Issue> issues, {String? path}) {
     final filePath = path ?? _defaultPath;
     final file = File(filePath);
 
@@ -40,15 +34,17 @@ class Ratchet {
       return RatchetResult(
         passed: false,
         regressions: [],
-        message: 'No baseline found at $filePath. '
+        message:
+            'No baseline found at $filePath. '
             'Run with --save-baseline first.',
       );
     }
 
     final baselineJson =
         jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-    final baselineCounts = (baselineJson['rules'] as Map<String, dynamic>)
-        .map((k, v) => MapEntry(k, v as int));
+    final baselineCounts = (baselineJson['rules'] as Map<String, dynamic>).map(
+      (k, v) => MapEntry(k, v as int),
+    );
 
     final currentCounts = _countByRule(issues);
     final regressions = _findRegressions(currentCounts, baselineCounts);
@@ -100,7 +96,10 @@ class Ratchet {
     }
 
     final regMsg = regressions
-        .map((r) => '  ${r.rule}: ${r.baseline} → ${r.current} (+${r.current - r.baseline})')
+        .map(
+          (r) =>
+              '  ${r.rule}: ${r.baseline} → ${r.current} (+${r.current - r.baseline})',
+        )
         .join('\n');
     return RatchetResult(
       passed: false,
@@ -144,11 +143,11 @@ class RatchetResult {
   });
 
   Map<String, dynamic> toJson() => {
-        'passed': passed,
-        'message': message,
-        'regressions': regressions.map((r) => r.toJson()).toList(),
-        'improvements': improvements,
-      };
+    'passed': passed,
+    'message': message,
+    'regressions': regressions.map((r) => r.toJson()).toList(),
+    'improvements': improvements,
+  };
 }
 
 class RatchetRegression {
@@ -163,9 +162,9 @@ class RatchetRegression {
   });
 
   Map<String, dynamic> toJson() => {
-        'rule': rule,
-        'baseline': baseline,
-        'current': current,
-        'delta': current - baseline,
-      };
+    'rule': rule,
+    'baseline': baseline,
+    'current': current,
+    'delta': current - baseline,
+  };
 }

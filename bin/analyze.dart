@@ -26,7 +26,8 @@ Future<void> main(List<String> args) async {
   if (!File('$projectRoot/pubspec.yaml').existsSync()) {
     stderr.writeln('Error: pubspec.yaml not found at $projectRoot');
     stderr.writeln(
-        'Run this command from your Dart/Flutter project root, or use --project.');
+      'Run this command from your Dart/Flutter project root, or use --project.',
+    );
     exit(1);
   }
 
@@ -39,7 +40,8 @@ Future<void> main(List<String> args) async {
   final context = await ProjectContext.build(projectRoot);
 
   print(
-      '  Scanned ${context.allFiles.length} files (${context.entrypoints.length} entrypoints)');
+    '  Scanned ${context.allFiles.length} files (${context.entrypoints.length} entrypoints)',
+  );
 
   // ── Special analysis modes ──
 
@@ -91,6 +93,9 @@ bool _trySpecialMode(
     case 'migrations':
       _runMigrations(context, format);
       return true;
+    case 'l10n':
+      _runL10n(context, format);
+      return true;
     default:
       return false;
   }
@@ -122,8 +127,16 @@ ArgParser _buildParser() {
       abbr: 'o',
       help: 'Run only a specific category of rules.',
       allowed: [
-        'arch', 'dead', 'metrics', 'lint', 'slop',
-        'impact', 'map', 'migrations', 'all',
+        'arch',
+        'dead',
+        'metrics',
+        'lint',
+        'slop',
+        'impact',
+        'map',
+        'migrations',
+        'l10n',
+        'all',
       ],
       defaultsTo: 'all',
     )
@@ -147,12 +160,7 @@ ArgParser _buildParser() {
       'files',
       help: 'Files to analyze for impact (used with -o impact).',
     )
-    ..addFlag(
-      'help',
-      abbr: 'h',
-      negatable: false,
-      help: 'Show help.',
-    )
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'Show help.')
     ..addFlag(
       'no-report',
       negatable: false,
@@ -190,6 +198,7 @@ List<Issue> _runRuleAnalysis(ProjectContext context, String category) {
     VerboseLoggingRule(),
     SingleMethodClassRule(),
     PassthroughFunctionRule(),
+    LazyNullCheckRule(),
   ];
   final runner = RuleRunner(rules: allRules, config: context.config);
   if (category == 'all') return runner.runAll(context);
@@ -219,38 +228,50 @@ void _runImpact(ProjectContext context, List<String> files, String format) {
 
 void _printHotSpots(List<HotSpot> spots, String format) {
   if (format == 'json') {
-    print(const JsonEncoder.withIndent('  ').convert(
-      spots.map((s) => {
-        'file': s.file,
-        'directDependents': s.directDependents,
-        'transitiveDependents': s.transitiveDependents,
-      }).toList(),
-    ));
+    print(
+      const JsonEncoder.withIndent('  ').convert(
+        spots
+            .map(
+              (s) => {
+                'file': s.file,
+                'directDependents': s.directDependents,
+                'transitiveDependents': s.transitiveDependents,
+              },
+            )
+            .toList(),
+      ),
+    );
     return;
   }
   print('  Hot Spots (highest blast radius):');
   print('');
   for (final s in spots) {
-    print('  ${s.transitiveDependents.toString().padLeft(3)} transitive '
-        '(${s.directDependents} direct)  ${s.file}');
+    print(
+      '  ${s.transitiveDependents.toString().padLeft(3)} transitive '
+      '(${s.directDependents} direct)  ${s.file}',
+    );
   }
 }
 
 void _printImpactReport(ImpactReport report, String format) {
   if (format == 'json') {
-    print(const JsonEncoder.withIndent('  ').convert({
-      'changedFiles': report.changedFiles,
-      'totalAffected': report.totalAffected,
-      'totalFiles': report.totalFiles,
-      'impactPercent': report.impactPercent.toStringAsFixed(1),
-      'affectedByCategory': report.affectedByCategory,
-      'affectedFiles': report.affectedFiles,
-    }));
+    print(
+      const JsonEncoder.withIndent('  ').convert({
+        'changedFiles': report.changedFiles,
+        'totalAffected': report.totalAffected,
+        'totalFiles': report.totalFiles,
+        'impactPercent': report.impactPercent.toStringAsFixed(1),
+        'affectedByCategory': report.affectedByCategory,
+        'affectedFiles': report.affectedFiles,
+      }),
+    );
     return;
   }
   print('  Changed: ${report.changedFiles.join(', ')}');
-  print('  Affected: ${report.totalAffected} / ${report.totalFiles} '
-      'files (${report.impactPercent.toStringAsFixed(1)}%)');
+  print(
+    '  Affected: ${report.totalAffected} / ${report.totalFiles} '
+    'files (${report.impactPercent.toStringAsFixed(1)}%)',
+  );
   if (report.affectedByCategory.isNotEmpty) {
     print('  By category:');
     for (final entry in report.affectedByCategory.entries) {
@@ -265,11 +286,15 @@ void _runMap(ProjectContext context, String format) {
     case 'mermaid':
       print(mapper.toMermaid());
     case 'json':
-      print(const JsonEncoder.withIndent('  ').convert({
-        'totalFiles': context.allFiles.length,
-        'totalEdges': context.importGraph.values.fold<int>(
-            0, (s, v) => s + v.length),
-      }));
+      print(
+        const JsonEncoder.withIndent('  ').convert({
+          'totalFiles': context.allFiles.length,
+          'totalEdges': context.importGraph.values.fold<int>(
+            0,
+            (s, v) => s + v.length,
+          ),
+        }),
+      );
     default:
       print(mapper.toTextSummary());
   }
@@ -285,6 +310,76 @@ void _runMigrations(ProjectContext context, String format) {
     print(report.toText());
   }
   print('');
+}
+
+void _runL10n(ProjectContext context, String format) {
+  final scanner = L10nScanner(context);
+  final strings = scanner.scanHardcodedStrings();
+  final status = scanner.getL10nStatus();
+
+  if (format == 'json') {
+    print(
+      const JsonEncoder.withIndent('  ').convert({
+        'hardcoded_strings': strings.map((s) {
+          final rel = s.file.startsWith(context.projectRoot)
+              ? s.file.substring(context.projectRoot.length + 1)
+              : s.file;
+          return {
+            'file': rel,
+            'line': s.line,
+            'value': s.value,
+            'context': s.context,
+          };
+        }).toList(),
+        'l10n_status': status.toJson(),
+      }),
+    );
+    print('');
+    return;
+  }
+
+  // Console output
+  print('  L10n Analysis');
+  print('  ${'═' * 56}');
+  print('');
+
+  if (strings.isNotEmpty) {
+    print('  Hardcoded Strings (${strings.length}):');
+    print('');
+    for (final s in strings) {
+      final rel = s.file.startsWith(context.projectRoot)
+          ? s.file.substring(context.projectRoot.length + 1)
+          : s.file;
+      print('    $rel:${s.line}  "${s.value}"  (${s.context})');
+    }
+    print('');
+  } else {
+    print('  ✅ No hardcoded UI strings found.');
+    print('');
+  }
+
+  if (status.languages.isNotEmpty) {
+    print('  Translation Coverage:');
+    print('');
+    print('    Base language: ${status.baseLanguage}');
+    print('    Total keys: ${status.totalKeys}');
+    print('');
+    for (final lang in status.languages) {
+      final count = status.translatedCount[lang] ?? 0;
+      final pct = status.totalKeys > 0
+          ? (count / status.totalKeys * 100).toStringAsFixed(0)
+          : '0';
+      final missing = status.missingKeys[lang];
+      final tag = missing != null && missing.isNotEmpty
+          ? '  (${missing.length} missing)'
+          : '';
+      print('    $lang: $count/${status.totalKeys} ($pct%)$tag');
+    }
+    print('');
+  } else {
+    print('  No ARB files found. Run `flutter gen-l10n` setup first.');
+    print('');
+  }
 }
 
 void _writeReport(
@@ -327,13 +422,14 @@ void _writeReport(
     }).toList(),
   };
 
-  File(path).writeAsStringSync(
-    const JsonEncoder.withIndent('  ').convert(report),
-  );
+  File(
+    path,
+  ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(report));
 }
 
 void _printUsage(ArgParser parser) {
-  print('''
+  print(
+    '''
 Dart Sentinel — Static analysis & metrics for Dart/Flutter
 
 Usage: dart run dart_sentinel [options]
@@ -365,5 +461,6 @@ Examples:
   dart run dart_sentinel -o migrations                      # migration progress
   dart run dart_sentinel --save-baseline                    # save ratchet baseline
   dart run dart_sentinel --check-baseline                   # CI ratchet check
-  dart run dart_sentinel:analyze                            # explicit script''');
+  dart run dart_sentinel:analyze                            # explicit script''',
+  );
 }

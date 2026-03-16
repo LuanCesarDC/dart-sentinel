@@ -38,11 +38,7 @@ class LayerDependencyRule extends AnalyzerRule {
     final sourceLayer = _findLayer(relativePath, layerConfig);
     if (sourceLayer == null) return [];
 
-    final source = (
-      relativePath: relativePath,
-      unit: unit,
-      layer: sourceLayer,
-    );
+    final source = (relativePath: relativePath, unit: unit, layer: sourceLayer);
     final issues = <Issue>[];
     for (final directive in unit.directives) {
       if (directive is! ImportDirective) continue;
@@ -53,9 +49,10 @@ class LayerDependencyRule extends AnalyzerRule {
   }
 
   Issue? _checkLayerImport(
-      ImportDirective directive,
-      ({String relativePath, CompilationUnit unit, LayerDefinition layer}) source,
-      ProjectContext context) {
+    ImportDirective directive,
+    ({String relativePath, CompilationUnit unit, LayerDefinition layer}) source,
+    ProjectContext context,
+  ) {
     final layerConfig = context.config.layerConfig!;
     final uri = directive.uri.stringValue;
     if (uri == null) return null;

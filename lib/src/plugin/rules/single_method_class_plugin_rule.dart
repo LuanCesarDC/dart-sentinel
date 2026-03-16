@@ -10,10 +10,11 @@ import '../lint_codes.dart';
 /// Plugin rule: detects classes with a single public method.
 class SingleMethodClassPluginRule extends AnalysisRule {
   SingleMethodClassPluginRule()
-      : super(
-          name: 'single_method_class',
-          description: 'Detects classes with a single public method that could be a function.',
-        );
+    : super(
+        name: 'single_method_class',
+        description:
+            'Detects classes with a single public method that could be a function.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.singleMethodClass;
@@ -42,17 +43,17 @@ class _Visitor extends SimpleAstVisitor<void> {
     final body = node.body;
     if (body is! BlockClassBody) return;
 
-    final publicMethods = body.members
-        .whereType<MethodDeclaration>()
-        .where((m) =>
-            !m.isStatic &&
-            !m.name.lexeme.startsWith('_') &&
-            !_objectMethods.contains(m.name.lexeme));
+    final publicMethods = body.members.whereType<MethodDeclaration>().where(
+      (m) =>
+          !m.isStatic &&
+          !m.name.lexeme.startsWith('_') &&
+          !_objectMethods.contains(m.name.lexeme),
+    );
 
-    final publicFields = body.members
-        .whereType<FieldDeclaration>()
-        .where((f) =>
-            !f.isStatic && !f.fields.variables.first.name.lexeme.startsWith('_'));
+    final publicFields = body.members.whereType<FieldDeclaration>().where(
+      (f) =>
+          !f.isStatic && !f.fields.variables.first.name.lexeme.startsWith('_'),
+    );
 
     if (publicMethods.length == 1 && publicFields.isEmpty) {
       final methodName = publicMethods.first.name.lexeme;

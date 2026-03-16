@@ -27,9 +27,10 @@ class DeadExportsRule extends AnalyzerRule {
   }
 
   List<Issue> _findDeadExports(
-      String file,
-      ProjectContext context,
-      Map<String, Set<String>> reverseImports) {
+    String file,
+    ProjectContext context,
+    Map<String, Set<String>> reverseImports,
+  ) {
     final unit = context.parsedUnits[file]!;
     final issues = <Issue>[];
 
@@ -38,7 +39,11 @@ class DeadExportsRule extends AnalyzerRule {
       final uri = directive.uri.stringValue;
       if (uri == null) continue;
 
-      final resolved = _resolveUri(uri, context.projectRoot, context.packageName);
+      final resolved = _resolveUri(
+        uri,
+        context.projectRoot,
+        context.packageName,
+      );
       if (resolved == null) continue;
 
       final importers = reverseImports[file] ?? {};
@@ -46,20 +51,22 @@ class DeadExportsRule extends AnalyzerRule {
         final line = directive.offset > 0
             ? _lineNumber(unit, directive.offset)
             : 0;
-        issues.add(Issue(
-          rule: name,
-          message: 'Export of "$uri" is not used — no file imports this barrel/file',
-          file: context.relativePath(file),
-          line: line,
-          severity: defaultSeverity,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message:
+                'Export of "$uri" is not used — no file imports this barrel/file',
+            file: context.relativePath(file),
+            line: line,
+            severity: defaultSeverity,
+          ),
+        );
       }
     }
     return issues;
   }
 
-  String? _resolveUri(
-      String uri, String projectRoot, String packageName) {
+  String? _resolveUri(String uri, String projectRoot, String packageName) {
     if (uri.startsWith('dart:')) return null;
     if (uri.startsWith('package:')) {
       final parts = uri.substring(8).split('/');

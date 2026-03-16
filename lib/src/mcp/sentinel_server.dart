@@ -13,6 +13,7 @@ import '../core/rule.dart';
 import '../core/runner.dart';
 import '../analysis/impact_analyzer.dart';
 import '../analysis/dependency_mapper.dart';
+import '../analysis/l10n_scanner.dart';
 import '../analysis/migration_tracker.dart';
 import '../rules/async_safety_rule.dart';
 import '../rules/banned_imports_rule.dart';
@@ -32,6 +33,7 @@ import '../rules/redundant_comments_rule.dart';
 import '../rules/verbose_logging_rule.dart';
 import '../rules/single_method_class_rule.dart';
 import '../rules/passthrough_function_rule.dart';
+import '../rules/lazy_null_check_rule.dart';
 
 /// MCP Server for Dart Sentinel.
 ///
@@ -41,19 +43,16 @@ import '../rules/passthrough_function_rule.dart';
 base class SentinelMCPServer extends MCPServer
     with ToolsSupport, ResourcesSupport {
   SentinelMCPServer(StreamChannel<String> channel)
-      : super.fromStreamChannel(
-          channel,
-          implementation: Implementation(
-            name: 'dart-sentinel',
-            version: '1.0.0',
-          ),
-          instructions:
-              'Dart Sentinel analyzes Dart/Flutter projects for architecture '
-              'violations, dead code, complexity metrics, and lint issues. '
-              'Use the `analyze` tool to run analysis on a project. '
-              'Use `check_import` to verify if a specific import is allowed. '
-              'Read resources for current config and architecture definition.',
-        ) {
+    : super.fromStreamChannel(
+        channel,
+        implementation: Implementation(name: 'dart-sentinel', version: '1.0.0'),
+        instructions:
+            'Dart Sentinel analyzes Dart/Flutter projects for architecture '
+            'violations, dead code, complexity metrics, and lint issues. '
+            'Use the `analyze` tool to run analysis on a project. '
+            'Use `check_import` to verify if a specific import is allowed. '
+            'Read resources for current config and architecture definition.',
+      ) {
     _registerTools();
     _registerResources();
   }
@@ -68,6 +67,9 @@ base class SentinelMCPServer extends MCPServer
     registerTool(_impactAnalysisTool, _handleImpactAnalysis);
     registerTool(_dependencyMapTool, _handleDependencyMap);
     registerTool(_migrationsTool, _handleMigrations);
+    registerTool(_scanHardcodedStringsTool, _handleScanHardcodedStrings);
+    registerTool(_l10nStatusTool, _handleL10nStatus);
+    registerTool(_generateL10nTool, _handleGenerateL10n);
   }
 
   // ── analyze ──
@@ -145,8 +147,7 @@ base class SentinelMCPServer extends MCPServer
     final projectCtx = await ProjectContext.build(projectRoot);
     final allIssues = _runAnalysis(projectCtx, 'all');
     final relativePath = projectCtx.relativePath(filePath);
-    final fileIssues =
-        allIssues.where((i) => i.file == relativePath).toList();
+    final fileIssues = allIssues.where((i) => i.file == relativePath).toList();
 
     return CallToolResult(
       content: [TextContent(text: _formatIssues(fileIssues))],
@@ -202,16 +203,18 @@ base class SentinelMCPServer extends MCPServer
     ];
 
     final allowed = violations.isEmpty;
-    return CallToolResult(content: [
-      TextContent(
-        text: _prettyJson.convert({
-          'allowed': allowed,
-          'from': fromFile,
-          'import': importUri,
-          if (!allowed) 'violations': violations,
-        }),
-      ),
-    ]);
+    return CallToolResult(
+      content: [
+        TextContent(
+          text: _prettyJson.convert({
+            'allowed': allowed,
+            'from': fromFile,
+            'import': importUri,
+            if (!allowed) 'violations': violations,
+          }),
+        ),
+      ],
+    );
   }
 
   // ── get_architecture ──
@@ -233,8 +236,7 @@ base class SentinelMCPServer extends MCPServer
     annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
   );
 
-  Future<CallToolResult> _handleGetArchitecture(
-      CallToolRequest request) async {
+  Future<CallToolResult> _handleGetArchitecture(CallToolRequest request) async {
     final args = request.arguments ?? {};
     final projectRoot = args['path'] as String? ?? Directory.current.path;
 
@@ -244,9 +246,11 @@ base class SentinelMCPServer extends MCPServer
     }
 
     final config = AnalyzerConfig.load(projectRoot);
-    return CallToolResult(content: [
-      TextContent(text: _prettyJson.convert(_architectureToJson(config))),
-    ]);
+    return CallToolResult(
+      content: [
+        TextContent(text: _prettyJson.convert(_architectureToJson(config))),
+      ],
+    );
   }
 
   // ── Resources ──────────────────────────────────────────────────────
@@ -262,9 +266,7 @@ base class SentinelMCPServer extends MCPServer
     inputSchema: ObjectSchema(
       properties: {
         'files': Schema.list(
-          items: Schema.string(
-            description: 'Relative file path to analyze.',
-          ),
+          items: Schema.string(description: 'Relative file path to analyze.'),
           description: 'List of changed file paths to analyze impact for.',
         ),
         'path': Schema.string(
@@ -277,8 +279,7 @@ base class SentinelMCPServer extends MCPServer
     annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
   );
 
-  Future<CallToolResult> _handleImpactAnalysis(
-      CallToolRequest request) async {
+  Future<CallToolResult> _handleImpactAnalysis(CallToolRequest request) async {
     final args = request.arguments ?? {};
     final projectRoot = args['path'] as String? ?? Directory.current.path;
     final filesList = args['files'] as List<dynamic>?;
@@ -293,29 +294,41 @@ base class SentinelMCPServer extends MCPServer
 
     if (filesList == null || filesList.isEmpty) {
       final spots = analyzer.hotSpots();
-      return CallToolResult(content: [
-        TextContent(text: _prettyJson.convert(
-          spots.map((s) => {
-            'file': s.file,
-            'directDependents': s.directDependents,
-            'transitiveDependents': s.transitiveDependents,
-          }).toList(),
-        )),
-      ]);
+      return CallToolResult(
+        content: [
+          TextContent(
+            text: _prettyJson.convert(
+              spots
+                  .map(
+                    (s) => {
+                      'file': s.file,
+                      'directDependents': s.directDependents,
+                      'transitiveDependents': s.transitiveDependents,
+                    },
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      );
     }
 
     final files = filesList.cast<String>();
     final report = analyzer.analyze(files);
-    return CallToolResult(content: [
-      TextContent(text: _prettyJson.convert({
-        'changedFiles': report.changedFiles,
-        'totalAffected': report.totalAffected,
-        'totalFiles': report.totalFiles,
-        'impactPercent': report.impactPercent.toStringAsFixed(1),
-        'affectedByCategory': report.affectedByCategory,
-        'affectedFiles': report.affectedFiles,
-      })),
-    ]);
+    return CallToolResult(
+      content: [
+        TextContent(
+          text: _prettyJson.convert({
+            'changedFiles': report.changedFiles,
+            'totalAffected': report.totalAffected,
+            'totalFiles': report.totalFiles,
+            'impactPercent': report.impactPercent.toStringAsFixed(1),
+            'affectedByCategory': report.affectedByCategory,
+            'affectedFiles': report.affectedFiles,
+          }),
+        ),
+      ],
+    );
   }
 
   // ── dependency_map ──
@@ -342,8 +355,7 @@ base class SentinelMCPServer extends MCPServer
     annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
   );
 
-  Future<CallToolResult> _handleDependencyMap(
-      CallToolRequest request) async {
+  Future<CallToolResult> _handleDependencyMap(CallToolRequest request) async {
     final args = request.arguments ?? {};
     final projectRoot = args['path'] as String? ?? Directory.current.path;
     final format = args['format'] as String? ?? 'text';
@@ -356,7 +368,9 @@ base class SentinelMCPServer extends MCPServer
     final context = await ProjectContext.build(projectRoot);
     final mapper = DependencyMapper(context);
 
-    final mapText = format == 'mermaid' ? mapper.toMermaid() : mapper.toTextSummary();
+    final mapText = format == 'mermaid'
+        ? mapper.toMermaid()
+        : mapper.toTextSummary();
     return CallToolResult(content: [TextContent(text: mapText)]);
   }
 
@@ -392,9 +406,206 @@ base class SentinelMCPServer extends MCPServer
     final tracker = MigrationTracker(context);
     final report = tracker.track();
 
-    return CallToolResult(content: [
-      TextContent(text: _prettyJson.convert(report.toJson())),
-    ]);
+    return CallToolResult(
+      content: [TextContent(text: _prettyJson.convert(report.toJson()))],
+    );
+  }
+
+  // ── scan_hardcoded_strings ──
+
+  static final _scanHardcodedStringsTool = Tool(
+    name: 'scan_hardcoded_strings',
+    description:
+        'Scan all Dart files for hardcoded UI strings that should be localized. '
+        'Uses AST analysis to find string literals inside Text(), AppBar(title:), '
+        'InputDecoration(hintText:), Tooltip(message:), and other UI widgets. '
+        'Returns each string with file, line, value, and widget context.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+        'files': Schema.list(
+          description:
+              'Optional list of specific file paths to scan. '
+              'If omitted, scans all Dart files in the project.',
+          items: Schema.string(),
+        ),
+      },
+    ),
+    annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
+  );
+
+  Future<CallToolResult> _handleScanHardcodedStrings(
+    CallToolRequest request,
+  ) async {
+    final args = request.arguments ?? {};
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+    final filesList = args['files'] as List<dynamic>?;
+
+    final pubspec = File('$projectRoot/pubspec.yaml');
+    if (!pubspec.existsSync()) {
+      return _errorResult('No pubspec.yaml found at $projectRoot');
+    }
+
+    final context = await ProjectContext.build(projectRoot);
+    final scanner = L10nScanner(context);
+
+    final paths = filesList?.cast<String>();
+    final strings = scanner.scanHardcodedStrings(paths: paths);
+
+    final relativized = strings.map((s) {
+      final rel = s.file.startsWith(projectRoot)
+          ? s.file.substring(projectRoot.length + 1)
+          : s.file;
+      return {
+        'file': rel,
+        'line': s.line,
+        'column': s.column,
+        'value': s.value,
+        'context': s.context,
+      };
+    }).toList();
+
+    return CallToolResult(
+      content: [
+        TextContent(
+          text: _prettyJson.convert({
+            'total': strings.length,
+            'strings': relativized,
+          }),
+        ),
+      ],
+    );
+  }
+
+  // ── l10n_status ──
+
+  static final _l10nStatusTool = Tool(
+    name: 'l10n_status',
+    description:
+        'Get the current localization status of the project. '
+        'Reads all .arb files, compares languages, and reports '
+        'total keys, per-language coverage, and missing translations.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+      },
+    ),
+    annotations: ToolAnnotations(readOnlyHint: true, idempotentHint: true),
+  );
+
+  Future<CallToolResult> _handleL10nStatus(CallToolRequest request) async {
+    final args = request.arguments ?? {};
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+
+    final pubspec = File('$projectRoot/pubspec.yaml');
+    if (!pubspec.existsSync()) {
+      return _errorResult('No pubspec.yaml found at $projectRoot');
+    }
+
+    final context = await ProjectContext.build(projectRoot);
+    final scanner = L10nScanner(context);
+    final status = scanner.getL10nStatus();
+
+    return CallToolResult(
+      content: [TextContent(text: _prettyJson.convert(status.toJson()))],
+    );
+  }
+
+  // ── generate_l10n ──
+
+  static final _generateL10nTool = Tool(
+    name: 'generate_l10n',
+    description:
+        'Generate or update ARB localization files with translations. '
+        'Provide a JSON object mapping language codes to key-value pairs. '
+        'By default merges with existing ARB files. '
+        'Example: {"en": {"hello": "Hello"}, "pt": {"hello": "Olá"}}',
+    inputSchema: ObjectSchema(
+      properties: {
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+        'translations': ObjectSchema(
+          description:
+              'Map of language code → (key → translated string). '
+              'Example: {"en": {"save": "Save"}, "pt": {"save": "Salvar"}}',
+        ),
+        'merge': Schema.bool(
+          description:
+              'If true (default), new keys are added to existing ARB files. '
+              'If false, files are overwritten entirely.',
+        ),
+      },
+      required: ['translations'],
+    ),
+  );
+
+  Future<CallToolResult> _handleGenerateL10n(CallToolRequest request) async {
+    final args = request.arguments ?? {};
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+    final rawTranslations = args['translations'] as Map<String, dynamic>?;
+    final merge = args['merge'] as bool? ?? true;
+
+    if (rawTranslations == null || rawTranslations.isEmpty) {
+      return _errorResult(
+        'Missing "translations" argument. '
+        'Provide a map like: {"en": {"hello": "Hello"}, "pt": {"hello": "Olá"}}',
+      );
+    }
+
+    final pubspec = File('$projectRoot/pubspec.yaml');
+    if (!pubspec.existsSync()) {
+      return _errorResult('No pubspec.yaml found at $projectRoot');
+    }
+
+    // Parse translations
+    final translations = <String, Map<String, String>>{};
+    for (final entry in rawTranslations.entries) {
+      final lang = entry.key;
+      final values = entry.value;
+      if (values is Map<String, dynamic>) {
+        translations[lang] = values.map(
+          (k, v) => MapEntry(k, v.toString()),
+        );
+      }
+    }
+
+    final context = await ProjectContext.build(projectRoot);
+    final scanner = L10nScanner(context);
+    final updatedFiles = scanner.generateArb(translations, merge: merge);
+
+    final relativeFiles = updatedFiles
+        .map(
+          (f) => f.startsWith(projectRoot)
+              ? f.substring(projectRoot.length + 1)
+              : f,
+        )
+        .toList();
+
+    return CallToolResult(
+      content: [
+        TextContent(
+          text: _prettyJson.convert({
+            'status': 'success',
+            'files_updated': relativeFiles,
+            'languages': translations.keys.toList(),
+            'keys_per_language': {
+              for (final e in translations.entries) e.key: e.value.length,
+            },
+          }),
+        ),
+      ],
+    );
   }
 
   void _registerResources() {
@@ -434,49 +645,55 @@ base class SentinelMCPServer extends MCPServer
     );
   }
 
-  FutureOr<ReadResourceResult> _handleReadConfig(
-      ReadResourceRequest request) {
+  FutureOr<ReadResourceResult> _handleReadConfig(ReadResourceRequest request) {
     final configFile = File('${Directory.current.path}/analyzer.yaml');
-    final content =
-        configFile.existsSync() ? configFile.readAsStringSync() : '';
-    return ReadResourceResult(contents: [
-      TextResourceContents(uri: request.uri, text: content),
-    ]);
+    final content = configFile.existsSync()
+        ? configFile.readAsStringSync()
+        : '';
+    return ReadResourceResult(
+      contents: [TextResourceContents(uri: request.uri, text: content)],
+    );
   }
 
-  FutureOr<ReadResourceResult> _handleReadReport(
-      ReadResourceRequest request) {
-    final reportFile =
-        File('${Directory.current.path}/.dart_sentinel/report.json');
-    final content =
-        reportFile.existsSync() ? reportFile.readAsStringSync() : '{}';
-    return ReadResourceResult(contents: [
-      TextResourceContents(
-        uri: request.uri,
-        text: content,
-        mimeType: 'application/json',
-      ),
-    ]);
+  FutureOr<ReadResourceResult> _handleReadReport(ReadResourceRequest request) {
+    final reportFile = File(
+      '${Directory.current.path}/.dart_sentinel/report.json',
+    );
+    final content = reportFile.existsSync()
+        ? reportFile.readAsStringSync()
+        : '{}';
+    return ReadResourceResult(
+      contents: [
+        TextResourceContents(
+          uri: request.uri,
+          text: content,
+          mimeType: 'application/json',
+        ),
+      ],
+    );
   }
 
   FutureOr<ReadResourceResult> _handleReadArchitecture(
-      ReadResourceRequest request) {
+    ReadResourceRequest request,
+  ) {
     final projectRoot = Directory.current.path;
     final configFile = File('$projectRoot/analyzer.yaml');
     if (!configFile.existsSync()) {
-      return ReadResourceResult(contents: [
-        TextResourceContents(uri: request.uri, text: '{}'),
-      ]);
+      return ReadResourceResult(
+        contents: [TextResourceContents(uri: request.uri, text: '{}')],
+      );
     }
 
     final config = AnalyzerConfig.load(projectRoot);
-    return ReadResourceResult(contents: [
-      TextResourceContents(
-        uri: request.uri,
-        text: _prettyJson.convert(_architectureToJson(config)),
-        mimeType: 'application/json',
-      ),
-    ]);
+    return ReadResourceResult(
+      contents: [
+        TextResourceContents(
+          uri: request.uri,
+          text: _prettyJson.convert(_architectureToJson(config)),
+          mimeType: 'application/json',
+        ),
+      ],
+    );
   }
 
   // ── Helpers ────────────────────────────────────────────────────────
@@ -501,6 +718,7 @@ base class SentinelMCPServer extends MCPServer
       VerboseLoggingRule(),
       SingleMethodClassRule(),
       PassthroughFunctionRule(),
+      LazyNullCheckRule(),
     ];
     final runner = RuleRunner(rules: allRules, config: context.config);
     if (category == 'all') return runner.runAll(context);
@@ -519,13 +737,15 @@ base class SentinelMCPServer extends MCPServer
     return _prettyJson.convert({
       'status': 'issues_found',
       'issues': issues
-          .map((i) => {
-                'rule': i.rule,
-                'severity': i.severity.toString(),
-                'file': i.file,
-                'line': i.line,
-                'message': i.message,
-              })
+          .map(
+            (i) => {
+              'rule': i.rule,
+              'severity': i.severity.toString(),
+              'file': i.file,
+              'line': i.line,
+              'message': i.message,
+            },
+          )
           .toList(),
       'summary': {
         'total': issues.length,
@@ -539,23 +759,30 @@ base class SentinelMCPServer extends MCPServer
 
   Map<String, Object?> _architectureToJson(AnalyzerConfig config) {
     return {
-      'layers': config.layerConfig?.layers.values.map((l) => {
-            'name': l.name,
-            'paths': l.paths,
-            'can_depend_on': l.canDependOn,
-          }).toList() ??
+      'layers':
+          config.layerConfig?.layers.values
+              .map(
+                (l) => {
+                  'name': l.name,
+                  'paths': l.paths,
+                  'can_depend_on': l.canDependOn,
+                },
+              )
+              .toList() ??
           [],
-      'banned_imports': config.bannedImports.map((b) => {
-        'paths': b.paths,
-        'deny': b.deny,
-        'message': b.message,
-      }).toList(),
-      'banned_symbols': config.bannedSymbols.map((s) => {
-        'paths': s.paths,
-        'deny': s.deny,
-        'suggest': s.suggest,
-        'message': s.message,
-      }).toList(),
+      'banned_imports': config.bannedImports
+          .map((b) => {'paths': b.paths, 'deny': b.deny, 'message': b.message})
+          .toList(),
+      'banned_symbols': config.bannedSymbols
+          .map(
+            (s) => {
+              'paths': s.paths,
+              'deny': s.deny,
+              'suggest': s.suggest,
+              'message': s.message,
+            },
+          )
+          .toList(),
       'feature_isolation': config.featureIsolation != null
           ? {
               'enabled': config.featureIsolation!.enabled,
@@ -569,7 +796,9 @@ base class SentinelMCPServer extends MCPServer
   static const _prettyJson = JsonEncoder.withIndent('  ');
 
   List<Map<String, String>> _checkBannedImports(
-    AnalyzerConfig config, String fromFile, String importUri,
+    AnalyzerConfig config,
+    String fromFile,
+    String importUri,
   ) {
     final results = <Map<String, String>>[];
     for (final banned in config.bannedImports) {
@@ -592,7 +821,9 @@ base class SentinelMCPServer extends MCPServer
   }
 
   List<Map<String, String>> _checkLayerDeps(
-    AnalyzerConfig config, String fromFile, String importUri,
+    AnalyzerConfig config,
+    String fromFile,
+    String importUri,
   ) {
     if (config.layerConfig == null) return const [];
     final layers = config.layerConfig!.layers;
@@ -602,14 +833,13 @@ base class SentinelMCPServer extends MCPServer
     final results = <Map<String, String>>[];
     for (final layer in layers.values) {
       if (layer.name == sourceLayer.name) continue;
-      final matches = layer.paths.any(
-        (p) => GlobMatcher(p).matches(importUri),
-      );
+      final matches = layer.paths.any((p) => GlobMatcher(p).matches(importUri));
       if (!matches) continue;
       if (sourceLayer.canDependOn.contains(layer.name)) continue;
       results.add({
         'rule': 'layer-dependency',
-        'message': 'Layer "${sourceLayer.name}" cannot depend on '
+        'message':
+            'Layer "${sourceLayer.name}" cannot depend on '
             '"${layer.name}" (import: $importUri)',
       });
     }
@@ -617,7 +847,8 @@ base class SentinelMCPServer extends MCPServer
   }
 
   LayerDefinition? _findLayer(
-    Map<String, LayerDefinition> layers, String filePath,
+    Map<String, LayerDefinition> layers,
+    String filePath,
   ) {
     for (final layer in layers.values) {
       if (layer.paths.any((p) => GlobMatcher(p).matches(filePath))) {
@@ -627,8 +858,6 @@ base class SentinelMCPServer extends MCPServer
     return null;
   }
 
-  CallToolResult _errorResult(String message) => CallToolResult(
-        isError: true,
-        content: [TextContent(text: message)],
-      );
+  CallToolResult _errorResult(String message) =>
+      CallToolResult(isError: true, content: [TextContent(text: message)]);
 }

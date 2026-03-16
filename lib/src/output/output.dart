@@ -39,7 +39,9 @@ class ConsoleOutput {
   }
 
   static void _appendIssueGroups(
-      Map<String, List<Issue>> grouped, StringBuffer buffer) {
+    Map<String, List<Issue>> grouped,
+    StringBuffer buffer,
+  ) {
     for (final entry in grouped.entries) {
       buffer.writeln('  ${entry.key}');
       for (final issue in entry.value) {
@@ -56,11 +58,13 @@ class ConsoleOutput {
   }
 
   static void _appendSummary(
-      StringBuffer buffer, List<Issue> issues, Duration? elapsed) {
+    StringBuffer buffer,
+    List<Issue> issues,
+    Duration? elapsed,
+  ) {
     final fileCount = issues.map((i) => i.file).toSet().length;
     final errors = issues.where((i) => i.severity == Severity.error).length;
-    final warnings =
-        issues.where((i) => i.severity == Severity.warning).length;
+    final warnings = issues.where((i) => i.severity == Severity.warning).length;
     final infos = issues.where((i) => i.severity == Severity.info).length;
 
     final parts = <String>[];
@@ -69,7 +73,8 @@ class ConsoleOutput {
     if (infos > 0) parts.add('$infos info${infos > 1 ? 's' : ''}');
 
     buffer.writeln(
-        '  ${parts.join(', ')} in $fileCount file${fileCount > 1 ? 's' : ''}');
+      '  ${parts.join(', ')} in $fileCount file${fileCount > 1 ? 's' : ''}',
+    );
     if (elapsed != null) {
       buffer.writeln('  ⏱  ${elapsed.inMilliseconds}ms');
     }
@@ -88,32 +93,43 @@ class ConsoleOutput {
     final display = sorted.take(top).toList();
 
     // Calculate column widths
-    final fileWidth =
-        math.max(4, display.map((m) => m.file.length).reduce(math.max));
-    final locWidth =
-        math.max(3, display.map((m) => m.loc.toString().length).reduce(math.max));
-    final ccWidth =
-        math.max(6, display.map((m) => m.maxCC.toString().length + 5).reduce(math.max));
-    final methodsWidth =
-        math.max(7, display.map((m) => m.methods.toString().length).reduce(math.max));
+    final fileWidth = math.max(
+      4,
+      display.map((m) => m.file.length).reduce(math.max),
+    );
+    final locWidth = math.max(
+      3,
+      display.map((m) => m.loc.toString().length).reduce(math.max),
+    );
+    final ccWidth = math.max(
+      6,
+      display.map((m) => m.maxCC.toString().length + 5).reduce(math.max),
+    );
+    final methodsWidth = math.max(
+      7,
+      display.map((m) => m.methods.toString().length).reduce(math.max),
+    );
 
     final buffer = StringBuffer();
     buffer.writeln('');
 
     // Header
     buffer.writeln(
-        '  ${'File'.padRight(fileWidth)}  ${'LOC'.padLeft(locWidth)}  ${'Max CC'.padLeft(ccWidth)}  ${'Methods'.padLeft(methodsWidth)}');
+      '  ${'File'.padRight(fileWidth)}  ${'LOC'.padLeft(locWidth)}  ${'Max CC'.padLeft(ccWidth)}  ${'Methods'.padLeft(methodsWidth)}',
+    );
     buffer.writeln(
-        '  ${'─' * fileWidth}  ${'─' * locWidth}  ${'─' * ccWidth}  ${'─' * methodsWidth}');
+      '  ${'─' * fileWidth}  ${'─' * locWidth}  ${'─' * ccWidth}  ${'─' * methodsWidth}',
+    );
 
     for (final m in display) {
       final ccStr = m.maxCC > 20
           ? '${m.maxCC} ⚠️'
           : m.maxCC > 10
-              ? '${m.maxCC} !'
-              : '${m.maxCC}';
+          ? '${m.maxCC} !'
+          : '${m.maxCC}';
       buffer.writeln(
-          '  ${m.file.padRight(fileWidth)}  ${m.loc.toString().padLeft(locWidth)}  ${ccStr.padLeft(ccWidth)}  ${m.methods.toString().padLeft(methodsWidth)}');
+        '  ${m.file.padRight(fileWidth)}  ${m.loc.toString().padLeft(locWidth)}  ${ccStr.padLeft(ccWidth)}  ${m.methods.toString().padLeft(methodsWidth)}',
+      );
     }
 
     buffer.writeln('');
@@ -130,8 +146,7 @@ class JsonOutput {
       'summary': {
         'total': issues.length,
         'errors': issues.where((i) => i.severity == Severity.error).length,
-        'warnings':
-            issues.where((i) => i.severity == Severity.warning).length,
+        'warnings': issues.where((i) => i.severity == Severity.warning).length,
         'infos': issues.where((i) => i.severity == Severity.info).length,
       },
     });
@@ -145,11 +160,11 @@ class MarkdownOutput {
 
     final buffer = StringBuffer();
     final errors = issues.where((i) => i.severity == Severity.error).length;
-    final warnings =
-        issues.where((i) => i.severity == Severity.warning).length;
+    final warnings = issues.where((i) => i.severity == Severity.warning).length;
 
     buffer.writeln(
-        '## 🔍 Analysis: $errors error${errors > 1 ? 's' : ''}, $warnings warning${warnings > 1 ? 's' : ''}');
+      '## 🔍 Analysis: $errors error${errors > 1 ? 's' : ''}, $warnings warning${warnings > 1 ? 's' : ''}',
+    );
     buffer.writeln('');
 
     // Group by rule
@@ -170,8 +185,7 @@ class MarkdownOutput {
           Severity.info => '🔵',
         };
         final loc = issue.line > 0 ? '${issue.line}' : '-';
-        buffer.writeln(
-            '| $icon | `${issue.file}` | $loc | ${issue.message} |');
+        buffer.writeln('| $icon | `${issue.file}` | $loc | ${issue.message} |');
       }
       buffer.writeln('');
     }

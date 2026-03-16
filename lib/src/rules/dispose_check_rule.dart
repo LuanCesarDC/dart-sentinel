@@ -68,7 +68,10 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
 
   void _analyzeClass(AstNode node, NodeList<ClassMember> members) {
     final constructorParams = _collectConstructorParamFields(members);
-    final disposableFields = _collectDisposableFields(members, constructorParams);
+    final disposableFields = _collectDisposableFields(
+      members,
+      constructorParams,
+    );
     final methodBodies = _collectMethodBodies(members);
     final disposeCleanups = _collectDisposeCleanups(members, methodBodies);
     final addListenerCalls = _collectAddListenerCalls(members);
@@ -92,8 +95,7 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   Set<String> _formalParamFields(ConstructorDeclaration constructor) {
     final result = <String>{};
     for (final param in constructor.parameters.parameters) {
-      final actual =
-          param is DefaultFormalParameter ? param.parameter : param;
+      final actual = param is DefaultFormalParameter ? param.parameter : param;
       if (actual is FieldFormalParameter) {
         result.add(actual.name.lexeme);
       } else if (actual is SuperFormalParameter) {
@@ -120,8 +122,7 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   Set<String> _constructorParamNames(ConstructorDeclaration constructor) {
     return constructor.parameters.parameters
         .map((p) {
-          final actual =
-              p is DefaultFormalParameter ? p.parameter : p;
+          final actual = p is DefaultFormalParameter ? p.parameter : p;
           return actual.name?.lexeme;
         })
         .whereType<String>()
@@ -129,7 +130,9 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   }
 
   Map<String, _DisposableType> _collectDisposableFields(
-      NodeList<ClassMember> members, Set<String> constructorParams) {
+    NodeList<ClassMember> members,
+    Set<String> constructorParams,
+  ) {
     final fields = <String, _DisposableType>{};
     for (final member in members) {
       if (member is! FieldDeclaration) continue;
@@ -145,7 +148,8 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   }
 
   Map<String, FunctionBody> _collectMethodBodies(
-      NodeList<ClassMember> members) {
+    NodeList<ClassMember> members,
+  ) {
     final bodies = <String, FunctionBody>{};
     for (final member in members) {
       if (member is! MethodDeclaration) continue;
@@ -156,8 +160,9 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   }
 
   Map<String, Set<String>> _collectDisposeCleanups(
-      NodeList<ClassMember> members,
-      Map<String, FunctionBody> methodBodies) {
+    NodeList<ClassMember> members,
+    Map<String, FunctionBody> methodBodies,
+  ) {
     for (final member in members) {
       if (member is! MethodDeclaration) continue;
       if (member.name.lexeme != 'dispose') continue;
@@ -183,9 +188,10 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   // ── Reporting helpers ──
 
   void _reportMissingDispose(
-      Map<String, _DisposableType> disposableFields,
-      Map<String, Set<String>> disposeCleanups,
-      NodeList<ClassMember> members) {
+    Map<String, _DisposableType> disposableFields,
+    Map<String, Set<String>> disposeCleanups,
+    NodeList<ClassMember> members,
+  ) {
     for (final entry in disposableFields.entries) {
       final cleanups = disposeCleanups[entry.key] ?? {};
       if (cleanups.contains(entry.value.requiredCleanup)) continue;
@@ -194,46 +200,51 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
       final line = fieldDecl != null
           ? unit.lineInfo.getLocation(fieldDecl.offset).lineNumber
           : 0;
-      issues.add(Issue(
-        rule: 'dispose-check',
-        message:
-            '${entry.value.typeName} "${entry.key}" must call '
-            '.${entry.value.requiredCleanup}() in dispose()',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'dispose-check',
+          message:
+              '${entry.value.typeName} "${entry.key}" must call '
+              '.${entry.value.requiredCleanup}() in dispose()',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 
   void _reportMissingRemoveListener(
-      Set<String> addListenerCalls,
-      Map<String, Set<String>> disposeCleanups) {
+    Set<String> addListenerCalls,
+    Map<String, Set<String>> disposeCleanups,
+  ) {
     final normalizedCleanups = <String, Set<String>>{};
     for (final entry in disposeCleanups.entries) {
       final normalized = _normalizeTarget(entry.key);
-      normalizedCleanups
-          .putIfAbsent(normalized, () => {})
-          .addAll(entry.value);
+      normalizedCleanups.putIfAbsent(normalized, () => {}).addAll(entry.value);
     }
 
     for (final target in addListenerCalls) {
       final normalized = _normalizeTarget(target);
       final cleanups = normalizedCleanups[normalized] ?? {};
       if (cleanups.contains('removeListener')) continue;
-      issues.add(Issue(
-        rule: 'dispose-check',
-        message:
-            '"$target.addListener()" called but '
-            '"removeListener()" not found in dispose()',
-        file: filePath,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'dispose-check',
+          message:
+              '"$target.addListener()" called but '
+              '"removeListener()" not found in dispose()',
+          file: filePath,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 
   FieldDeclaration? _findFieldDeclaration(
-      NodeList<ClassMember> members, String fieldName) {
+    NodeList<ClassMember> members,
+    String fieldName,
+  ) {
     for (final member in members) {
       if (member is! FieldDeclaration) continue;
       for (final variable in member.fields.variables) {
@@ -244,8 +255,10 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   }
 
   _DisposableType? _classifyDisposableType(String typeName) {
-    final cleaned =
-        typeName.replaceAll('?', '').replaceAll(RegExp(r'<.*>'), '').trim();
+    final cleaned = typeName
+        .replaceAll('?', '')
+        .replaceAll(RegExp(r'<.*>'), '')
+        .trim();
 
     switch (cleaned) {
       case 'StreamSubscription':
@@ -340,8 +353,12 @@ class _CleanupVisitor extends RecursiveAstVisitor<void> {
           ? targetName.substring(5)
           : targetName;
 
-      if ({'dispose', 'cancel', 'close', 'removeListener'}
-          .contains(methodName)) {
+      if ({
+        'dispose',
+        'cancel',
+        'close',
+        'removeListener',
+      }.contains(methodName)) {
         cleanups.add(_CleanupCall(cleanTarget, methodName));
       }
     }

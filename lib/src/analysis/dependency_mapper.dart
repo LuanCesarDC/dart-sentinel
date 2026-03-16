@@ -36,19 +36,21 @@ class DependencyMapper {
     buffer.writeln('${'═' * 60}');
     buffer.writeln('');
     buffer.writeln(
-        'Files: ${context.allFiles.length}  '
-        'Modules: ${modules.keys.length}  '
-        'Edges: ${_totalEdges()}');
+      'Files: ${context.allFiles.length}  '
+      'Modules: ${modules.keys.length}  '
+      'Edges: ${_totalEdges()}',
+    );
     buffer.writeln('');
 
     // Module summary
     buffer.writeln('Modules:');
     final sortedModules = modules.keys.toList()..sort();
     for (final mod in sortedModules) {
-      final fileCount =
-          _filesInModule(mod).length;
+      final fileCount = _filesInModule(mod).length;
       final deps = modules[mod]!;
-      final depStr = deps.isEmpty ? '(no dependencies)' : '→ ${deps.join(', ')}';
+      final depStr = deps.isEmpty
+          ? '(no dependencies)'
+          : '→ ${deps.join(', ')}';
       buffer.writeln('  $mod ($fileCount files) $depStr');
     }
     buffer.writeln('');
@@ -72,10 +74,12 @@ class DependencyMapper {
       context.entrypoints,
       context.importGraph,
     );
-    final isolated = context.allFiles
-        .where((f) => !reachable.contains(f))
-        .map((f) => context.relativePath(f))
-        .toList()..sort();
+    final isolated =
+        context.allFiles
+            .where((f) => !reachable.contains(f))
+            .map((f) => context.relativePath(f))
+            .toList()
+          ..sort();
     if (isolated.isNotEmpty) {
       buffer.writeln('');
       buffer.writeln('Isolated files (${isolated.length}):');

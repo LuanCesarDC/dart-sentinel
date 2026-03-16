@@ -46,8 +46,8 @@ class ImpactAnalyzer {
         ),
       ),
       affectedByCategory: categorized,
-      affectedFiles:
-          allAffected.map((f) => context.relativePath(f)).toList()..sort(),
+      affectedFiles: allAffected.map((f) => context.relativePath(f)).toList()
+        ..sort(),
     );
   }
 
@@ -61,24 +61,30 @@ class ImpactAnalyzer {
       transitive.remove(file);
       final direct = reversed[file]?.length ?? 0;
       if (transitive.isNotEmpty) {
-        spots.add(HotSpot(
-          file: context.relativePath(file),
-          directDependents: direct,
-          transitiveDependents: transitive.length,
-        ));
+        spots.add(
+          HotSpot(
+            file: context.relativePath(file),
+            directDependents: direct,
+            transitiveDependents: transitive.length,
+          ),
+        );
       }
     }
 
     spots.sort(
-        (a, b) => b.transitiveDependents.compareTo(a.transitiveDependents));
+      (a, b) => b.transitiveDependents.compareTo(a.transitiveDependents),
+    );
     return spots.take(top).toList();
   }
 
   List<String> _resolveFiles(List<String> files) {
-    return files.map((f) {
-      if (p.isAbsolute(f)) return f;
-      return p.normalize(p.join(context.projectRoot, f));
-    }).where((f) => context.importGraph.containsKey(f)).toList();
+    return files
+        .map((f) {
+          if (p.isAbsolute(f)) return f;
+          return p.normalize(p.join(context.projectRoot, f));
+        })
+        .where((f) => context.importGraph.containsKey(f))
+        .toList();
   }
 
   Map<String, int> _categorize(Set<String> files) {

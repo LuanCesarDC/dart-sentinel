@@ -27,12 +27,14 @@ class DeadFilesRule extends AnalyzerRule {
       if (!file.startsWith(context.libRoot)) continue;
       if (reachable.contains(file)) continue;
 
-      issues.add(Issue(
-        rule: name,
-        message: 'File is not reachable from any entrypoint',
-        file: context.relativePath(file),
-        severity: defaultSeverity,
-      ));
+      issues.add(
+        Issue(
+          rule: name,
+          message: 'File is not reachable from any entrypoint',
+          file: context.relativePath(file),
+          severity: defaultSeverity,
+        ),
+      );
     }
 
     return issues;

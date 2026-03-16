@@ -52,12 +52,14 @@ export 'src/rules/redundant_comments_rule.dart';
 export 'src/rules/verbose_logging_rule.dart';
 export 'src/rules/single_method_class_rule.dart';
 export 'src/rules/passthrough_function_rule.dart';
+export 'src/rules/lazy_null_check_rule.dart';
 
 // Analysis
 export 'src/analysis/dependency_mapper.dart';
 export 'src/analysis/impact_analyzer.dart';
 export 'src/analysis/migration_tracker.dart';
 export 'src/analysis/ratchet.dart';
+export 'src/analysis/l10n_scanner.dart';
 
 // Output
 export 'src/output/output.dart';

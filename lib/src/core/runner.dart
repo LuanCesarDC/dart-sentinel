@@ -8,14 +8,11 @@ class RuleRunner {
   final List<AnalyzerRule> rules;
   final AnalyzerConfig config;
 
-  RuleRunner({
-    required this.rules,
-    required this.config,
-  });
+  RuleRunner({required this.rules, required this.config});
 
   /// Run all rules and return sorted issues.
   ///
-  /// Severity can be overridden per-rule via [config.ruleSeverities].
+  /// Severity can be overridden per-rule via `AnalyzerConfig.ruleSeverities`.
   List<Issue> runAll(ProjectContext context) {
     final issues = <Issue>[];
 
@@ -27,13 +24,15 @@ class RuleRunner {
 
       if (overrideSeverity != null) {
         for (final issue in ruleIssues) {
-          issues.add(Issue(
-            rule: issue.rule,
-            message: issue.message,
-            file: issue.file,
-            line: issue.line,
-            severity: overrideSeverity,
-          ));
+          issues.add(
+            Issue(
+              rule: issue.rule,
+              message: issue.message,
+              file: issue.file,
+              line: issue.line,
+              severity: overrideSeverity,
+            ),
+          );
         }
       } else {
         issues.addAll(ruleIssues);
@@ -62,18 +61,9 @@ class RuleRunner {
         'feature-isolation',
         'import-cycles',
       },
-      'dead': {
-        'dead-files',
-        'dead-exports',
-      },
-      'metrics': {
-        'complexity',
-        'build-complexity',
-      },
-      'lint': {
-        'dispose-check',
-        'async-safety',
-      },
+      'dead': {'dead-files', 'dead-exports'},
+      'metrics': {'complexity', 'build-complexity'},
+      'lint': {'dispose-check', 'async-safety'},
       'slop': {
         'empty-catch',
         'dead-todos',
@@ -82,6 +72,7 @@ class RuleRunner {
         'verbose-logging',
         'single-method-class',
         'passthrough-function',
+        'lazy-null-check',
       },
     };
 

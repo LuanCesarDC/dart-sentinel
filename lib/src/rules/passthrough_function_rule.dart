@@ -20,8 +20,7 @@ class PassthroughFunctionRule extends AnalyzerRule {
 
     for (final entry in context.parsedUnits.entries) {
       final relativePath = context.relativePath(entry.key);
-      final visitor =
-          _PassthroughVisitor(relativePath, entry.value);
+      final visitor = _PassthroughVisitor(relativePath, entry.value);
       entry.value.visitChildren(visitor);
       issues.addAll(visitor.issues);
     }
@@ -39,24 +38,29 @@ class _PassthroughVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitMethodDeclaration(MethodDeclaration node) {
     // Skip overrides (they may intentionally delegate to super)
-    final hasOverride = node.metadata.any(
-      (a) => a.name.name == 'override',
-    );
+    final hasOverride = node.metadata.any((a) => a.name.name == 'override');
     if (hasOverride) {
       super.visitMethodDeclaration(node);
       return;
     }
 
-    _checkPassthrough(node.name.lexeme, node.parameters,
-        node.body, node.offset);
+    _checkPassthrough(
+      node.name.lexeme,
+      node.parameters,
+      node.body,
+      node.offset,
+    );
     super.visitMethodDeclaration(node);
   }
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
-    _checkPassthrough(node.name.lexeme,
-        node.functionExpression.parameters,
-        node.functionExpression.body, node.offset);
+    _checkPassthrough(
+      node.name.lexeme,
+      node.functionExpression.parameters,
+      node.functionExpression.body,
+      node.offset,
+    );
     super.visitFunctionDeclaration(node);
   }
 
@@ -82,14 +86,17 @@ class _PassthroughVisitor extends RecursiveAstVisitor<void> {
 
     if (_isPassthrough(call.argList, paramNames)) {
       final line = unit.lineInfo.getLocation(offset).lineNumber;
-      issues.add(Issue(
-        rule: 'passthrough-function',
-        message: '\'$funcName\' only delegates to \'${call.calleeName}\' '
-            'with the same arguments — consider calling \'${call.calleeName}\' directly.',
-        file: filePath,
-        line: line,
-        severity: Severity.info,
-      ));
+      issues.add(
+        Issue(
+          rule: 'passthrough-function',
+          message:
+              '\'$funcName\' only delegates to \'${call.calleeName}\' '
+              'with the same arguments — consider calling \'${call.calleeName}\' directly.',
+          file: filePath,
+          line: line,
+          severity: Severity.info,
+        ),
+      );
     }
   }
 
@@ -105,7 +112,8 @@ class _PassthroughVisitor extends RecursiveAstVisitor<void> {
   }
 
   ({ArgumentList argList, String calleeName})? _extractCallInfo(
-      Expression expr) {
+    Expression expr,
+  ) {
     if (expr is MethodInvocation) {
       return (argList: expr.argumentList, calleeName: expr.methodName.name);
     }

@@ -60,7 +60,8 @@ class BannedSymbolsRule extends AnalyzerRule {
   }
 
   List<BannedSymbolConfig> _applicableRules(
-    String relativePath, List<BannedSymbolConfig> configs,
+    String relativePath,
+    List<BannedSymbolConfig> configs,
   ) {
     return configs.where((c) {
       return c.paths.any((p) => GlobMatcher(p).matches(relativePath));
@@ -119,18 +120,21 @@ class _BannedSymbolVisitor extends RecursiveAstVisitor<void> {
     _reportedOffsets.add(offset);
 
     final line = unit.lineInfo.getLocation(offset).lineNumber;
-    final suggest =
-        config.suggest.isNotEmpty ? ' Use ${config.suggest} instead.' : '';
+    final suggest = config.suggest.isNotEmpty
+        ? ' Use ${config.suggest} instead.'
+        : '';
     final message = config.message.isNotEmpty
         ? '${config.message}$suggest'
         : 'Banned symbol: $symbolName.$suggest';
 
-    issues.add(Issue(
-      rule: 'banned-symbols',
-      message: message,
-      file: filePath,
-      line: line,
-      severity: Severity.warning,
-    ));
+    issues.add(
+      Issue(
+        rule: 'banned-symbols',
+        message: message,
+        file: filePath,
+        line: line,
+        severity: Severity.warning,
+      ),
+    );
   }
 }

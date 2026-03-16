@@ -66,10 +66,12 @@ class ProjectContext {
     final config = AnalyzerConfig.load(projectRoot);
     final excludePatterns = _buildExcludePatterns(config);
     final dirsToScan = _dirsToScan(projectRoot, libRoot, config);
-    final allFiles =
-        await _collectDartFiles(dirsToScan, projectRoot, excludePatterns);
-    final entrypoints =
-        await _detectEntrypoints(config, projectRoot, libRoot);
+    final allFiles = await _collectDartFiles(
+      dirsToScan,
+      projectRoot,
+      excludePatterns,
+    );
+    final entrypoints = await _detectEntrypoints(config, projectRoot, libRoot);
     final resolver = _ImportResolver(projectRoot, packageName);
     final parseResult = _parseAndBuildGraph(allFiles, resolver);
 
@@ -121,7 +123,10 @@ class ProjectContext {
   }
 
   static List<Directory> _dirsToScan(
-      String projectRoot, String libRoot, AnalyzerConfig config) {
+    String projectRoot,
+    String libRoot,
+    AnalyzerConfig config,
+  ) {
     final dirs = <Directory>[Directory(libRoot)];
     for (final extra in config.extraScanDirs) {
       final dir = Directory(p.join(projectRoot, extra));
@@ -161,7 +166,9 @@ class ProjectContext {
   }
 
   static List<String> _resolveConfiguredEntrypoints(
-      List<String> entrypoints, String projectRoot) {
+    List<String> entrypoints,
+    String projectRoot,
+  ) {
     final result = <String>[];
     for (final ep in entrypoints) {
       final epPath = p.normalize(p.join(projectRoot, ep));
@@ -188,7 +195,8 @@ class ProjectContext {
     Map<String, Set<String>> importGraph,
     Map<String, Set<String>> rawImports,
     Map<String, CompilationUnit> parsedUnits,
-  }) _parseAndBuildGraph(List<String> files, _ImportResolver resolver) {
+  })
+  _parseAndBuildGraph(List<String> files, _ImportResolver resolver) {
     final importGraph = <String, Set<String>>{};
     final rawImports = <String, Set<String>>{};
     final parsedUnits = <String, CompilationUnit>{};
@@ -238,7 +246,9 @@ class ProjectContext {
   }
 
   static bool _matchesExclude(
-      String relativePath, Set<String> excludePatterns) {
+    String relativePath,
+    Set<String> excludePatterns,
+  ) {
     return matchesAnyGlob(relativePath, excludePatterns.toList());
   }
 
@@ -270,8 +280,7 @@ class _ImportResolver {
     if (uri.startsWith('package:')) {
       final parts = uri.substring(8).split('/');
       if (parts.isEmpty || parts.first != packageName) return null;
-      return p.normalize(
-          p.join(projectRoot, 'lib', parts.skip(1).join('/')));
+      return p.normalize(p.join(projectRoot, 'lib', parts.skip(1).join('/')));
     }
     return p.normalize(p.join(p.dirname(currentFile), uri));
   }

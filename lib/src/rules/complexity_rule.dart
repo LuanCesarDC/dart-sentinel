@@ -34,19 +34,25 @@ class ComplexityRule extends AnalyzerRule {
       // --- File-level metrics ---
       final loc = _countLoc(file, context);
       if (loc >= metrics.linesPerFileError) {
-        issues.add(Issue(
-          rule: name,
-          message: 'File has $loc lines of code (limit: ${metrics.linesPerFileError})',
-          file: relativePath,
-          severity: Severity.error,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message:
+                'File has $loc lines of code (limit: ${metrics.linesPerFileError})',
+            file: relativePath,
+            severity: Severity.error,
+          ),
+        );
       } else if (loc >= metrics.linesPerFileWarning) {
-        issues.add(Issue(
-          rule: name,
-          message: 'File has $loc lines of code (limit: ${metrics.linesPerFileWarning})',
-          file: relativePath,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message:
+                'File has $loc lines of code (limit: ${metrics.linesPerFileWarning})',
+            file: relativePath,
+            severity: Severity.warning,
+          ),
+        );
       }
 
       // --- Method/Function-level metrics ---
@@ -89,25 +95,29 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodDeclaration(MethodDeclaration node) {
-    _analyzeCallable(_CallableInfo(
-      name: node.name.lexeme,
-      kind: 'Method',
-      body: node.body,
-      parameters: node.parameters,
-      line: unit.lineInfo.getLocation(node.offset).lineNumber,
-    ));
+    _analyzeCallable(
+      _CallableInfo(
+        name: node.name.lexeme,
+        kind: 'Method',
+        body: node.body,
+        parameters: node.parameters,
+        line: unit.lineInfo.getLocation(node.offset).lineNumber,
+      ),
+    );
     super.visitMethodDeclaration(node);
   }
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
-    _analyzeCallable(_CallableInfo(
-      name: node.name.lexeme,
-      kind: 'Function',
-      body: node.functionExpression.body,
-      parameters: node.functionExpression.parameters,
-      line: unit.lineInfo.getLocation(node.offset).lineNumber,
-    ));
+    _analyzeCallable(
+      _CallableInfo(
+        name: node.name.lexeme,
+        kind: 'Function',
+        body: node.functionExpression.body,
+        parameters: node.functionExpression.parameters,
+        line: unit.lineInfo.getLocation(node.offset).lineNumber,
+      ),
+    );
     super.visitFunctionDeclaration(node);
   }
 
@@ -121,100 +131,116 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
   void _checkCyclomaticComplexity(_CallableInfo info) {
     final cc = _cyclomaticComplexity(info.body);
     if (cc >= metrics.cyclomaticComplexityError) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has cyclomatic complexity of $cc '
-            '(limit: ${metrics.cyclomaticComplexityError})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has cyclomatic complexity of $cc '
+              '(limit: ${metrics.cyclomaticComplexityError})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.error,
+        ),
+      );
     } else if (cc >= metrics.cyclomaticComplexityWarning) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has cyclomatic complexity of $cc '
-            '(limit: ${metrics.cyclomaticComplexityWarning})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has cyclomatic complexity of $cc '
+              '(limit: ${metrics.cyclomaticComplexityWarning})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 
   void _checkLinesPerMethod(_CallableInfo info) {
     final methodLoc = _bodyLineCount(info.body);
     if (methodLoc >= metrics.linesPerMethodError) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has $methodLoc lines '
-            '(limit: ${metrics.linesPerMethodError})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has $methodLoc lines '
+              '(limit: ${metrics.linesPerMethodError})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.error,
+        ),
+      );
     } else if (methodLoc >= metrics.linesPerMethodWarning) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has $methodLoc lines '
-            '(limit: ${metrics.linesPerMethodWarning})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has $methodLoc lines '
+              '(limit: ${metrics.linesPerMethodWarning})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 
   void _checkParameterCount(_CallableInfo info) {
     final paramCount = info.parameters?.parameters.length ?? 0;
     if (paramCount >= metrics.maxParametersError) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has $paramCount parameters '
-            '(limit: ${metrics.maxParametersError})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has $paramCount parameters '
+              '(limit: ${metrics.maxParametersError})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.error,
+        ),
+      );
     } else if (paramCount >= metrics.maxParametersWarning) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has $paramCount parameters '
-            '(limit: ${metrics.maxParametersWarning})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has $paramCount parameters '
+              '(limit: ${metrics.maxParametersWarning})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 
   void _checkNestingDepth(_CallableInfo info) {
     final nesting = _maxNestingDepth(info.body);
     if (nesting >= metrics.maxNestingError) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has nesting depth of $nesting '
-            '(limit: ${metrics.maxNestingError})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has nesting depth of $nesting '
+              '(limit: ${metrics.maxNestingError})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.error,
+        ),
+      );
     } else if (nesting >= metrics.maxNestingWarning) {
-      issues.add(Issue(
-        rule: 'complexity',
-        message:
-            '${info.kind} "${info.name}" has nesting depth of $nesting '
-            '(limit: ${metrics.maxNestingWarning})',
-        file: filePath,
-        line: info.line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'complexity',
+          message:
+              '${info.kind} "${info.name}" has nesting depth of $nesting '
+              '(limit: ${metrics.maxNestingWarning})',
+          file: filePath,
+          line: info.line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 

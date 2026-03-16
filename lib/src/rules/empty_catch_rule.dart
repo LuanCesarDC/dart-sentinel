@@ -46,14 +46,17 @@ class _EmptyCatchVisitor extends RecursiveAstVisitor<void> {
       _checkEmptyBody(node, body);
     } else if (config.flagPrintOnly && _isPrintOnly(statements)) {
       final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-      issues.add(Issue(
-        rule: 'empty-catch',
-        message: 'Catch block only prints the error — '
-            'consider logging with context or rethrowing.',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'empty-catch',
+          message:
+              'Catch block only prints the error — '
+              'consider logging with context or rethrowing.',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
 
     super.visitCatchClause(node);
@@ -64,13 +67,15 @@ class _EmptyCatchVisitor extends RecursiveAstVisitor<void> {
     if (config.allowEmptyWithComment && _hasComment(body)) return;
 
     final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-    issues.add(Issue(
-      rule: 'empty-catch',
-      message: 'Empty catch block swallows the exception silently.',
-      file: filePath,
-      line: line,
-      severity: Severity.warning,
-    ));
+    issues.add(
+      Issue(
+        rule: 'empty-catch',
+        message: 'Empty catch block swallows the exception silently.',
+        file: filePath,
+        line: line,
+        severity: Severity.warning,
+      ),
+    );
   }
 
   bool _isPrintOnly(List<Statement> statements) {

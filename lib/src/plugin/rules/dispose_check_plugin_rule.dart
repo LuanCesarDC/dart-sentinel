@@ -10,10 +10,11 @@ import '../lint_codes.dart';
 /// Plugin rule: detects disposable resources not cleaned up in dispose().
 class DisposeCheckPluginRule extends AnalysisRule {
   DisposeCheckPluginRule()
-      : super(
-          name: 'dispose_check',
-          description: 'Detects disposable resources not cleaned up in dispose().',
-        );
+    : super(
+        name: 'dispose_check',
+        description:
+            'Detects disposable resources not cleaned up in dispose().',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.disposeCheck;
@@ -40,7 +41,10 @@ class _Visitor extends SimpleAstVisitor<void> {
 
   void _analyzeClass(NodeList<ClassMember> members) {
     final constructorParams = _collectConstructorParamFields(members);
-    final disposableFields = _collectDisposableFields(members, constructorParams);
+    final disposableFields = _collectDisposableFields(
+      members,
+      constructorParams,
+    );
     final methodBodies = _collectMethodBodies(members);
     final disposeCleanups = _collectDisposeCleanups(members, methodBodies);
     final addListenerCalls = _collectAddListenerCalls(members);
@@ -54,7 +58,9 @@ class _Visitor extends SimpleAstVisitor<void> {
     for (final member in members) {
       if (member is! ConstructorDeclaration) continue;
       for (final param in member.parameters.parameters) {
-        final actual = param is DefaultFormalParameter ? param.parameter : param;
+        final actual = param is DefaultFormalParameter
+            ? param.parameter
+            : param;
         if (actual is FieldFormalParameter) result.add(actual.name.lexeme);
         if (actual is SuperFormalParameter) result.add(actual.name.lexeme);
       }
@@ -69,7 +75,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   Map<String, _DisposableType> _collectDisposableFields(
-      NodeList<ClassMember> members, Set<String> constructorParams) {
+    NodeList<ClassMember> members,
+    Set<String> constructorParams,
+  ) {
     final fields = <String, _DisposableType>{};
     for (final member in members) {
       if (member is! FieldDeclaration) continue;
@@ -84,7 +92,9 @@ class _Visitor extends SimpleAstVisitor<void> {
     return fields;
   }
 
-  Map<String, FunctionBody> _collectMethodBodies(NodeList<ClassMember> members) {
+  Map<String, FunctionBody> _collectMethodBodies(
+    NodeList<ClassMember> members,
+  ) {
     final bodies = <String, FunctionBody>{};
     for (final member in members) {
       if (member is! MethodDeclaration) continue;
@@ -95,7 +105,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   Map<String, Set<String>> _collectDisposeCleanups(
-      NodeList<ClassMember> members, Map<String, FunctionBody> methodBodies) {
+    NodeList<ClassMember> members,
+    Map<String, FunctionBody> methodBodies,
+  ) {
     for (final member in members) {
       if (member is! MethodDeclaration) continue;
       if (member.name.lexeme != 'dispose') continue;
@@ -119,9 +131,10 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   void _reportMissingDispose(
-      Map<String, _DisposableType> disposableFields,
-      Map<String, Set<String>> disposeCleanups,
-      NodeList<ClassMember> members) {
+    Map<String, _DisposableType> disposableFields,
+    Map<String, Set<String>> disposeCleanups,
+    NodeList<ClassMember> members,
+  ) {
     for (final entry in disposableFields.entries) {
       final cleanups = disposeCleanups[entry.key] ?? {};
       if (cleanups.contains(entry.value.requiredCleanup)) continue;
@@ -140,7 +153,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   void _reportMissingRemoveListener(
-      Set<String> addListenerCalls, Map<String, Set<String>> disposeCleanups) {
+    Set<String> addListenerCalls,
+    Map<String, Set<String>> disposeCleanups,
+  ) {
     final normalizedCleanups = <String, Set<String>>{};
     for (final entry in disposeCleanups.entries) {
       final normalized = _normalizeTarget(entry.key);
@@ -151,7 +166,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   FieldDeclaration? _findFieldDeclaration(
-      NodeList<ClassMember> members, String fieldName) {
+    NodeList<ClassMember> members,
+    String fieldName,
+  ) {
     for (final member in members) {
       if (member is! FieldDeclaration) continue;
       for (final variable in member.fields.variables) {
@@ -162,8 +179,10 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   _DisposableType? _classifyType(String typeName) {
-    final cleaned =
-        typeName.replaceAll('?', '').replaceAll(RegExp(r'<.*>'), '').trim();
+    final cleaned = typeName
+        .replaceAll('?', '')
+        .replaceAll(RegExp(r'<.*>'), '')
+        .trim();
     switch (cleaned) {
       case 'StreamSubscription':
         return _DisposableType('StreamSubscription', 'cancel');
@@ -215,9 +234,7 @@ class _CleanupCollector extends RecursiveAstVisitor<void> {
   void visitMethodInvocation(MethodInvocation node) {
     final target = node.target;
     if (target is SimpleIdentifier) {
-      cleanups
-          .putIfAbsent(target.name, () => {})
-          .add(node.methodName.name);
+      cleanups.putIfAbsent(target.name, () => {}).add(node.methodName.name);
     }
     if (target is PrefixedIdentifier) {
       cleanups
@@ -228,7 +245,8 @@ class _CleanupCollector extends RecursiveAstVisitor<void> {
     // Follow method calls within the class
     if (target == null) {
       final methodName = node.methodName.name;
-      if (!_visited.contains(methodName) && methodBodies.containsKey(methodName)) {
+      if (!_visited.contains(methodName) &&
+          methodBodies.containsKey(methodName)) {
         _visited.add(methodName);
         methodBodies[methodName]!.visitChildren(this);
       }

@@ -26,7 +26,9 @@ Set<String> reachableFrom(String start, Map<String, Set<String>> graph) {
 
 /// Find all nodes reachable from any of the [starts].
 Set<String> reachableFromAll(
-    Iterable<String> starts, Map<String, Set<String>> graph) {
+  Iterable<String> starts,
+  Map<String, Set<String>> graph,
+) {
   final visited = <String>{};
   for (final start in starts) {
     visited.addAll(reachableFrom(start, graph));

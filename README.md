@@ -46,6 +46,7 @@ All single-file rules run as analysis server plugins:
 | `verbose_logging` | info | — |
 | `single_method_class` | info | — |
 | `passthrough_function` | info | — |
+| `lazy_null_check` | warning | — |
 | `sentinel_complexity` | warning | — |
 | `build_complexity` | warning | — |
 
@@ -160,6 +161,15 @@ rules:
   generic-naming: warning
   dead-todos: info
   verbose-logging: info
+  lazy-null-check: warning
+
+# AI slop rule-specific settings
+ai_slop:
+  lazy_null_check:
+    flag_empty_string: true   # x ?? ""
+    flag_zero: true           # x ?? 0
+    flag_false: true          # x ?? false
+    flag_empty_collection: true # x ?? [] / x ?? {}
 
 # Architecture rules
 architecture:
@@ -261,6 +271,7 @@ metrics:
 | `verbose-logging` | Flags excessive consecutive log/print statements |
 | `single-method-class` | Suggests plain functions for classes with a single public method |
 | `passthrough-function` | Detects functions that only delegate to another with the same arguments |
+| `lazy-null-check` | Detects lazy null coalescing (`x ?? ""`, `x ?? 0`, `x ?? []`, `x ?? false`) |
 
 ## Analysis Tools
 
@@ -335,6 +346,36 @@ showDialog → AppDialog.show
   ✅ Migration complete!
 
 Total remaining: 12
+```
+
+### L10n Scanner (`-o l10n`)
+
+Scan for hardcoded UI strings and check translation coverage across ARB files. Designed to work with AI agents for full-app translation workflows.
+
+```bash
+dart run dart_sentinel -o l10n
+dart run dart_sentinel -o l10n -f json
+```
+
+Example output:
+```
+  L10n Analysis
+  ════════════════════════════════════════════════════════════
+
+  Hardcoded Strings (3):
+
+    lib/src/home_page.dart:42  "Welcome back!"  (Text)
+    lib/src/login_page.dart:18  "Sign in"  (ElevatedButton.label)
+    lib/src/settings.dart:55  "Dark Mode"  (SwitchListTile.title)
+
+  Translation Coverage:
+
+    Base language: en
+    Total keys: 24
+
+    en: 24/24 (100%)
+    pt: 22/24 (92%)  (2 missing)
+    es: 20/24 (83%)  (4 missing)
 ```
 
 ### Ratchet Mode (CI Baseline Enforcement)
@@ -426,6 +467,9 @@ That's it. The AI agent will automatically discover the server and use it.
 | `impact_analysis` | Compute blast radius of file changes, or list hot spots |
 | `dependency_map` | Generate dependency map (text or Mermaid format) |
 | `migrations` | Track migration progress for banned-symbols rules |
+| `scan_hardcoded_strings` | Find hardcoded UI strings in Text(), AppBar, Tooltip, etc. |
+| `l10n_status` | Get translation coverage across ARB files and missing keys |
+| `generate_l10n` | Create or update ARB files with translations |
 
 ### Available Resources
 
@@ -445,6 +489,15 @@ When an AI agent generates code in your project, it can:
 4. Call `analyze` to run a full project scan
 5. Call `impact_analysis` to understand the blast radius before refactoring a file
 6. Call `dependency_map` to visualize module dependencies
+7. Call `scan_hardcoded_strings` to find all hardcoded UI strings that need localization
+8. Call `l10n_status` to check translation coverage and missing keys
+9. Call `generate_l10n` to write ARB translation files from generated translations
+
+**AI-assisted translation workflow:**
+1. `scan_hardcoded_strings` → agent discovers all hardcoded strings
+2. Agent generates translation keys and translates to target languages
+3. `generate_l10n` → agent writes the ARB files
+4. Agent replaces hardcoded strings with `AppLocalizations.of(context).key`
 
 ### CLI
 
@@ -491,6 +544,7 @@ dart_sentinel/
         impact_analyzer.dart  # Change impact & hot spots
         dependency_mapper.dart # Module graph & Mermaid diagrams
         ratchet.dart          # Baseline save/compare for CI
+        l10n_scanner.dart     # Hardcoded string scanner + ARB tools
         migration_tracker.dart # Banned-symbols migration progress
       config/
         analyzer_config.dart  # YAML configuration
@@ -500,7 +554,7 @@ dart_sentinel/
         rule.dart             # Base class for rules
         runner.dart           # Rule runner
       mcp/
-        sentinel_server.dart  # MCP server (7 tools, 3 resources)
+        sentinel_server.dart  # MCP server (10 tools, 3 resources)
       rules/
         async_safety_rule.dart
         banned_imports_rule.dart
@@ -517,6 +571,7 @@ dart_sentinel/
         import_cycle_rule.dart
         layer_dependency_rule.dart
         passthrough_function_rule.dart
+        lazy_null_check_rule.dart
         redundant_comments_rule.dart
         single_method_class_rule.dart
         verbose_logging_rule.dart

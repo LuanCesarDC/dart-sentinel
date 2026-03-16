@@ -20,19 +20,20 @@ class ImportCycleRule extends AnalyzerRule {
 
     for (final cycle in cycles) {
       // Format the cycle as relative paths
-      final cyclePaths =
-          cycle.map((f) => context.relativePath(f)).toList();
+      final cyclePaths = cycle.map((f) => context.relativePath(f)).toList();
       cyclePaths.add(cyclePaths.first); // Close the cycle
 
       final cycleStr = cyclePaths.join(' → ');
 
       // Report the issue on the first file of the cycle
-      issues.add(Issue(
-        rule: name,
-        message: 'Import cycle detected: $cycleStr',
-        file: context.relativePath(cycle.first),
-        severity: defaultSeverity,
-      ));
+      issues.add(
+        Issue(
+          rule: name,
+          message: 'Import cycle detected: $cycleStr',
+          file: context.relativePath(cycle.first),
+          severity: defaultSeverity,
+        ),
+      );
     }
 
     return issues;

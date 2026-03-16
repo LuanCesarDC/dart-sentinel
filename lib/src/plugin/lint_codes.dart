@@ -7,7 +7,8 @@ abstract final class SentinelCodes {
   static const LintCode emptyCatch = LintCode(
     'empty_catch',
     'Empty catch block swallows the exception silently.',
-    correctionMessage: 'Add error handling, rethrow, or document why it is safe to ignore.',
+    correctionMessage:
+        'Add error handling, rethrow, or document why it is safe to ignore.',
     severity: DiagnosticSeverity.WARNING,
   );
 
@@ -22,14 +23,16 @@ abstract final class SentinelCodes {
   static const LintCode deadTodo = LintCode(
     'dead_todo',
     '{0}',
-    correctionMessage: 'Add context (issue number, author) or remove the comment.',
+    correctionMessage:
+        'Add context (issue number, author) or remove the comment.',
     severity: DiagnosticSeverity.INFO,
   );
 
   static const LintCode redundantComment = LintCode(
     'redundant_comment',
     'Comment restates the code — remove or add insight.',
-    correctionMessage: 'Remove the comment or rewrite it to explain why, not what.',
+    correctionMessage:
+        'Remove the comment or rewrite it to explain why, not what.',
     severity: DiagnosticSeverity.INFO,
   );
 
@@ -60,13 +63,20 @@ abstract final class SentinelCodes {
     correctionMessage: 'Inline the call or remove the wrapper.',
     severity: DiagnosticSeverity.INFO,
   );
-
+  static const LintCode lazyNullCheck = LintCode(
+    'lazy_null_check',
+    'Lazy null check — `?? <empty default>` silently swallows null.',
+    correctionMessage:
+        'Handle the null case explicitly instead of defaulting to an empty value.',
+    severity: DiagnosticSeverity.WARNING,
+  );
   // ── Flutter Safety ──
 
   static const LintCode asyncSafety = LintCode(
     'async_safety',
     '{0}',
-    correctionMessage: 'Add a `mounted` check before using BuildContext or setState after await.',
+    correctionMessage:
+        'Add a `mounted` check before using BuildContext or setState after await.',
     severity: DiagnosticSeverity.WARNING,
   );
 

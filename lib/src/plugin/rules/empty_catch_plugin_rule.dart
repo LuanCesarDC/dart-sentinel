@@ -10,14 +10,17 @@ import '../lint_codes.dart';
 /// Plugin rule: detects empty catch blocks and catch-and-print-only.
 class EmptyCatchPluginRule extends MultiAnalysisRule {
   EmptyCatchPluginRule()
-      : super(
-          name: 'empty_catch',
-          description: 'Detects empty catch blocks and catch-and-print-only patterns.',
-        );
+    : super(
+        name: 'empty_catch',
+        description:
+            'Detects empty catch blocks and catch-and-print-only patterns.',
+      );
 
   @override
-  List<DiagnosticCode> get diagnosticCodes =>
-      [SentinelCodes.emptyCatch, SentinelCodes.emptyCatchPrintOnly];
+  List<DiagnosticCode> get diagnosticCodes => [
+    SentinelCodes.emptyCatch,
+    SentinelCodes.emptyCatchPrintOnly,
+  ];
 
   @override
   void registerNodeProcessors(
@@ -43,7 +46,10 @@ class _Visitor extends SimpleAstVisitor<void> {
     }
 
     if (_isPrintOnly(statements)) {
-      rule.reportAtNode(node, diagnosticCode: SentinelCodes.emptyCatchPrintOnly);
+      rule.reportAtNode(
+        node,
+        diagnosticCode: SentinelCodes.emptyCatchPrintOnly,
+      );
     }
   }
 

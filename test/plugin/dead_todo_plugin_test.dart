@@ -24,10 +24,7 @@ class DeadTodoPluginRuleTest extends AnalysisRuleTest {
 // TODO fix this
 void f() {}
 ''',
-      [
-        lint(0, 16),
-        error(diag.todo, 3, 13),
-      ],
+      [lint(0, 16), error(diag.todo, 3, 13)],
     );
   }
 
@@ -38,9 +35,7 @@ void f() {}
 // TODO(#123): fix this bug
 void f() {}
 ''',
-      [
-        error(diag.todo, 3, 24),
-      ],
+      [error(diag.todo, 3, 24)],
     );
   }
 
@@ -51,9 +46,7 @@ void f() {}
 // TODO: refactor the authentication flow to use the new token system
 void f() {}
 ''',
-      [
-        error(diag.todo, 3, 66),
-      ],
+      [error(diag.todo, 3, 66)],
     );
   }
 

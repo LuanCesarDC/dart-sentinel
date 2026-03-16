@@ -42,6 +42,7 @@ rules:
   verbose-logging: info
   single-method-class: info
   passthrough-function: info
+  lazy-null-check: warning
 
 # Architecture enforcement
 architecture:

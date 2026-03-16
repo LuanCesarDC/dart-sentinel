@@ -102,8 +102,9 @@ class AnalyzerConfig {
     final rulesNode = yaml['rules'];
     if (rulesNode is YamlMap) {
       for (final entry in rulesNode.entries) {
-        ruleSeverities[entry.key.toString()] =
-            Severity.fromString(entry.value.toString());
+        ruleSeverities[entry.key.toString()] = Severity.fromString(
+          entry.value.toString(),
+        );
       }
     }
 
@@ -217,10 +218,12 @@ class AnalyzerConfig {
                   allow.add(a.toString());
                 }
               }
-              exceptions.add(FeatureException(
-                from: e['from']?.toString() ?? '',
-                allow: allow,
-              ));
+              exceptions.add(
+                FeatureException(
+                  from: e['from']?.toString() ?? '',
+                  allow: allow,
+                ),
+              );
             }
           }
         }
@@ -238,34 +241,60 @@ class AnalyzerConfig {
     MetricsConfig metrics = const MetricsConfig();
     if (metricsNode is YamlMap) {
       metrics = MetricsConfig(
-        cyclomaticComplexityWarning:
-            _intOr(metricsNode['cyclomatic_complexity'], 'warning', 10),
-        cyclomaticComplexityError:
-            _intOr(metricsNode['cyclomatic_complexity'], 'error', 20),
-        linesPerFileWarning:
-            _intOr(metricsNode['lines_per_file'], 'warning', 300),
-        linesPerFileError:
-            _intOr(metricsNode['lines_per_file'], 'error', 600),
-        linesPerMethodWarning:
-            _intOr(metricsNode['lines_per_method'], 'warning', 50),
-        linesPerMethodError:
-            _intOr(metricsNode['lines_per_method'], 'error', 100),
-        maxParametersWarning:
-            _intOr(metricsNode['max_parameters'], 'warning', 4),
-        maxParametersError:
-            _intOr(metricsNode['max_parameters'], 'error', 7),
-        maxNestingWarning:
-            _intOr(metricsNode['max_nesting'], 'warning', 4),
-        maxNestingError:
-            _intOr(metricsNode['max_nesting'], 'error', 6),
-        buildMethodLocWarning:
-            _intOr(metricsNode['build_method_loc'], 'warning', 30),
-        buildMethodLocError:
-            _intOr(metricsNode['build_method_loc'], 'error', 60),
-        buildMethodBranchesWarning:
-            _intOr(metricsNode['build_method_branches'], 'warning', 3),
-        buildMethodBranchesError:
-            _intOr(metricsNode['build_method_branches'], 'error', 6),
+        cyclomaticComplexityWarning: _intOr(
+          metricsNode['cyclomatic_complexity'],
+          'warning',
+          10,
+        ),
+        cyclomaticComplexityError: _intOr(
+          metricsNode['cyclomatic_complexity'],
+          'error',
+          20,
+        ),
+        linesPerFileWarning: _intOr(
+          metricsNode['lines_per_file'],
+          'warning',
+          300,
+        ),
+        linesPerFileError: _intOr(metricsNode['lines_per_file'], 'error', 600),
+        linesPerMethodWarning: _intOr(
+          metricsNode['lines_per_method'],
+          'warning',
+          50,
+        ),
+        linesPerMethodError: _intOr(
+          metricsNode['lines_per_method'],
+          'error',
+          100,
+        ),
+        maxParametersWarning: _intOr(
+          metricsNode['max_parameters'],
+          'warning',
+          4,
+        ),
+        maxParametersError: _intOr(metricsNode['max_parameters'], 'error', 7),
+        maxNestingWarning: _intOr(metricsNode['max_nesting'], 'warning', 4),
+        maxNestingError: _intOr(metricsNode['max_nesting'], 'error', 6),
+        buildMethodLocWarning: _intOr(
+          metricsNode['build_method_loc'],
+          'warning',
+          30,
+        ),
+        buildMethodLocError: _intOr(
+          metricsNode['build_method_loc'],
+          'error',
+          60,
+        ),
+        buildMethodBranchesWarning: _intOr(
+          metricsNode['build_method_branches'],
+          'warning',
+          3,
+        ),
+        buildMethodBranchesError: _intOr(
+          metricsNode['build_method_branches'],
+          'error',
+          6,
+        ),
       );
     }
 
@@ -437,6 +466,7 @@ class AiSlopConfig {
   final DeadTodosConfig deadTodos;
   final VerboseLoggingConfig verboseLogging;
   final SingleMethodClassConfig singleMethodClass;
+  final LazyNullCheckConfig lazyNullCheck;
 
   const AiSlopConfig({
     this.emptyCatch = const EmptyCatchConfig(),
@@ -444,6 +474,7 @@ class AiSlopConfig {
     this.deadTodos = const DeadTodosConfig(),
     this.verboseLogging = const VerboseLoggingConfig(),
     this.singleMethodClass = const SingleMethodClassConfig(),
+    this.lazyNullCheck = const LazyNullCheckConfig(),
   });
 
   factory AiSlopConfig.fromYaml(dynamic node) {
@@ -453,8 +484,10 @@ class AiSlopConfig {
       genericNaming: GenericNamingConfig.fromYaml(node['generic_naming']),
       deadTodos: DeadTodosConfig.fromYaml(node['dead_todos']),
       verboseLogging: VerboseLoggingConfig.fromYaml(node['verbose_logging']),
-      singleMethodClass:
-          SingleMethodClassConfig.fromYaml(node['single_method_class']),
+      singleMethodClass: SingleMethodClassConfig.fromYaml(
+        node['single_method_class'],
+      ),
+      lazyNullCheck: LazyNullCheckConfig.fromYaml(node['lazy_null_check']),
     );
   }
 }
@@ -484,13 +517,31 @@ class GenericNamingConfig {
   final bool allowInLambdas;
 
   static const _defaultDenyVars = {
-    'data', 'result', 'value', 'item', 'element', 'obj',
-    'temp', 'tmp', 'output', 'input', 'response', 'res', 'ret', 'val',
+    'data',
+    'result',
+    'value',
+    'item',
+    'element',
+    'obj',
+    'temp',
+    'tmp',
+    'output',
+    'input',
+    'response',
+    'res',
+    'ret',
+    'val',
   };
 
   static const _defaultDenyFuncs = {
-    'processData', 'handleData', 'getData', 'processItems',
-    'handleResult', 'executeTask', 'doWork', 'runProcess',
+    'processData',
+    'handleData',
+    'getData',
+    'processItems',
+    'handleResult',
+    'executeTask',
+    'doWork',
+    'runProcess',
   };
 
   const GenericNamingConfig({
@@ -528,8 +579,14 @@ class DeadTodosConfig {
   final List<String> vaguePhrases;
 
   static const _defaultVaguePhrases = [
-    'fix later', 'improve', 'clean up', 'refactor',
-    'handle edge cases', 'add more', 'make better', 'temporary',
+    'fix later',
+    'improve',
+    'clean up',
+    'refactor',
+    'handle edge cases',
+    'add more',
+    'make better',
+    'temporary',
   ];
 
   const DeadTodosConfig({
@@ -541,14 +598,13 @@ class DeadTodosConfig {
   factory DeadTodosConfig.fromYaml(dynamic node) {
     if (node is! YamlMap) return const DeadTodosConfig();
     return DeadTodosConfig(
-      minContextWords: int.tryParse(
-            node['min_context_words']?.toString() ?? '',
-          ) ?? 5,
+      minContextWords:
+          int.tryParse(node['min_context_words']?.toString() ?? '') ?? 5,
       requireReference: node['require_reference'] as bool? ?? false,
       vaguePhrases: node['vague_phrases'] is YamlList
           ? (node['vague_phrases'] as YamlList)
-              .map((e) => e.toString())
-              .toList()
+                .map((e) => e.toString())
+                .toList()
           : _defaultVaguePhrases,
     );
   }
@@ -559,9 +615,15 @@ class VerboseLoggingConfig {
   final Set<String> logFunctions;
 
   static const _defaultLogFunctions = {
-    'log', 'print', 'debugPrint',
-    'logger.info', 'logger.warning', 'logger.error',
-    'logger.fine', 'logger.severe', 'logger.shout',
+    'log',
+    'print',
+    'debugPrint',
+    'logger.info',
+    'logger.warning',
+    'logger.error',
+    'logger.fine',
+    'logger.severe',
+    'logger.shout',
   };
 
   const VerboseLoggingConfig({
@@ -572,13 +634,10 @@ class VerboseLoggingConfig {
   factory VerboseLoggingConfig.fromYaml(dynamic node) {
     if (node is! YamlMap) return const VerboseLoggingConfig();
     return VerboseLoggingConfig(
-      maxConsecutiveLogs: int.tryParse(
-            node['max_consecutive_logs']?.toString() ?? '',
-          ) ?? 3,
+      maxConsecutiveLogs:
+          int.tryParse(node['max_consecutive_logs']?.toString() ?? '') ?? 3,
       logFunctions: node['log_functions'] is YamlList
-          ? (node['log_functions'] as YamlList)
-              .map((e) => e.toString())
-              .toSet()
+          ? (node['log_functions'] as YamlList).map((e) => e.toString()).toSet()
           : _defaultLogFunctions,
     );
   }
@@ -599,6 +658,38 @@ class SingleMethodClassConfig {
       ignoreIfExtends: node['ignore_if_extends'] as bool? ?? true,
       ignoreIfHasConstructorParams:
           node['ignore_if_has_constructor_params'] as bool? ?? true,
+    );
+  }
+}
+
+/// Configuration for lazy null check detection.
+class LazyNullCheckConfig {
+  /// Flag `x ?? ""` and `x ?? ''`.
+  final bool flagEmptyString;
+
+  /// Flag `x ?? 0` and `x ?? 0.0`.
+  final bool flagZero;
+
+  /// Flag `x ?? false`.
+  final bool flagFalse;
+
+  /// Flag `x ?? []` and `x ?? {}`.
+  final bool flagEmptyCollection;
+
+  const LazyNullCheckConfig({
+    this.flagEmptyString = true,
+    this.flagZero = true,
+    this.flagFalse = true,
+    this.flagEmptyCollection = true,
+  });
+
+  factory LazyNullCheckConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const LazyNullCheckConfig();
+    return LazyNullCheckConfig(
+      flagEmptyString: node['flag_empty_string'] as bool? ?? true,
+      flagZero: node['flag_zero'] as bool? ?? true,
+      flagFalse: node['flag_false'] as bool? ?? true,
+      flagEmptyCollection: node['flag_empty_collection'] as bool? ?? true,
     );
   }
 }

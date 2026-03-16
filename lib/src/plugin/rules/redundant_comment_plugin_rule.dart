@@ -11,33 +11,77 @@ import '../lint_codes.dart';
 /// Plugin rule: detects comments that just restate what the code does.
 class RedundantCommentPluginRule extends AnalysisRule {
   RedundantCommentPluginRule()
-      : super(
-          name: 'redundant_comment',
-          description: 'Detects comments that restate the code.',
-        );
+    : super(
+        name: 'redundant_comment',
+        description: 'Detects comments that restate the code.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.redundantComment;
 
   static final _trivialPatterns = [
-    RegExp(r'^//\s*(create|initialize|init)\s+(a|an|the|new)?\s*', caseSensitive: false),
+    RegExp(
+      r'^//\s*(create|initialize|init)\s+(a|an|the|new)?\s*',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(return|returns)\s+(the|a|an)?\s*', caseSensitive: false),
     RegExp(r'^//\s*(set|sets)\s+(the|a|an)?\s*', caseSensitive: false),
     RegExp(r'^//\s*(get|gets)\s+(the|a|an)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(loop|iterate|go)\s+(through|over|for)\s+', caseSensitive: false),
-    RegExp(r'^//\s*(check|validate)\s+(if|that|the|whether)\s+', caseSensitive: false),
+    RegExp(
+      r'^//\s*(loop|iterate|go)\s+(through|over|for)\s+',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(check|validate)\s+(if|that|the|whether)\s+',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(call|invoke)\s+(the|a)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(add|append|push|insert)\s+(the|a|an|new)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(remove|delete|drop)\s+(the|a|an)?\s*', caseSensitive: false),
+    RegExp(
+      r'^//\s*(add|append|push|insert)\s+(the|a|an|new)?\s*',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(remove|delete|drop)\s+(the|a|an)?\s*',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(import|export|include)\s+', caseSensitive: false),
-    RegExp(r'^//\s*(this|the)\s+(method|function|class|variable|field)\s+', caseSensitive: false),
-    RegExp(r'^//\s*(constructor|destructor|dispose|getter|setter)\s*$', caseSensitive: false),
+    RegExp(
+      r'^//\s*(this|the)\s+(method|function|class|variable|field)\s+',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(constructor|destructor|dispose|getter|setter)\s*$',
+      caseSensitive: false,
+    ),
   ];
 
   static const _stopWords = {
-    'a', 'an', 'the', 'is', 'to', 'of', 'in', 'for', 'on', 'at',
-    'by', 'and', 'or', 'if', 'it', 'as', 'be', 'do', 'no', 'so',
-    'up', 'we', 'my', 'me', 'he', 'am',
+    'a',
+    'an',
+    'the',
+    'is',
+    'to',
+    'of',
+    'in',
+    'for',
+    'on',
+    'at',
+    'by',
+    'and',
+    'or',
+    'if',
+    'it',
+    'as',
+    'be',
+    'do',
+    'no',
+    'so',
+    'up',
+    'we',
+    'my',
+    'me',
+    'he',
+    'am',
   };
 
   @override
@@ -72,8 +116,13 @@ class _Visitor extends SimpleAstVisitor<void> {
       final text = comment.lexeme;
       if (text.startsWith('//') &&
           !text.startsWith('///') &&
-          !RegExp(r'^//\s*(TODO|FIXME|HACK|XXX)\b', caseSensitive: false).hasMatch(text)) {
-        if (RedundantCommentPluginRule._trivialPatterns.any((p) => p.hasMatch(text))) {
+          !RegExp(
+            r'^//\s*(TODO|FIXME|HACK|XXX)\b',
+            caseSensitive: false,
+          ).hasMatch(text)) {
+        if (RedundantCommentPluginRule._trivialPatterns.any(
+          (p) => p.hasMatch(text),
+        )) {
           // Check overlap with the next code token's text
           final codeText = codeToken.lexeme;
           if (_hasHighOverlap(text, codeText)) {
@@ -86,7 +135,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   bool _hasHighOverlap(String comment, String codeLine) {
-    final commentWords = _extractWords(comment.replaceFirst(RegExp(r'^//\s*'), ''));
+    final commentWords = _extractWords(
+      comment.replaceFirst(RegExp(r'^//\s*'), ''),
+    );
     final codeWords = _extractWords(codeLine);
     if (commentWords.isEmpty || codeWords.isEmpty) return false;
     final matches = commentWords.where((w) => codeWords.contains(w)).length;

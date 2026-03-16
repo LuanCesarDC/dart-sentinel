@@ -10,10 +10,11 @@ import '../lint_codes.dart';
 /// Plugin rule: detects methods/functions exceeding complexity thresholds.
 class ComplexityPluginRule extends AnalysisRule {
   ComplexityPluginRule()
-      : super(
-          name: 'sentinel_complexity',
-          description: 'Detects methods exceeding cyclomatic complexity, nesting, or parameter thresholds.',
-        );
+    : super(
+        name: 'sentinel_complexity',
+        description:
+            'Detects methods exceeding cyclomatic complexity, nesting, or parameter thresholds.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.complexity;
@@ -47,41 +48,59 @@ class _Visitor extends SimpleAstVisitor<void> {
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
     _analyze(
-      'Function', node.name.lexeme,
-      node.functionExpression.body, node.functionExpression.parameters, node,
+      'Function',
+      node.name.lexeme,
+      node.functionExpression.body,
+      node.functionExpression.parameters,
+      node,
     );
   }
 
   void _analyze(
-    String kind, String name, FunctionBody body,
-    FormalParameterList? params, AstNode reportNode,
+    String kind,
+    String name,
+    FunctionBody body,
+    FormalParameterList? params,
+    AstNode reportNode,
   ) {
     final cc = _cyclomaticComplexity(body);
     if (cc >= ComplexityPluginRule._ccWarning) {
-      rule.reportAtNode(reportNode, arguments: [
-        '$kind "$name" has cyclomatic complexity of $cc (limit: ${ComplexityPluginRule._ccWarning})',
-      ]);
+      rule.reportAtNode(
+        reportNode,
+        arguments: [
+          '$kind "$name" has cyclomatic complexity of $cc (limit: ${ComplexityPluginRule._ccWarning})',
+        ],
+      );
     }
 
     final lines = body.toSource().split('\n').length;
     if (lines >= ComplexityPluginRule._linesWarning) {
-      rule.reportAtNode(reportNode, arguments: [
-        '$kind "$name" has $lines lines (limit: ${ComplexityPluginRule._linesWarning})',
-      ]);
+      rule.reportAtNode(
+        reportNode,
+        arguments: [
+          '$kind "$name" has $lines lines (limit: ${ComplexityPluginRule._linesWarning})',
+        ],
+      );
     }
 
     final paramCount = params?.parameters.length ?? 0;
     if (paramCount >= ComplexityPluginRule._paramsWarning) {
-      rule.reportAtNode(reportNode, arguments: [
-        '$kind "$name" has $paramCount parameters (limit: ${ComplexityPluginRule._paramsWarning})',
-      ]);
+      rule.reportAtNode(
+        reportNode,
+        arguments: [
+          '$kind "$name" has $paramCount parameters (limit: ${ComplexityPluginRule._paramsWarning})',
+        ],
+      );
     }
 
     final nesting = _maxNestingDepth(body);
     if (nesting >= ComplexityPluginRule._nestingWarning) {
-      rule.reportAtNode(reportNode, arguments: [
-        '$kind "$name" has nesting depth of $nesting (limit: ${ComplexityPluginRule._nestingWarning})',
-      ]);
+      rule.reportAtNode(
+        reportNode,
+        arguments: [
+          '$kind "$name" has nesting depth of $nesting (limit: ${ComplexityPluginRule._nestingWarning})',
+        ],
+      );
     }
   }
 
@@ -102,21 +121,53 @@ class _CCVisitor extends RecursiveAstVisitor<void> {
   int complexity = 0;
 
   @override
-  void visitIfStatement(IfStatement node) { complexity++; super.visitIfStatement(node); }
+  void visitIfStatement(IfStatement node) {
+    complexity++;
+    super.visitIfStatement(node);
+  }
+
   @override
-  void visitForStatement(ForStatement node) { complexity++; super.visitForStatement(node); }
+  void visitForStatement(ForStatement node) {
+    complexity++;
+    super.visitForStatement(node);
+  }
+
   @override
-  void visitForElement(ForElement node) { complexity++; super.visitForElement(node); }
+  void visitForElement(ForElement node) {
+    complexity++;
+    super.visitForElement(node);
+  }
+
   @override
-  void visitWhileStatement(WhileStatement node) { complexity++; super.visitWhileStatement(node); }
+  void visitWhileStatement(WhileStatement node) {
+    complexity++;
+    super.visitWhileStatement(node);
+  }
+
   @override
-  void visitDoStatement(DoStatement node) { complexity++; super.visitDoStatement(node); }
+  void visitDoStatement(DoStatement node) {
+    complexity++;
+    super.visitDoStatement(node);
+  }
+
   @override
-  void visitSwitchCase(SwitchCase node) { complexity++; super.visitSwitchCase(node); }
+  void visitSwitchCase(SwitchCase node) {
+    complexity++;
+    super.visitSwitchCase(node);
+  }
+
   @override
-  void visitCatchClause(CatchClause node) { complexity++; super.visitCatchClause(node); }
+  void visitCatchClause(CatchClause node) {
+    complexity++;
+    super.visitCatchClause(node);
+  }
+
   @override
-  void visitConditionalExpression(ConditionalExpression node) { complexity++; super.visitConditionalExpression(node); }
+  void visitConditionalExpression(ConditionalExpression node) {
+    complexity++;
+    super.visitConditionalExpression(node);
+  }
+
   @override
   void visitBinaryExpression(BinaryExpression node) {
     final op = node.operator.lexeme;
@@ -129,17 +180,47 @@ class _NestingVisitor extends RecursiveAstVisitor<void> {
   int _depth = 0;
   int maxDepth = 0;
 
-  void _enter() { _depth++; if (_depth > maxDepth) maxDepth = _depth; }
-  void _exit() { _depth--; }
+  void _enter() {
+    _depth++;
+    if (_depth > maxDepth) maxDepth = _depth;
+  }
+
+  void _exit() {
+    _depth--;
+  }
 
   @override
-  void visitIfStatement(IfStatement node) { _enter(); super.visitIfStatement(node); _exit(); }
+  void visitIfStatement(IfStatement node) {
+    _enter();
+    super.visitIfStatement(node);
+    _exit();
+  }
+
   @override
-  void visitForStatement(ForStatement node) { _enter(); super.visitForStatement(node); _exit(); }
+  void visitForStatement(ForStatement node) {
+    _enter();
+    super.visitForStatement(node);
+    _exit();
+  }
+
   @override
-  void visitWhileStatement(WhileStatement node) { _enter(); super.visitWhileStatement(node); _exit(); }
+  void visitWhileStatement(WhileStatement node) {
+    _enter();
+    super.visitWhileStatement(node);
+    _exit();
+  }
+
   @override
-  void visitDoStatement(DoStatement node) { _enter(); super.visitDoStatement(node); _exit(); }
+  void visitDoStatement(DoStatement node) {
+    _enter();
+    super.visitDoStatement(node);
+    _exit();
+  }
+
   @override
-  void visitSwitchStatement(SwitchStatement node) { _enter(); super.visitSwitchStatement(node); _exit(); }
+  void visitSwitchStatement(SwitchStatement node) {
+    _enter();
+    super.visitSwitchStatement(node);
+    _exit();
+  }
 }

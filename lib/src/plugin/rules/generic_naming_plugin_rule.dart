@@ -10,22 +10,39 @@ import '../lint_codes.dart';
 /// Plugin rule: detects variables and functions with generic/meaningless names.
 class GenericNamingPluginRule extends AnalysisRule {
   GenericNamingPluginRule()
-      : super(
-          name: 'generic_naming',
-          description: 'Detects variables and functions with low semantic specificity.',
-        );
+    : super(
+        name: 'generic_naming',
+        description:
+            'Detects variables and functions with low semantic specificity.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.genericNaming;
 
   static const _defaultDenyVariables = {
-    'item', 'element', 'data', 'info', 'temp', 'tmp',
-    'obj', 'object', 'thing', 'stuff', 'foo', 'bar', 'baz',
+    'item',
+    'element',
+    'data',
+    'info',
+    'temp',
+    'tmp',
+    'obj',
+    'object',
+    'thing',
+    'stuff',
+    'foo',
+    'bar',
+    'baz',
   };
 
   static const _defaultDenyFunctions = {
-    'handle', 'process', 'execute', 'run',
-    'doStuff', 'doWork', 'doSomething',
+    'handle',
+    'process',
+    'execute',
+    'run',
+    'doStuff',
+    'doWork',
+    'doSomething',
   };
 
   @override
@@ -89,7 +106,8 @@ class _Visitor extends SimpleAstVisitor<void> {
   bool _isInLambda(AstNode node) {
     AstNode? parent = node.parent;
     while (parent != null) {
-      if (parent is FunctionExpression && parent.parent is! FunctionDeclaration) {
+      if (parent is FunctionExpression &&
+          parent.parent is! FunctionDeclaration) {
         return true;
       }
       if (parent is ClassDeclaration || parent is CompilationUnit) break;

@@ -11,10 +11,11 @@ import '../lint_codes.dart';
 /// Plugin rule: detects TODO/FIXME comments without actionable context.
 class DeadTodoPluginRule extends AnalysisRule {
   DeadTodoPluginRule()
-      : super(
-          name: 'dead_todo',
-          description: 'Detects TODO/FIXME comments without descriptions or context.',
-        );
+    : super(
+        name: 'dead_todo',
+        description:
+            'Detects TODO/FIXME comments without descriptions or context.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.deadTodo;
@@ -73,7 +74,8 @@ class _Visitor extends SimpleAstVisitor<void> {
 
     if (body.isEmpty) {
       rule.reportAtOffset(
-        offset, length,
+        offset,
+        length,
         arguments: ['TODO without description — add context or remove.'],
       );
       return;
@@ -85,7 +87,8 @@ class _Visitor extends SimpleAstVisitor<void> {
     final words = body.split(RegExp(r'\s+')).where((w) => w.length > 1);
     if (words.length < 3) {
       rule.reportAtOffset(
-        offset, length,
+        offset,
+        length,
         arguments: ["TODO lacks actionable context: '$body'"],
       );
     }

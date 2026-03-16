@@ -23,23 +23,27 @@ class MigrationTracker {
 
     final migrations = <MigrationEntry>[];
     for (final config in configs) {
-      final matching = issues.where((i) =>
-          config.deny.any((d) => i.message.contains(d))).toList();
+      final matching = issues
+          .where((i) => config.deny.any((d) => i.message.contains(d)))
+          .toList();
 
       final bySymbol = <String, int>{};
       for (final symbol in config.deny) {
-        bySymbol[symbol] =
-            matching.where((i) => i.message.contains(symbol)).length;
+        bySymbol[symbol] = matching
+            .where((i) => i.message.contains(symbol))
+            .length;
       }
 
-      migrations.add(MigrationEntry(
-        symbols: config.deny,
-        suggest: config.suggest,
-        message: config.message,
-        remaining: matching.length,
-        bySymbol: bySymbol,
-        files: matching.map((i) => i.file).toSet().toList()..sort(),
-      ));
+      migrations.add(
+        MigrationEntry(
+          symbols: config.deny,
+          suggest: config.suggest,
+          message: config.message,
+          remaining: matching.length,
+          bySymbol: bySymbol,
+          files: matching.map((i) => i.file).toSet().toList()..sort(),
+        ),
+      );
     }
 
     return MigrationReport(
@@ -53,10 +57,7 @@ class MigrationReport {
   final List<MigrationEntry> migrations;
   final int totalRemaining;
 
-  MigrationReport({
-    required this.migrations,
-    required this.totalRemaining,
-  });
+  MigrationReport({required this.migrations, required this.totalRemaining});
 
   String toText() {
     final buffer = StringBuffer();
@@ -74,7 +75,9 @@ class MigrationReport {
           : m.symbols.join(', ');
       buffer.writeln('');
       buffer.writeln('$label');
-      buffer.writeln('  Remaining: ${m.remaining} usages in ${m.files.length} files');
+      buffer.writeln(
+        '  Remaining: ${m.remaining} usages in ${m.files.length} files',
+      );
 
       for (final entry in m.bySymbol.entries) {
         if (entry.value > 0) {
@@ -93,9 +96,9 @@ class MigrationReport {
   }
 
   Map<String, dynamic> toJson() => {
-        'totalRemaining': totalRemaining,
-        'migrations': migrations.map((m) => m.toJson()).toList(),
-      };
+    'totalRemaining': totalRemaining,
+    'migrations': migrations.map((m) => m.toJson()).toList(),
+  };
 }
 
 class MigrationEntry {
@@ -116,10 +119,10 @@ class MigrationEntry {
   });
 
   Map<String, dynamic> toJson() => {
-        'symbols': symbols,
-        'suggest': suggest,
-        'remaining': remaining,
-        'bySymbol': bySymbol,
-        'files': files,
-      };
+    'symbols': symbols,
+    'suggest': suggest,
+    'remaining': remaining,
+    'bySymbol': bySymbol,
+    'files': files,
+  };
 }

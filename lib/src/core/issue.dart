@@ -50,8 +50,7 @@ class Issue implements Comparable<Issue> {
   @override
   int compareTo(Issue other) {
     // Sort by severity (error first), then file, then line
-    final severityCompare =
-        other.severity.index.compareTo(severity.index);
+    final severityCompare = other.severity.index.compareTo(severity.index);
     if (severityCompare != 0) return severityCompare;
 
     final fileCompare = file.compareTo(other.file);
@@ -61,12 +60,12 @@ class Issue implements Comparable<Issue> {
   }
 
   Map<String, dynamic> toJson() => {
-        'rule': rule,
-        'message': message,
-        'file': file,
-        'line': line,
-        'severity': severity.toString(),
-      };
+    'rule': rule,
+    'message': message,
+    'file': file,
+    'line': line,
+    'severity': severity.toString(),
+  };
 
   @override
   String toString() {

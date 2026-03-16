@@ -19,7 +19,7 @@ class SentinelPlugin extends ServerPlugin {
   final Map<String, List<SentinelDiagnostic>> _diagnosticsByFile = {};
 
   SentinelPlugin({required ResourceProvider resourceProvider})
-      : super(resourceProvider: resourceProvider);
+    : super(resourceProvider: resourceProvider);
 
   @override
   String get name => 'dart_sentinel';
@@ -53,6 +53,7 @@ class SentinelPlugin extends ServerPlugin {
     _checkVerboseLogging(result, path, diagnostics, errors);
     _checkPassthroughFunction(result, path, diagnostics, errors);
     _checkRedundantComment(result, path, diagnostics, errors);
+    _checkLazyNullCheck(result, path, diagnostics, errors);
 
     _diagnosticsByFile[path] = diagnostics;
 
@@ -83,24 +84,30 @@ class SentinelPlugin extends ServerPlugin {
     List<SentinelDiagnostic> diagnostics,
     List<protocol.AnalysisError> errors,
   ) {
-    result.unit.visitChildren(_EmptyCatchVisitor((node, code, message, correction) {
-      final loc = _location(result, node.offset, node.length);
-      diagnostics.add(SentinelDiagnostic(
-        code: code,
-        offset: node.offset,
-        length: node.length,
-        message: message,
-      ));
-      errors.add(protocol.AnalysisError(
-        protocol.AnalysisErrorSeverity.WARNING,
-        protocol.AnalysisErrorType.LINT,
-        loc,
-        message,
-        code,
-        correction: correction,
-        hasFix: code == 'empty_catch',
-      ));
-    }));
+    result.unit.visitChildren(
+      _EmptyCatchVisitor((node, code, message, correction) {
+        final loc = _location(result, node.offset, node.length);
+        diagnostics.add(
+          SentinelDiagnostic(
+            code: code,
+            offset: node.offset,
+            length: node.length,
+            message: message,
+          ),
+        );
+        errors.add(
+          protocol.AnalysisError(
+            protocol.AnalysisErrorSeverity.WARNING,
+            protocol.AnalysisErrorType.LINT,
+            loc,
+            message,
+            code,
+            correction: correction,
+            hasFix: code == 'empty_catch',
+          ),
+        );
+      }),
+    );
   }
 
   // ── Check: dead_todo ──────────────────────────────────
@@ -122,21 +129,26 @@ class SentinelPlugin extends ServerPlugin {
           ? '$tag without description — add context or remove.'
           : '$tag lacks actionable context: "$body"';
       final loc = _location(result, offset, length);
-      diagnostics.add(SentinelDiagnostic(
-        code: 'dead_todo',
-        offset: offset,
-        length: length,
-        message: msg,
-      ));
-      errors.add(protocol.AnalysisError(
-        protocol.AnalysisErrorSeverity.INFO,
-        protocol.AnalysisErrorType.LINT,
-        loc,
-        msg,
-        'dead_todo',
-        correction: 'Add actionable context (issue ref, author, or 3+ words).',
-        hasFix: true,
-      ));
+      diagnostics.add(
+        SentinelDiagnostic(
+          code: 'dead_todo',
+          offset: offset,
+          length: length,
+          message: msg,
+        ),
+      );
+      errors.add(
+        protocol.AnalysisError(
+          protocol.AnalysisErrorSeverity.INFO,
+          protocol.AnalysisErrorType.LINT,
+          loc,
+          msg,
+          'dead_todo',
+          correction:
+              'Add actionable context (issue ref, author, or 3+ words).',
+          hasFix: true,
+        ),
+      );
     });
   }
 
@@ -162,42 +174,48 @@ class SentinelPlugin extends ServerPlugin {
     List<SentinelDiagnostic> diagnostics,
     List<protocol.AnalysisError> errors,
   ) {
-    result.unit.visitChildren(_GenericNamingVisitor((node, message) {
-      // Extract name token offset for accurate highlighting
-      final int nameOffset;
-      final int nameLength;
-      if (node is VariableDeclaration) {
-        nameOffset = node.name.offset;
-        nameLength = node.name.length;
-      } else if (node is SimpleFormalParameter) {
-        nameOffset = node.name!.offset;
-        nameLength = node.name!.length;
-      } else if (node is FunctionDeclaration) {
-        nameOffset = node.name.offset;
-        nameLength = node.name.length;
-      } else if (node is MethodDeclaration) {
-        nameOffset = node.name.offset;
-        nameLength = node.name.length;
-      } else {
-        nameOffset = node.offset;
-        nameLength = node.length;
-      }
-      final loc = _location(result, nameOffset, nameLength);
-      diagnostics.add(SentinelDiagnostic(
-        code: 'generic_naming',
-        offset: nameOffset,
-        length: nameLength,
-        message: message,
-      ));
-      errors.add(protocol.AnalysisError(
-        protocol.AnalysisErrorSeverity.WARNING,
-        protocol.AnalysisErrorType.LINT,
-        loc,
-        message,
-        'generic_naming',
-        correction: 'Use a more descriptive name.',
-      ));
-    }));
+    result.unit.visitChildren(
+      _GenericNamingVisitor((node, message) {
+        // Extract name token offset for accurate highlighting
+        final int nameOffset;
+        final int nameLength;
+        if (node is VariableDeclaration) {
+          nameOffset = node.name.offset;
+          nameLength = node.name.length;
+        } else if (node is SimpleFormalParameter) {
+          nameOffset = node.name!.offset;
+          nameLength = node.name!.length;
+        } else if (node is FunctionDeclaration) {
+          nameOffset = node.name.offset;
+          nameLength = node.name.length;
+        } else if (node is MethodDeclaration) {
+          nameOffset = node.name.offset;
+          nameLength = node.name.length;
+        } else {
+          nameOffset = node.offset;
+          nameLength = node.length;
+        }
+        final loc = _location(result, nameOffset, nameLength);
+        diagnostics.add(
+          SentinelDiagnostic(
+            code: 'generic_naming',
+            offset: nameOffset,
+            length: nameLength,
+            message: message,
+          ),
+        );
+        errors.add(
+          protocol.AnalysisError(
+            protocol.AnalysisErrorSeverity.WARNING,
+            protocol.AnalysisErrorType.LINT,
+            loc,
+            message,
+            'generic_naming',
+            correction: 'Use a more descriptive name.',
+          ),
+        );
+      }),
+    );
   }
 
   // ── Check: single_method_class ────────────────────────
@@ -208,24 +226,31 @@ class SentinelPlugin extends ServerPlugin {
     List<SentinelDiagnostic> diagnostics,
     List<protocol.AnalysisError> errors,
   ) {
-    result.unit.visitChildren(_SingleMethodClassVisitor((nameToken, className, methodName) {
-      final msg = "Class '$className' has only one public method '$methodName' "
-          "— consider using a plain function instead.";
-      final loc = _location(result, nameToken.offset, nameToken.length);
-      diagnostics.add(SentinelDiagnostic(
-        code: 'single_method_class',
-        offset: nameToken.offset,
-        length: nameToken.length,
-        message: msg,
-      ));
-      errors.add(protocol.AnalysisError(
-        protocol.AnalysisErrorSeverity.INFO,
-        protocol.AnalysisErrorType.LINT,
-        loc,
-        msg,
-        'single_method_class',
-      ));
-    }));
+    result.unit.visitChildren(
+      _SingleMethodClassVisitor((nameToken, className, methodName) {
+        final msg =
+            "Class '$className' has only one public method '$methodName' "
+            "— consider using a plain function instead.";
+        final loc = _location(result, nameToken.offset, nameToken.length);
+        diagnostics.add(
+          SentinelDiagnostic(
+            code: 'single_method_class',
+            offset: nameToken.offset,
+            length: nameToken.length,
+            message: msg,
+          ),
+        );
+        errors.add(
+          protocol.AnalysisError(
+            protocol.AnalysisErrorSeverity.INFO,
+            protocol.AnalysisErrorType.LINT,
+            loc,
+            msg,
+            'single_method_class',
+          ),
+        );
+      }),
+    );
   }
 
   // ── Check: verbose_logging ────────────────────────────
@@ -236,27 +261,34 @@ class SentinelPlugin extends ServerPlugin {
     List<SentinelDiagnostic> diagnostics,
     List<protocol.AnalysisError> errors,
   ) {
-    result.unit.visitChildren(_VerboseLoggingVisitor((first, last, count) {
-      final msg = '$count consecutive log statements — '
-          'consider a single structured log or removing debug noise.';
-      final rangeLength = last.end - first.offset;
-      final loc = _location(result, first.offset, rangeLength);
-      diagnostics.add(SentinelDiagnostic(
-        code: 'verbose_logging',
-        offset: first.offset,
-        length: rangeLength,
-        message: msg,
-        endOffset: last.end,
-      ));
-      errors.add(protocol.AnalysisError(
-        protocol.AnalysisErrorSeverity.INFO,
-        protocol.AnalysisErrorType.LINT,
-        loc,
-        msg,
-        'verbose_logging',
-        hasFix: true,
-      ));
-    }));
+    result.unit.visitChildren(
+      _VerboseLoggingVisitor((first, last, count) {
+        final msg =
+            '$count consecutive log statements — '
+            'consider a single structured log or removing debug noise.';
+        final rangeLength = last.end - first.offset;
+        final loc = _location(result, first.offset, rangeLength);
+        diagnostics.add(
+          SentinelDiagnostic(
+            code: 'verbose_logging',
+            offset: first.offset,
+            length: rangeLength,
+            message: msg,
+            endOffset: last.end,
+          ),
+        );
+        errors.add(
+          protocol.AnalysisError(
+            protocol.AnalysisErrorSeverity.INFO,
+            protocol.AnalysisErrorType.LINT,
+            loc,
+            msg,
+            'verbose_logging',
+            hasFix: true,
+          ),
+        );
+      }),
+    );
   }
 
   // ── Check: passthrough_function ───────────────────────
@@ -267,27 +299,34 @@ class SentinelPlugin extends ServerPlugin {
     List<SentinelDiagnostic> diagnostics,
     List<protocol.AnalysisError> errors,
   ) {
-    result.unit.visitChildren(_PassthroughVisitor((node, delegateName) {
-      final name = node is FunctionDeclaration
-          ? node.name.lexeme
-          : (node as MethodDeclaration).name.lexeme;
-      final msg = "'$name' only delegates to '$delegateName' with the same "
-          "arguments — consider calling '$delegateName' directly.";
-      final loc = _location(result, node.offset, node.length);
-      diagnostics.add(SentinelDiagnostic(
-        code: 'passthrough_function',
-        offset: node.offset,
-        length: node.length,
-        message: msg,
-      ));
-      errors.add(protocol.AnalysisError(
-        protocol.AnalysisErrorSeverity.INFO,
-        protocol.AnalysisErrorType.LINT,
-        loc,
-        msg,
-        'passthrough_function',
-      ));
-    }));
+    result.unit.visitChildren(
+      _PassthroughVisitor((node, delegateName) {
+        final name = node is FunctionDeclaration
+            ? node.name.lexeme
+            : (node as MethodDeclaration).name.lexeme;
+        final msg =
+            "'$name' only delegates to '$delegateName' with the same "
+            "arguments — consider calling '$delegateName' directly.";
+        final loc = _location(result, node.offset, node.length);
+        diagnostics.add(
+          SentinelDiagnostic(
+            code: 'passthrough_function',
+            offset: node.offset,
+            length: node.length,
+            message: msg,
+          ),
+        );
+        errors.add(
+          protocol.AnalysisError(
+            protocol.AnalysisErrorSeverity.INFO,
+            protocol.AnalysisErrorType.LINT,
+            loc,
+            msg,
+            'passthrough_function',
+          ),
+        );
+      }),
+    );
   }
 
   // ── Check: redundant_comment ──────────────────────────
@@ -301,44 +340,105 @@ class SentinelPlugin extends ServerPlugin {
     _walkComments(result.unit, (text, offset, length) {
       final trimmed = text.trim();
       if (!trimmed.startsWith('//') || trimmed.startsWith('///')) return;
-      if (RegExp(r'^//\s*(TODO|FIXME|HACK|XXX)\b', caseSensitive: false)
-          .hasMatch(trimmed)) return;
+      if (RegExp(
+        r'^//\s*(TODO|FIXME|HACK|XXX)\b',
+        caseSensitive: false,
+      ).hasMatch(trimmed))
+        return;
       if (!_matchesTrivialPattern(trimmed)) return;
 
       final msg = 'Comment restates the code — remove or add insight.';
       final loc = _location(result, offset, length);
-      diagnostics.add(SentinelDiagnostic(
-        code: 'redundant_comment',
-        offset: offset,
-        length: length,
-        message: msg,
-      ));
-      errors.add(protocol.AnalysisError(
-        protocol.AnalysisErrorSeverity.INFO,
-        protocol.AnalysisErrorType.LINT,
-        loc,
-        msg,
-        'redundant_comment',
-        correction: 'Remove the comment or add meaningful insight.',
-        hasFix: true,
-      ));
+      diagnostics.add(
+        SentinelDiagnostic(
+          code: 'redundant_comment',
+          offset: offset,
+          length: length,
+          message: msg,
+        ),
+      );
+      errors.add(
+        protocol.AnalysisError(
+          protocol.AnalysisErrorSeverity.INFO,
+          protocol.AnalysisErrorType.LINT,
+          loc,
+          msg,
+          'redundant_comment',
+          correction: 'Remove the comment or add meaningful insight.',
+          hasFix: true,
+        ),
+      );
     });
   }
 
   static final _trivialPatterns = [
-    RegExp(r'^//\s*(create|initialize|init)\s+(a|an|the|new)?\s*', caseSensitive: false),
+    RegExp(
+      r'^//\s*(create|initialize|init)\s+(a|an|the|new)?\s*',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(return|returns)\s+(the|a|an)?\s*', caseSensitive: false),
     RegExp(r'^//\s*(set|sets)\s+(the|a|an)?\s*', caseSensitive: false),
     RegExp(r'^//\s*(get|gets)\s+(the|a|an)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(loop|iterate|go)\s+(through|over|for)\s+', caseSensitive: false),
-    RegExp(r'^//\s*(check|validate)\s+(if|that|the|whether)\s+', caseSensitive: false),
+    RegExp(
+      r'^//\s*(loop|iterate|go)\s+(through|over|for)\s+',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(check|validate)\s+(if|that|the|whether)\s+',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(call|invoke)\s+(the|a)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(add|append|push|insert)\s+(the|a|an|new)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(remove|delete|drop)\s+(the|a|an)?\s*', caseSensitive: false),
+    RegExp(
+      r'^//\s*(add|append|push|insert)\s+(the|a|an|new)?\s*',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(remove|delete|drop)\s+(the|a|an)?\s*',
+      caseSensitive: false,
+    ),
   ];
 
   bool _matchesTrivialPattern(String line) =>
       _trivialPatterns.any((p) => p.hasMatch(line));
+
+  // ── Check: lazy_null_check ────────────────────────────
+
+  void _checkLazyNullCheck(
+    ResolvedUnitResult result,
+    String path,
+    List<SentinelDiagnostic> diagnostics,
+    List<protocol.AnalysisError> errors,
+  ) {
+    result.unit.visitChildren(
+      _LazyNullCheckVisitor((node, defaultValue) {
+        final msg =
+            'Lazy null check: `?? $defaultValue` silently swallows null — '
+            'consider handling the null case explicitly.';
+        final loc = _location(result, node.offset, node.length);
+        diagnostics.add(
+          SentinelDiagnostic(
+            code: 'lazy_null_check',
+            offset: node.offset,
+            length: node.length,
+            message: msg,
+          ),
+        );
+        errors.add(
+          protocol.AnalysisError(
+            protocol.AnalysisErrorSeverity.WARNING,
+            protocol.AnalysisErrorType.LINT,
+            loc,
+            msg,
+            'lazy_null_check',
+            correction:
+                'Handle the null case explicitly instead of defaulting to an '
+                'empty value.',
+            hasFix: false,
+          ),
+        );
+      }),
+    );
+  }
 
   // ── Helpers ───────────────────────────────────────────
 
@@ -380,9 +480,8 @@ class SentinelPlugin extends ServerPlugin {
 
 // ── AST Visitors ────────────────────────────────────────
 
-typedef _ReportCatch = void Function(
-  AstNode node, String code, String message, String correction,
-);
+typedef _ReportCatch =
+    void Function(AstNode node, String code, String message, String correction);
 
 class _EmptyCatchVisitor extends RecursiveAstVisitor<void> {
   final _ReportCatch report;
@@ -419,7 +518,8 @@ class _EmptyCatchVisitor extends RecursiveAstVisitor<void> {
     if (stmt is! ExpressionStatement) return false;
     final expr = stmt.expression;
     if (expr is! MethodInvocation) return false;
-    return expr.methodName.name == 'print' || expr.methodName.name == 'debugPrint';
+    return expr.methodName.name == 'print' ||
+        expr.methodName.name == 'debugPrint';
   }
 
   bool _hasComment(Block body) {
@@ -440,14 +540,37 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
   _GenericNamingVisitor(this.report);
 
   static const _genericVarNames = {
-    'data', 'item', 'element', 'info', 'temp', 'tmp',
-    'obj', 'object', 'thing', 'stuff', 'foo', 'bar', 'baz',
-    'input', 'output', 'result', 'value', 'val',
+    'data',
+    'item',
+    'element',
+    'info',
+    'temp',
+    'tmp',
+    'obj',
+    'object',
+    'thing',
+    'stuff',
+    'foo',
+    'bar',
+    'baz',
+    'input',
+    'output',
+    'result',
+    'value',
+    'val',
   };
   static const _genericFuncNames = {
-    'handle', 'process', 'execute', 'run', 'do',
-    'doStuff', 'doSomething', 'doWork', 'doIt',
-    'manage', 'perform',
+    'handle',
+    'process',
+    'execute',
+    'run',
+    'do',
+    'doStuff',
+    'doSomething',
+    'doWork',
+    'doIt',
+    'manage',
+    'perform',
   };
 
   @override
@@ -459,7 +582,10 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
         super.visitVariableDeclaration(node);
         return;
       }
-      report(node, 'Generic variable name "$name" — use a more descriptive name.');
+      report(
+        node,
+        'Generic variable name "$name" — use a more descriptive name.',
+      );
     }
     super.visitVariableDeclaration(node);
   }
@@ -473,7 +599,10 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
         super.visitSimpleFormalParameter(node);
         return;
       }
-      report(node, 'Generic parameter name "$name" — use a more descriptive name.');
+      report(
+        node,
+        'Generic parameter name "$name" — use a more descriptive name.',
+      );
     }
     super.visitSimpleFormalParameter(node);
   }
@@ -482,7 +611,10 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
   void visitFunctionDeclaration(FunctionDeclaration node) {
     final name = node.name.lexeme;
     if (_genericFuncNames.contains(name)) {
-      report(node, 'Generic function name "$name" — use a more descriptive name.');
+      report(
+        node,
+        'Generic function name "$name" — use a more descriptive name.',
+      );
     }
     super.visitFunctionDeclaration(node);
   }
@@ -491,7 +623,10 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
   void visitMethodDeclaration(MethodDeclaration node) {
     final name = node.name.lexeme;
     if (_genericFuncNames.contains(name)) {
-      report(node, 'Generic method name "$name" — use a more descriptive name.');
+      report(
+        node,
+        'Generic method name "$name" — use a more descriptive name.',
+      );
     }
     super.visitMethodDeclaration(node);
   }
@@ -500,7 +635,8 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
     AstNode? current = node.parent;
     while (current != null) {
       if (current is FunctionExpression &&
-          current.parent is! FunctionDeclaration) return true;
+          current.parent is! FunctionDeclaration)
+        return true;
       if (current is FunctionDeclaration || current is MethodDeclaration) {
         return false;
       }
@@ -510,9 +646,8 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
   }
 }
 
-typedef _ReportClass = void Function(
-  Token nameToken, String className, String methodName,
-);
+typedef _ReportClass =
+    void Function(Token nameToken, String className, String methodName);
 
 class _SingleMethodClassVisitor extends RecursiveAstVisitor<void> {
   final _ReportClass report;
@@ -549,9 +684,15 @@ class _VerboseLoggingVisitor extends RecursiveAstVisitor<void> {
   _VerboseLoggingVisitor(this.report);
 
   static const _logFunctions = {
-    'log', 'print', 'debugPrint',
-    'logger.info', 'logger.warning', 'logger.error',
-    'logger.fine', 'logger.severe', 'logger.shout',
+    'log',
+    'print',
+    'debugPrint',
+    'logger.info',
+    'logger.warning',
+    'logger.error',
+    'logger.fine',
+    'logger.severe',
+    'logger.shout',
   };
 
   @override
@@ -602,7 +743,11 @@ class _PassthroughVisitor extends RecursiveAstVisitor<void> {
     for (final annotation in node.metadata) {
       if (annotation.name.name == 'override') return;
     }
-    _check(node, node.functionExpression.parameters, node.functionExpression.body);
+    _check(
+      node,
+      node.functionExpression.parameters,
+      node.functionExpression.body,
+    );
     super.visitFunctionDeclaration(node);
   }
 
@@ -637,8 +782,7 @@ class _PassthroughVisitor extends RecursiveAstVisitor<void> {
     if (expr is MethodInvocation) call = expr;
     if (call == null) return;
 
-    final paramNames =
-        params.parameters.map((p) => p.name?.lexeme).toList();
+    final paramNames = params.parameters.map((p) => p.name?.lexeme).toList();
     final args = call.argumentList.arguments;
     if (args.length != paramNames.length) return;
 
@@ -659,5 +803,32 @@ class _PassthroughVisitor extends RecursiveAstVisitor<void> {
         ? '${call.target!.toSource()}.${call.methodName.name}'
         : call.methodName.name;
     report(node, delegateName);
+  }
+}
+
+class _LazyNullCheckVisitor extends RecursiveAstVisitor<void> {
+  final void Function(BinaryExpression node, String defaultValue) report;
+  _LazyNullCheckVisitor(this.report);
+
+  @override
+  void visitBinaryExpression(BinaryExpression node) {
+    if (node.operator.lexeme == '??') {
+      final rhs = node.rightOperand;
+      final match = _matchDefault(rhs);
+      if (match != null) {
+        report(node, match);
+      }
+    }
+    super.visitBinaryExpression(node);
+  }
+
+  String? _matchDefault(Expression expr) {
+    if (expr is SimpleStringLiteral && expr.value.isEmpty) return '""';
+    if (expr is IntegerLiteral && expr.value == 0) return '0';
+    if (expr is DoubleLiteral && expr.value == 0.0) return '0.0';
+    if (expr is BooleanLiteral && !expr.value) return 'false';
+    if (expr is ListLiteral && expr.elements.isEmpty) return '[]';
+    if (expr is SetOrMapLiteral && expr.elements.isEmpty) return '{}';
+    return null;
   }
 }

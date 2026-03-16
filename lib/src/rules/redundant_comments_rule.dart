@@ -19,18 +19,39 @@ class RedundantCommentsRule extends AnalyzerRule {
 
   /// Patterns that indicate a comment is just restating the code.
   static final _trivialPatterns = [
-    RegExp(r'^//\s*(create|initialize|init)\s+(a|an|the|new)?\s*', caseSensitive: false),
+    RegExp(
+      r'^//\s*(create|initialize|init)\s+(a|an|the|new)?\s*',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(return|returns)\s+(the|a|an)?\s*', caseSensitive: false),
     RegExp(r'^//\s*(set|sets)\s+(the|a|an)?\s*', caseSensitive: false),
     RegExp(r'^//\s*(get|gets)\s+(the|a|an)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(loop|iterate|go)\s+(through|over|for)\s+', caseSensitive: false),
-    RegExp(r'^//\s*(check|validate)\s+(if|that|the|whether)\s+', caseSensitive: false),
+    RegExp(
+      r'^//\s*(loop|iterate|go)\s+(through|over|for)\s+',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(check|validate)\s+(if|that|the|whether)\s+',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(call|invoke)\s+(the|a)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(add|append|push|insert)\s+(the|a|an|new)?\s*', caseSensitive: false),
-    RegExp(r'^//\s*(remove|delete|drop)\s+(the|a|an)?\s*', caseSensitive: false),
+    RegExp(
+      r'^//\s*(add|append|push|insert)\s+(the|a|an|new)?\s*',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(remove|delete|drop)\s+(the|a|an)?\s*',
+      caseSensitive: false,
+    ),
     RegExp(r'^//\s*(import|export|include)\s+', caseSensitive: false),
-    RegExp(r'^//\s*(this|the)\s+(method|function|class|variable|field)\s+', caseSensitive: false),
-    RegExp(r'^//\s*(constructor|destructor|dispose|getter|setter)\s*$', caseSensitive: false),
+    RegExp(
+      r'^//\s*(this|the)\s+(method|function|class|variable|field)\s+',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^//\s*(constructor|destructor|dispose|getter|setter)\s*$',
+      caseSensitive: false,
+    ),
   ];
 
   @override
@@ -56,21 +77,26 @@ class RedundantCommentsRule extends AnalyzerRule {
       if (!line.startsWith('//') || line.startsWith('///')) continue;
 
       // Skip TODOs, FIXMEs (handled by dead-todos)
-      if (RegExp(r'^//\s*(TODO|FIXME|HACK|XXX)\b', caseSensitive: false)
-          .hasMatch(line)) continue;
+      if (RegExp(
+        r'^//\s*(TODO|FIXME|HACK|XXX)\b',
+        caseSensitive: false,
+      ).hasMatch(line))
+        continue;
 
       if (!_matchesTrivialPattern(line)) continue;
 
       // Check if the comment's identifiers overlap with the next code line
       final nextCodeLine = _nextNonCommentLine(lines, i);
       if (nextCodeLine != null && _hasHighOverlap(line, nextCodeLine)) {
-        issues.add(Issue(
-          rule: name,
-          message: 'Comment restates the code — remove or add insight.',
-          file: filePath,
-          line: i + 1,
-          severity: defaultSeverity,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message: 'Comment restates the code — remove or add insight.',
+            file: filePath,
+            line: i + 1,
+            severity: defaultSeverity,
+          ),
+        );
       }
     }
     return issues;
@@ -91,7 +117,9 @@ class RedundantCommentsRule extends AnalyzerRule {
   }
 
   bool _hasHighOverlap(String comment, String codeLine) {
-    final commentWords = _extractWords(comment.replaceFirst(RegExp(r'^//\s*'), ''));
+    final commentWords = _extractWords(
+      comment.replaceFirst(RegExp(r'^//\s*'), ''),
+    );
     final codeWords = _extractWords(codeLine);
 
     if (commentWords.isEmpty || codeWords.isEmpty) return false;
@@ -109,11 +137,52 @@ class RedundantCommentsRule extends AnalyzerRule {
   }
 
   static const _stopWords = {
-    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
-    'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from',
-    'this', 'that', 'it', 'if', 'then', 'else', 'new', 'var',
-    'final', 'const', 'void', 'null', 'true', 'false', 'int',
-    'string', 'double', 'bool', 'list', 'map', 'set', 'async',
-    'await', 'return', 'class', 'each', 'all', 'and', 'or',
+    'the',
+    'a',
+    'an',
+    'is',
+    'are',
+    'was',
+    'were',
+    'be',
+    'been',
+    'to',
+    'of',
+    'in',
+    'for',
+    'on',
+    'with',
+    'at',
+    'by',
+    'from',
+    'this',
+    'that',
+    'it',
+    'if',
+    'then',
+    'else',
+    'new',
+    'var',
+    'final',
+    'const',
+    'void',
+    'null',
+    'true',
+    'false',
+    'int',
+    'string',
+    'double',
+    'bool',
+    'list',
+    'map',
+    'set',
+    'async',
+    'await',
+    'return',
+    'class',
+    'each',
+    'all',
+    'and',
+    'or',
   };
 }

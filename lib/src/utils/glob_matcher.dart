@@ -55,14 +55,12 @@ class GlobMatcher {
   }
 
   static int _appendStarToken(String pattern, int i, StringBuffer buffer) {
-    final isDoubleStar =
-        i + 1 < pattern.length && pattern[i + 1] == '*';
+    final isDoubleStar = i + 1 < pattern.length && pattern[i + 1] == '*';
     if (!isDoubleStar) {
       buffer.write('[^/]*');
       return 1;
     }
-    final hasTrailingSlash =
-        i + 2 < pattern.length && pattern[i + 2] == '/';
+    final hasTrailingSlash = i + 2 < pattern.length && pattern[i + 2] == '/';
     if (hasTrailingSlash) {
       buffer.write('(?:.+/)?');
       return 3;

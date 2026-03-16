@@ -10,10 +10,11 @@ import '../lint_codes.dart';
 /// Plugin rule: detects overly complex build() methods in Flutter widgets.
 class BuildComplexityPluginRule extends AnalysisRule {
   BuildComplexityPluginRule()
-      : super(
-          name: 'build_complexity',
-          description: 'Detects overly complex build() methods in Flutter widgets.',
-        );
+    : super(
+        name: 'build_complexity',
+        description:
+            'Detects overly complex build() methods in Flutter widgets.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.buildComplexity;
@@ -49,20 +50,26 @@ class _Visitor extends SimpleAstVisitor<void> {
   void _analyze(MethodDeclaration method, String className) {
     final loc = method.body.toSource().split('\n').length;
     if (loc >= BuildComplexityPluginRule._locWarning) {
-      rule.reportAtNode(method, arguments: [
-        'build() in "$className" has $loc lines (limit: ${BuildComplexityPluginRule._locWarning}). '
-            'Consider extracting widgets.',
-      ]);
+      rule.reportAtNode(
+        method,
+        arguments: [
+          'build() in "$className" has $loc lines (limit: ${BuildComplexityPluginRule._locWarning}). '
+              'Consider extracting widgets.',
+        ],
+      );
     }
 
     final counter = _BranchCounter();
     method.body.accept(counter);
     if (counter.count >= BuildComplexityPluginRule._branchesWarning) {
-      rule.reportAtNode(method, arguments: [
-        'build() in "$className" has ${counter.count} branches '
-            '(limit: ${BuildComplexityPluginRule._branchesWarning}). '
-            'Consider extracting widgets.',
-      ]);
+      rule.reportAtNode(
+        method,
+        arguments: [
+          'build() in "$className" has ${counter.count} branches '
+              '(limit: ${BuildComplexityPluginRule._branchesWarning}). '
+              'Consider extracting widgets.',
+        ],
+      );
     }
   }
 }
@@ -71,15 +78,38 @@ class _BranchCounter extends RecursiveAstVisitor<void> {
   int count = 0;
 
   @override
-  void visitIfStatement(IfStatement node) { count++; super.visitIfStatement(node); }
+  void visitIfStatement(IfStatement node) {
+    count++;
+    super.visitIfStatement(node);
+  }
+
   @override
-  void visitForStatement(ForStatement node) { count++; super.visitForStatement(node); }
+  void visitForStatement(ForStatement node) {
+    count++;
+    super.visitForStatement(node);
+  }
+
   @override
-  void visitWhileStatement(WhileStatement node) { count++; super.visitWhileStatement(node); }
+  void visitWhileStatement(WhileStatement node) {
+    count++;
+    super.visitWhileStatement(node);
+  }
+
   @override
-  void visitSwitchStatement(SwitchStatement node) { count++; super.visitSwitchStatement(node); }
+  void visitSwitchStatement(SwitchStatement node) {
+    count++;
+    super.visitSwitchStatement(node);
+  }
+
   @override
-  void visitConditionalExpression(ConditionalExpression node) { count++; super.visitConditionalExpression(node); }
+  void visitConditionalExpression(ConditionalExpression node) {
+    count++;
+    super.visitConditionalExpression(node);
+  }
+
   @override
-  void visitIfElement(IfElement node) { count++; super.visitIfElement(node); }
+  void visitIfElement(IfElement node) {
+    count++;
+    super.visitIfElement(node);
+  }
 }

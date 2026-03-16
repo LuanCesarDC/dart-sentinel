@@ -10,10 +10,11 @@ import '../lint_codes.dart';
 /// Plugin rule: detects setState/context used after await without mounted check.
 class AsyncSafetyPluginRule extends AnalysisRule {
   AsyncSafetyPluginRule()
-      : super(
-          name: 'async_safety',
-          description: 'Detects setState or BuildContext usage after await without mounted check.',
-        );
+    : super(
+        name: 'async_safety',
+        description:
+            'Detects setState or BuildContext usage after await without mounted check.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.asyncSafety;
@@ -101,7 +102,9 @@ class _Visitor extends SimpleAstVisitor<void> {
     for (final usage in finder.usages) {
       rule.reportAtNode(
         usage.node,
-        arguments: ['${usage.description} used after await without `mounted` check'],
+        arguments: [
+          '${usage.description} used after await without `mounted` check',
+        ],
       );
     }
   }
@@ -136,10 +139,15 @@ class _ContextUsageFinder extends RecursiveAstVisitor<void> {
   final List<_ContextUsage> usages = [];
 
   static const _contextMethods = {
-    'Navigator.of', 'Theme.of', 'MediaQuery.of',
-    'ScaffoldMessenger.of', 'Scaffold.of',
-    'DefaultTextStyle.of', 'Directionality.of',
-    'ModalRoute.of', 'FocusScope.of',
+    'Navigator.of',
+    'Theme.of',
+    'MediaQuery.of',
+    'ScaffoldMessenger.of',
+    'Scaffold.of',
+    'DefaultTextStyle.of',
+    'Directionality.of',
+    'ModalRoute.of',
+    'FocusScope.of',
   };
 
   @override

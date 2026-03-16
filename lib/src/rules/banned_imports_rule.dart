@@ -28,8 +28,11 @@ class BannedImportsRule extends AnalyzerRule {
     return issues;
   }
 
-  List<Issue> _checkFile(String file, List<BannedImportConfig> configs,
-      ProjectContext context) {
+  List<Issue> _checkFile(
+    String file,
+    List<BannedImportConfig> configs,
+    ProjectContext context,
+  ) {
     final relativePath = context.relativePath(file);
     final unit = context.parsedUnits[file];
     if (unit == null) return [];
@@ -44,22 +47,27 @@ class BannedImportsRule extends AnalyzerRule {
         if (!_matchesDeny(uri, config.deny, context)) continue;
 
         final line = unit.lineInfo.getLocation(directive.offset).lineNumber;
-        issues.add(Issue(
-          rule: name,
-          message: config.message.isNotEmpty
-              ? '${config.message} (import: $uri)'
-              : 'Banned import: $uri',
-          file: relativePath,
-          line: line,
-          severity: defaultSeverity,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message: config.message.isNotEmpty
+                ? '${config.message} (import: $uri)'
+                : 'Banned import: $uri',
+            file: relativePath,
+            line: line,
+            severity: defaultSeverity,
+          ),
+        );
       }
     }
     return issues;
   }
 
   bool _matchesDeny(
-      String importUri, List<String> denyPatterns, ProjectContext context) {
+    String importUri,
+    List<String> denyPatterns,
+    ProjectContext context,
+  ) {
     for (final pattern in denyPatterns) {
       // Match against the raw import URI
       if (GlobMatcher(pattern).matches(importUri)) return true;

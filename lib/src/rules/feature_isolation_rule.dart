@@ -54,15 +54,26 @@ class FeatureIsolationRule extends AnalyzerRule {
   }
 
   Issue? _checkImportDirective(
-      ImportDirective directive,
-      ({String relativePath, String absolutePath, String feature, CompilationUnit unit}) source,
-      ProjectContext context) {
+    ImportDirective directive,
+    ({
+      String relativePath,
+      String absolutePath,
+      String feature,
+      CompilationUnit unit,
+    })
+    source,
+    ProjectContext context,
+  ) {
     final config = context.config.featureIsolation!;
     final uri = directive.uri.stringValue;
     if (uri == null) return null;
     if (uri.startsWith('dart:')) return null;
 
-    final importRelative = _resolveToRelative(uri, source.absolutePath, context);
+    final importRelative = _resolveToRelative(
+      uri,
+      source.absolutePath,
+      context,
+    );
     if (importRelative == null) return null;
     if (_isSharedImport(importRelative, config)) return null;
 
@@ -85,14 +96,12 @@ class FeatureIsolationRule extends AnalyzerRule {
 
   /// Extract the feature name from a file path.
   /// E.g. `lib/features/booking/viewmodel/foo.dart` → `booking`
-  String? _extractFeature(
-      String relativePath, FeatureIsolationConfig config) {
+  String? _extractFeature(String relativePath, FeatureIsolationConfig config) {
     for (final pattern in config.paths) {
       // Pattern like "lib/features/*/"
       // Extract the wildcard segment
       final normalized = relativePath.replaceAll(r'\', '/');
-      final patternBase =
-          pattern.replaceAll('*/', '').replaceAll('*', '');
+      final patternBase = pattern.replaceAll('*/', '').replaceAll('*', '');
 
       if (normalized.startsWith(patternBase)) {
         final rest = normalized.substring(patternBase.length);
@@ -105,15 +114,15 @@ class FeatureIsolationRule extends AnalyzerRule {
     return null;
   }
 
-  bool _isSharedImport(
-      String importPath, FeatureIsolationConfig config) {
+  bool _isSharedImport(String importPath, FeatureIsolationConfig config) {
     return matchesAnyGlob(importPath, config.allowShared);
   }
 
   bool _isException(
-      String sourceFeature,
-      String importPath,
-      FeatureIsolationConfig config) {
+    String sourceFeature,
+    String importPath,
+    FeatureIsolationConfig config,
+  ) {
     for (final exception in config.exceptions) {
       // Check if source feature matches the exception's from
       if (exception.from.contains(sourceFeature)) {
@@ -126,15 +135,17 @@ class FeatureIsolationRule extends AnalyzerRule {
   }
 
   String? _resolveToRelative(
-      String uri, String sourceFile, ProjectContext context) {
+    String uri,
+    String sourceFile,
+    ProjectContext context,
+  ) {
     if (uri.startsWith('package:${context.packageName}/')) {
       return 'lib/${uri.substring('package:${context.packageName}/'.length)}';
     }
     if (uri.startsWith('package:')) return null; // External package
 
     // Relative import: resolve based on source file
-    final resolved =
-        p.normalize(p.join(p.dirname(sourceFile), uri));
+    final resolved = p.normalize(p.join(p.dirname(sourceFile), uri));
     return context.relativePath(resolved);
   }
 }

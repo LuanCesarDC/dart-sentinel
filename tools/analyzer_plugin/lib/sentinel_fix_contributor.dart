@@ -28,21 +28,24 @@ class SentinelFixContributor {
       if (diagFixes.isEmpty) continue;
 
       final loc = _location(result, diag.offset, diag.length);
-      final severity = diag.code == 'empty_catch' || diag.code == 'empty_catch_print_only'
+      final severity =
+          diag.code == 'empty_catch' || diag.code == 'empty_catch_print_only'
           ? protocol.AnalysisErrorSeverity.WARNING
           : protocol.AnalysisErrorSeverity.INFO;
 
-      fixes.add(AnalysisErrorFixes(
-        protocol.AnalysisError(
-          severity,
-          protocol.AnalysisErrorType.LINT,
-          loc,
-          diag.message,
-          diag.code,
-          hasFix: true,
+      fixes.add(
+        AnalysisErrorFixes(
+          protocol.AnalysisError(
+            severity,
+            protocol.AnalysisErrorType.LINT,
+            loc,
+            diag.message,
+            diag.code,
+            hasFix: true,
+          ),
+          fixes: diagFixes,
         ),
-        fixes: diagFixes,
-      ));
+      );
     }
 
     return fixes;
@@ -86,7 +89,9 @@ class SentinelFixContributor {
     while (lineStart > 0 && content[lineStart - 1] != '\n') {
       lineStart--;
     }
-    final indent = content.substring(lineStart, braceIdx).replaceAll(RegExp(r'\S.*'), '');
+    final indent = content
+        .substring(lineStart, braceIdx)
+        .replaceAll(RegExp(r'\S.*'), '');
 
     final builder = ChangeBuilder(session: result.session);
     await builder.addDartFileEdit(result.path, (fileBuilder) {
@@ -127,10 +132,7 @@ class SentinelFixContributor {
     });
 
     return [
-      PrioritizedSourceChange(
-        50,
-        builder.sourceChange..message = message,
-      ),
+      PrioritizedSourceChange(50, builder.sourceChange..message = message),
     ];
   }
 

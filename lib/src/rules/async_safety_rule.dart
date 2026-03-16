@@ -121,13 +121,15 @@ class _AsyncSafetyVisitor extends RecursiveAstVisitor<void> {
 
     for (final offset in visitor.offsets) {
       final line = unit.lineInfo.getLocation(offset).lineNumber;
-      issues.add(Issue(
-        rule: 'async-safety',
-        message: 'setState() called after await without `mounted` check',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'async-safety',
+          message: 'setState() called after await without `mounted` check',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 
@@ -137,14 +139,16 @@ class _AsyncSafetyVisitor extends RecursiveAstVisitor<void> {
 
     for (final usage in visitor.usages) {
       final line = unit.lineInfo.getLocation(usage.offset).lineNumber;
-      issues.add(Issue(
-        rule: 'async-safety',
-        message:
-            '${usage.description} used after await without `mounted` check',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'async-safety',
+          message:
+              '${usage.description} used after await without `mounted` check',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 }
@@ -206,8 +210,9 @@ class _ContextUsageFinder extends RecursiveAstVisitor<void> {
     if (node.target is SimpleIdentifier) {
       final targetName = (node.target as SimpleIdentifier).name;
       if (targetName == 'context') {
-        usages.add(_ContextUsage(
-            node.offset, 'context.${node.methodName.name}'));
+        usages.add(
+          _ContextUsage(node.offset, 'context.${node.methodName.name}'),
+        );
       }
     }
 

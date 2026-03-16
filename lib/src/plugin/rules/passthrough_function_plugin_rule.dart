@@ -10,10 +10,11 @@ import '../lint_codes.dart';
 /// Plugin rule: detects passthrough functions that only delegate.
 class PassthroughFunctionPluginRule extends AnalysisRule {
   PassthroughFunctionPluginRule()
-      : super(
-          name: 'passthrough_function',
-          description: 'Detects functions that only delegate to another with the same arguments.',
-        );
+    : super(
+        name: 'passthrough_function',
+        description:
+            'Detects functions that only delegate to another with the same arguments.',
+      );
 
   @override
   DiagnosticCode get diagnosticCode => SentinelCodes.passthroughFunction;

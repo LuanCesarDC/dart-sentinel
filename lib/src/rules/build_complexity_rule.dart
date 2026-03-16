@@ -27,8 +27,7 @@ class BuildComplexityRule extends AnalyzerRule {
       final unit = entry.value;
       final relativePath = context.relativePath(file);
 
-      final visitor =
-          _BuildComplexityVisitor(relativePath, unit, metrics);
+      final visitor = _BuildComplexityVisitor(relativePath, unit, metrics);
       unit.visitChildren(visitor);
       issues.addAll(visitor.issues);
     }
@@ -60,33 +59,36 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
   }
 
   void _analyzeBuildMethod(MethodDeclaration method, String className) {
-    final line =
-        unit.lineInfo.getLocation(method.offset).lineNumber;
+    final line = unit.lineInfo.getLocation(method.offset).lineNumber;
 
     // Count LOC
     final loc = method.body.toSource().split('\n').length;
     if (loc >= metrics.buildMethodLocError) {
-      issues.add(Issue(
-        rule: 'build-complexity',
-        message:
-            'build() in "$className" has $loc lines '
-            '(limit: ${metrics.buildMethodLocError}). '
-            'Consider extracting widgets or helper methods.',
-        file: filePath,
-        line: line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'build-complexity',
+          message:
+              'build() in "$className" has $loc lines '
+              '(limit: ${metrics.buildMethodLocError}). '
+              'Consider extracting widgets or helper methods.',
+          file: filePath,
+          line: line,
+          severity: Severity.error,
+        ),
+      );
     } else if (loc >= metrics.buildMethodLocWarning) {
-      issues.add(Issue(
-        rule: 'build-complexity',
-        message:
-            'build() in "$className" has $loc lines '
-            '(limit: ${metrics.buildMethodLocWarning}). '
-            'Consider extracting widgets or helper methods.',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'build-complexity',
+          message:
+              'build() in "$className" has $loc lines '
+              '(limit: ${metrics.buildMethodLocWarning}). '
+              'Consider extracting widgets or helper methods.',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
 
     // Count branches
@@ -95,27 +97,31 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
     final branches = branchCounter.count;
 
     if (branches >= metrics.buildMethodBranchesError) {
-      issues.add(Issue(
-        rule: 'build-complexity',
-        message:
-            'build() in "$className" has $branches branches '
-            '(limit: ${metrics.buildMethodBranchesError}). '
-            'Consider extracting logic into separate methods.',
-        file: filePath,
-        line: line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'build-complexity',
+          message:
+              'build() in "$className" has $branches branches '
+              '(limit: ${metrics.buildMethodBranchesError}). '
+              'Consider extracting logic into separate methods.',
+          file: filePath,
+          line: line,
+          severity: Severity.error,
+        ),
+      );
     } else if (branches >= metrics.buildMethodBranchesWarning) {
-      issues.add(Issue(
-        rule: 'build-complexity',
-        message:
-            'build() in "$className" has $branches branches '
-            '(limit: ${metrics.buildMethodBranchesWarning}). '
-            'Consider extracting logic into separate methods.',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'build-complexity',
+          message:
+              'build() in "$className" has $branches branches '
+              '(limit: ${metrics.buildMethodBranchesWarning}). '
+              'Consider extracting logic into separate methods.',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 }

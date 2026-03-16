@@ -34,7 +34,9 @@ class DeadTodosRule extends AnalyzerRule {
   }
 
   List<Issue> _checkUnit(
-    CompilationUnit unit, String filePath, DeadTodosConfig config,
+    CompilationUnit unit,
+    String filePath,
+    DeadTodosConfig config,
   ) {
     final issues = <Issue>[];
     final source = unit.toSource();
@@ -50,15 +52,17 @@ class DeadTodosRule extends AnalyzerRule {
       if (_isActionable(body, config)) continue;
 
       final lineNum = i + 1;
-      issues.add(Issue(
-        rule: name,
-        message: body.isEmpty
-            ? '$tag without description — add context or remove.'
-            : '$tag lacks actionable context: "$body"',
-        file: filePath,
-        line: lineNum,
-        severity: defaultSeverity,
-      ));
+      issues.add(
+        Issue(
+          rule: name,
+          message: body.isEmpty
+              ? '$tag without description — add context or remove.'
+              : '$tag lacks actionable context: "$body"',
+          file: filePath,
+          line: lineNum,
+          severity: defaultSeverity,
+        ),
+      );
     }
     return issues;
   }

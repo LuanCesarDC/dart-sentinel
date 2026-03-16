@@ -1,0 +1,10 @@
+name: example
+description: Example project demonstrating Dart Sentinel violations.
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  dart_sentinel:
+    path: ../

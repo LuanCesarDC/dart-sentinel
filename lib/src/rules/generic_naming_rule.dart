@@ -21,9 +21,7 @@ class GenericNamingRule extends AnalyzerRule {
 
     for (final entry in context.parsedUnits.entries) {
       final relativePath = context.relativePath(entry.key);
-      final visitor = _GenericNamingVisitor(
-        relativePath, entry.value, config,
-      );
+      final visitor = _GenericNamingVisitor(relativePath, entry.value, config);
       entry.value.visitChildren(visitor);
       issues.addAll(visitor.issues);
     }
@@ -123,12 +121,14 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
 
   void _report(String name, int offset, String kind) {
     final line = unit.lineInfo.getLocation(offset).lineNumber;
-    issues.add(Issue(
-      rule: 'generic-naming',
-      message: 'Generic $kind name "$name" — use a more descriptive name.',
-      file: filePath,
-      line: line,
-      severity: Severity.warning,
-    ));
+    issues.add(
+      Issue(
+        rule: 'generic-naming',
+        message: 'Generic $kind name "$name" — use a more descriptive name.',
+        file: filePath,
+        line: line,
+        severity: Severity.warning,
+      ),
+    );
   }
 }

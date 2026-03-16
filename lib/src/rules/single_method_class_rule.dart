@@ -21,8 +21,11 @@ class SingleMethodClassRule extends AnalyzerRule {
 
     for (final entry in context.parsedUnits.entries) {
       final relativePath = context.relativePath(entry.key);
-      final visitor =
-          _SingleMethodClassVisitor(relativePath, entry.value, config);
+      final visitor = _SingleMethodClassVisitor(
+        relativePath,
+        entry.value,
+        config,
+      );
       entry.value.visitChildren(visitor);
       issues.addAll(visitor.issues);
     }
@@ -51,15 +54,17 @@ class _SingleMethodClassVisitor extends RecursiveAstVisitor<void> {
     if (publicMethods.length == 1 && publicFields.isEmpty) {
       final line = unit.lineInfo.getLocation(node.offset).lineNumber;
       final methodName = publicMethods.first.name.lexeme;
-      issues.add(Issue(
-        rule: 'single-method-class',
-        message:
-            'Class \'${node.namePart.typeName.lexeme}\' has only one public method '
-            '\'$methodName\' — consider using a plain function instead.',
-        file: filePath,
-        line: line,
-        severity: Severity.info,
-      ));
+      issues.add(
+        Issue(
+          rule: 'single-method-class',
+          message:
+              'Class \'${node.namePart.typeName.lexeme}\' has only one public method '
+              '\'$methodName\' — consider using a plain function instead.',
+          file: filePath,
+          line: line,
+          severity: Severity.info,
+        ),
+      );
     }
 
     super.visitClassDeclaration(node);
@@ -85,21 +90,20 @@ class _SingleMethodClassVisitor extends RecursiveAstVisitor<void> {
     final body = node.body;
     if (body is! BlockClassBody) return [];
     return body.members.whereType<MethodDeclaration>().where(
-          (m) =>
-              !m.isStatic &&
-              !m.name.lexeme.startsWith('_') &&
-              !_objectMethods.contains(m.name.lexeme),
-        );
+      (m) =>
+          !m.isStatic &&
+          !m.name.lexeme.startsWith('_') &&
+          !_objectMethods.contains(m.name.lexeme),
+    );
   }
 
   Iterable<FieldDeclaration> _publicFields(ClassDeclaration node) {
     final body = node.body;
     if (body is! BlockClassBody) return [];
     return body.members.whereType<FieldDeclaration>().where(
-          (f) =>
-              !f.isStatic &&
-              !f.fields.variables.first.name.lexeme.startsWith('_'),
-        );
+      (f) =>
+          !f.isStatic && !f.fields.variables.first.name.lexeme.startsWith('_'),
+    );
   }
 
   bool _hasConstructorParams(ClassDeclaration node) {

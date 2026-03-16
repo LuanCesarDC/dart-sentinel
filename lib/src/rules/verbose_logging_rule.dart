@@ -65,14 +65,17 @@ class _VerboseLoggingVisitor extends RecursiveAstVisitor<void> {
   void _reportIfExcessive(int count, int? offset) {
     if (count >= config.maxConsecutiveLogs && offset != null) {
       final line = unit.lineInfo.getLocation(offset).lineNumber;
-      issues.add(Issue(
-        rule: 'verbose-logging',
-        message: '$count consecutive log statements — '
-            'consider a single structured log or removing debug noise.',
-        file: filePath,
-        line: line,
-        severity: Severity.info,
-      ));
+      issues.add(
+        Issue(
+          rule: 'verbose-logging',
+          message:
+              '$count consecutive log statements — '
+              'consider a single structured log or removing debug noise.',
+          file: filePath,
+          line: line,
+          severity: Severity.info,
+        ),
+      );
     }
   }
 
