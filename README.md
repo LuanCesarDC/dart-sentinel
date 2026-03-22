@@ -425,6 +425,175 @@ Add to `.githooks/pre-commit`:
 dart run dart_sentinel -o arch
 ```
 
+## Starting a Project with AI Agents
+
+This section is a step-by-step guide for using Dart Sentinel as the **architectural backbone** of an AI-assisted Flutter project. The idea is simple: you define the rules once, and the AI agent respects them — without you having to repeat constraints in every prompt.
+
+### 1. Choose a template and create `analyzer.yaml`
+
+Pick the template that matches your architecture (or start with `starter.yaml`):
+
+```bash
+# Example: Clean Architecture + BLoC
+cp example/templates/clean_bloc.yaml analyzer.yaml
+```
+
+This file is the **single source of truth** for your architecture. Edit it to match your project's folder structure, layer boundaries, and conventions. The AI agent will read this file (via MCP) to understand what is allowed.
+
+### 2. Configure the MCP server
+
+Create `.vscode/mcp.json` so the AI agent can talk to Dart Sentinel:
+
+```json
+{
+  "servers": {
+    "dart-sentinel": {
+      "type": "stdio",
+      "command": "dart",
+      "args": ["run", "dart_sentinel:mcp_server"]
+    }
+  }
+}
+```
+
+> For **Cursor**, **Claude Code**, or other MCP-compatible tools, check their docs for the equivalent config. The command is the same: `dart run dart_sentinel:mcp_server`.
+
+### 3. Create instruction files for the AI agent
+
+AI agents (Copilot, Cursor, Claude Code) read markdown instruction files to understand your project. Below is what to put in each one.
+
+#### `.github/copilot-instructions.md` (GitHub Copilot)
+
+This is the main instruction file for Copilot. Put your project-wide conventions here:
+
+```markdown
+# Project Instructions
+
+## Architecture
+This project follows Clean Architecture + BLoC (feature-first).
+Architecture rules are enforced by Dart Sentinel (`analyzer.yaml`).
+
+Before writing code:
+1. Read the architecture rules: use the `get_architecture` tool from dart-sentinel MCP
+2. Check if an import is allowed: use the `check_import` tool before adding any cross-layer import
+3. After generating a file: use `analyze_file` to verify no violations
+
+## Folder Structure
+- `lib/core/` — shared infrastructure (DI, error handling, network)
+- `lib/features/<name>/domain/` — entities, repository interfaces, use cases (NO Flutter imports)
+- `lib/features/<name>/data/` — models, data sources, repository implementations (NO Flutter imports)
+- `lib/features/<name>/presentation/` — pages, widgets, BLoCs
+- `lib/shared/` — reusable widgets and helpers
+
+## Conventions
+- BLoCs depend on UseCases only, never on Data layer directly
+- Domain layer is pure Dart — no Flutter, no external packages
+- Every feature is isolated — no cross-feature imports (use core/ or shared/)
+- Use AppButton, AppDialog instead of raw Flutter widgets (enforced by banned-symbols)
+- Dispose all StreamSubscriptions, TextEditingControllers, AnimationControllers
+- No empty catch blocks — always handle or rethrow
+- No setState/context usage after await without mounted check
+
+## After generating code
+Always run `analyze_file` on new/modified files to check for:
+- Layer violations
+- Banned imports
+- Complexity issues
+- Missing dispose calls
+```
+
+#### `.cursorrules` (Cursor)
+
+Same content as above. Cursor reads `.cursorrules` from the project root.
+
+#### `CLAUDE.md` (Claude Code)
+
+Same content as above. Claude Code reads `CLAUDE.md` from the project root.
+
+#### `.instructions.md` / `.copilot-instructions.md` (folder-scoped)
+
+You can also place scoped instructions in specific folders. These override or complement global instructions:
+
+```markdown
+<!-- lib/features/.instructions.md -->
+# Feature Rules
+- Each feature must be self-contained (domain + data + presentation)
+- No imports from other features — use core/ or shared/ for shared code
+- BLoCs go in presentation/bloc/, one BLoC per feature flow
+```
+
+```markdown
+<!-- lib/core/.instructions.md -->
+# Core Rules  
+- This folder has no dependencies on features/ or shared/
+- Only pure Dart and infrastructure packages allowed
+```
+
+### 4. Typical AI workflow
+
+Once everything is set up, the cycle looks like this:
+
+```
+You write a prompt
+  → AI reads copilot-instructions.md (knows the rules)
+  → AI calls get_architecture (reads analyzer.yaml via MCP)
+  → AI generates code
+  → AI calls analyze_file (Dart Sentinel checks for violations)
+  → AI fixes any violations
+  → You get clean, architecture-compliant code
+```
+
+**Example prompt:**
+> Create the auth feature with login use case, Firebase data source, and login page with BLoC.
+
+The agent will:
+1. Call `get_architecture` to understand layers and boundaries
+2. Create `lib/features/auth/domain/entities/user.dart`
+3. Create `lib/features/auth/domain/repositories/auth_repository.dart` (interface)
+4. Create `lib/features/auth/domain/usecases/login_usecase.dart`
+5. Create `lib/features/auth/data/models/user_model.dart`
+6. Create `lib/features/auth/data/datasources/firebase_auth_datasource.dart`
+7. Create `lib/features/auth/data/repositories/auth_repository_impl.dart`
+8. Create `lib/features/auth/presentation/bloc/auth_bloc.dart`
+9. Create `lib/features/auth/presentation/pages/login_page.dart`
+10. Call `analyze_file` on each file → fix any violations automatically
+
+### 5. CI integration with ratchet mode
+
+Lock in the quality bar so it never goes down:
+
+```bash
+# Save current baseline (commit .dart_sentinel/baseline.json)
+dart run dart_sentinel --save-baseline
+
+# CI step — fails if any rule has more issues than baseline
+dart run dart_sentinel --check-baseline
+```
+
+This means the AI can't introduce architectural regressions even if it doesn't call the MCP tools.
+
+### Quick reference: which file does what
+
+| File | Who reads it | Purpose |
+|------|-------------|---------|
+| `analyzer.yaml` | Dart Sentinel (+ AI via MCP) | Architecture rules, layers, banned imports, metrics thresholds |
+| `.vscode/mcp.json` | VS Code / Copilot | MCP server connection config |
+| `.github/copilot-instructions.md` | GitHub Copilot | Project conventions in natural language |
+| `.cursorrules` | Cursor | Project conventions in natural language |
+| `CLAUDE.md` | Claude Code | Project conventions in natural language |
+| `.instructions.md` | Copilot (folder-scoped) | Per-folder overrides and context |
+| `.dart_sentinel/baseline.json` | Dart Sentinel CLI | Ratchet baseline for CI |
+
+### Tips
+
+- **Keep `copilot-instructions.md` short and actionable.** The AI has limited context — bullet points > paragraphs.
+- **Always mention the MCP tools by name** (`get_architecture`, `check_import`, `analyze_file`) so the agent knows they exist.
+- **Use templates as starting points.** Customize `analyzer.yaml` to match your actual folder structure — templates are guides, not gospel.
+- **Run `dart run dart_sentinel` yourself periodically.** The AI agent won't always catch everything via MCP. A full scan catches cross-file issues (dead files, import cycles) that single-file analysis misses.
+- **Combine with `--save-baseline`** after big cleanup efforts to lock in the improvement.
+
+---
+
 ## MCP Server (AI Agent Integration)
 
 Dart Sentinel exposes an MCP (Model Context Protocol) server so AI coding assistants like GitHub Copilot, Cursor, and Claude Code can query your architecture rules in real time.
