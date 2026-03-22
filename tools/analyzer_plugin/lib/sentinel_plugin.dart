@@ -813,6 +813,32 @@ class _LazyNullCheckVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitBinaryExpression(BinaryExpression node) {
     if (node.operator.lexeme == '??') {
+      final lhs = node.leftOperand;
+
+      // Skip idiomatic patterns
+      if (lhs is IndexExpression) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+      if (_hasNullAwareAccess(lhs)) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+      if (lhs is AsExpression && lhs.type.question != null) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+      // obj.property ?? default
+      if (lhs is PropertyAccess || lhs is PrefixedIdentifier) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+      // method() ?? default
+      if (lhs is MethodInvocation) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+
       final rhs = node.rightOperand;
       final match = _matchDefault(rhs);
       if (match != null) {
@@ -820,6 +846,16 @@ class _LazyNullCheckVisitor extends RecursiveAstVisitor<void> {
       }
     }
     super.visitBinaryExpression(node);
+  }
+
+  bool _hasNullAwareAccess(Expression expr) {
+    if (expr is PropertyAccess && expr.isNullAware) return true;
+    if (expr is MethodInvocation && expr.isNullAware) return true;
+    if (expr is PropertyAccess) return _hasNullAwareAccess(expr.target!);
+    if (expr is MethodInvocation && expr.target != null) {
+      return _hasNullAwareAccess(expr.target!);
+    }
+    return false;
   }
 
   String? _matchDefault(Expression expr) {

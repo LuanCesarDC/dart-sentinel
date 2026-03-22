@@ -42,6 +42,39 @@ class _LazyNullCheckVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitBinaryExpression(BinaryExpression node) {
     if (node.operator.lexeme == '??') {
+      final lhs = node.leftOperand;
+
+      // Skip idiomatic patterns where ?? is the correct approach:
+      // map[key] ?? default — Map subscript returns nullable by design
+      if (config.ignoreMapAccess && lhs is IndexExpression) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+
+      // expr?.prop ?? default — null-propagation chain
+      if (config.ignoreNullAwareAccess && _hasNullAwareAccess(lhs)) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+
+      // expr as T? ?? default — explicit nullable cast
+      if (lhs is AsExpression && lhs.type.question != null) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+
+      // obj.property ?? default — API/getter returning nullable
+      if (lhs is PropertyAccess || lhs is PrefixedIdentifier) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+
+      // method() ?? default — method call returning nullable
+      if (lhs is MethodInvocation) {
+        super.visitBinaryExpression(node);
+        return;
+      }
+
       final rhs = node.rightOperand;
       final match = _matchLazyDefault(rhs);
       if (match != null) {
@@ -60,6 +93,18 @@ class _LazyNullCheckVisitor extends RecursiveAstVisitor<void> {
       }
     }
     super.visitBinaryExpression(node);
+  }
+
+  /// Check if the expression uses null-aware access (`?.`).
+  bool _hasNullAwareAccess(Expression expr) {
+    if (expr is PropertyAccess && expr.isNullAware) return true;
+    if (expr is MethodInvocation && expr.isNullAware) return true;
+    // a?.b.c — the outer PropertyAccess is not null-aware, but the inner is
+    if (expr is PropertyAccess) return _hasNullAwareAccess(expr.target!);
+    if (expr is MethodInvocation && expr.target != null) {
+      return _hasNullAwareAccess(expr.target!);
+    }
+    return false;
   }
 
   /// Returns a description of the default value if it matches a lazy pattern,

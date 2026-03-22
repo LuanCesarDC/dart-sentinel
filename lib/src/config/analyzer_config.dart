@@ -676,11 +676,19 @@ class LazyNullCheckConfig {
   /// Flag `x ?? []` and `x ?? {}`.
   final bool flagEmptyCollection;
 
+  /// Ignore `map[key] ?? default` — Map subscript is nullable by design.
+  final bool ignoreMapAccess;
+
+  /// Ignore `expr?.prop ?? default` — null-propagation chains.
+  final bool ignoreNullAwareAccess;
+
   const LazyNullCheckConfig({
     this.flagEmptyString = true,
     this.flagZero = true,
     this.flagFalse = true,
     this.flagEmptyCollection = true,
+    this.ignoreMapAccess = true,
+    this.ignoreNullAwareAccess = true,
   });
 
   factory LazyNullCheckConfig.fromYaml(dynamic node) {
@@ -690,6 +698,8 @@ class LazyNullCheckConfig {
       flagZero: node['flag_zero'] as bool? ?? true,
       flagFalse: node['flag_false'] as bool? ?? true,
       flagEmptyCollection: node['flag_empty_collection'] as bool? ?? true,
+      ignoreMapAccess: node['ignore_map_access'] as bool? ?? true,
+      ignoreNullAwareAccess: node['ignore_null_aware_access'] as bool? ?? true,
     );
   }
 }

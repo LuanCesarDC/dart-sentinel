@@ -37,10 +37,34 @@ class _Visitor extends SimpleAstVisitor<void> {
   void visitBinaryExpression(BinaryExpression node) {
     if (node.operator.lexeme != '??') return;
 
+    final lhs = node.leftOperand;
+
+    // Skip idiomatic patterns:
+    // map[key] ?? default
+    if (lhs is IndexExpression) return;
+    // expr?.prop ?? default
+    if (_hasNullAwareAccess(lhs)) return;
+    // expr as T? ?? default
+    if (lhs is AsExpression && lhs.type.question != null) return;
+    // obj.property ?? default — API/getter returning nullable
+    if (lhs is PropertyAccess || lhs is PrefixedIdentifier) return;
+    // method() ?? default — method call returning nullable
+    if (lhs is MethodInvocation) return;
+
     final rhs = node.rightOperand;
     if (_isLazyDefault(rhs)) {
       rule.reportAtNode(node);
     }
+  }
+
+  bool _hasNullAwareAccess(Expression expr) {
+    if (expr is PropertyAccess && expr.isNullAware) return true;
+    if (expr is MethodInvocation && expr.isNullAware) return true;
+    if (expr is PropertyAccess) return _hasNullAwareAccess(expr.target!);
+    if (expr is MethodInvocation && expr.target != null) {
+      return _hasNullAwareAccess(expr.target!);
+    }
+    return false;
   }
 
   bool _isLazyDefault(Expression expr) {
