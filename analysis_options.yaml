@@ -1,6 +1,4 @@
 analyzer:
-  plugins:
-    - dart_sentinel
   exclude:
     - example/**
 
