@@ -12,7 +12,7 @@ import 'sentinel_fix_contributor.dart';
 
 /// Old-style analyzer plugin for Dart SDK < 3.10.
 ///
-/// Uses the `analyzer_plugin` API (tools/analyzer_plugin/ bootstrap)
+/// Uses the `analyzer_plugin` API (tool/analyzer_plugin/ bootstrap)
 /// to report diagnostics and provide quick fixes in the IDE.
 class SentinelPlugin extends ServerPlugin {
   /// Tracks the diagnostics we sent per file so we can provide fixes.
