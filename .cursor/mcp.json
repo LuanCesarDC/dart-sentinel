@@ -1,7 +1,6 @@
 {
-  "servers": {
+  "mcpServers": {
     "dart-sentinel": {
-      "type": "stdio",
       "command": "dart_sentinel",
       "args": ["--mcp"]
     }

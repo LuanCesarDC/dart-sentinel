@@ -30,6 +30,7 @@
 # The barrel file re-exports everything that should be reachable.
 entrypoints:
   - lib/dart_sentinel.dart
+  - lib/main.dart
 
 # Include bin/ in scan for metrics/complexity checks.
 extra_scan_dirs:
@@ -45,18 +46,21 @@ exclude:
 # ──────────────────────────────────────────────────────────────
 
 rules:
-  # Architecture — hard errors, these are structural violations
+  # Architecture — hard errors, structural violations
   banned-imports: error
   layer-dependency: error
   import-cycles: warning
+  feature-isolation: warning
 
   # Dead code — warnings, useful but not blocking
   dead-files: warning
   dead-exports: warning
+  unused-code: warning
 
   # Metrics — keep methods small and readable
   complexity: warning
   build-complexity: warning
+  class-metrics: warning
 
   # Lint — catch real bugs
   dispose-check: warning
@@ -70,6 +74,26 @@ rules:
   verbose-logging: info
   single-method-class: info
   passthrough-function: info
+  lazy-null-check: warning
+  avoid-commented-out-code: info
+  no-magic-number: info
+  no-equal-then-else: warning
+  no-equal-arguments: warning
+  avoid-self-compare: warning
+  avoid-global-state: warning
+  avoid-returning-widgets: warning
+  flutter-anti-patterns: warning
+
+  # Testing enforcement
+  untested-files: info
+  test-quality: warning
+
+  # Pubspec hygiene
+  pubspec: warning
+  misused-dependencies: info
+
+  # Model conventions
+  model-missing-methods: info
 
 # ──────────────────────────────────────────────────────────────
 # Architecture — Layer Dependencies
@@ -100,6 +124,13 @@ architecture:
       paths: ["lib/src/core/**", "lib/src/config/**"]
       can_depend_on: [utils]
 
+    # Analysis modules: impact analysis, dependency mapping, L10n scanning,
+    # ratchet baseline, model code generation, file hash cache.
+    # Depends on core (for models + config) and utils (for algorithms).
+    analysis:
+      paths: ["lib/src/analysis/**"]
+      can_depend_on: [core, utils]
+
     # Analysis rules. Each rule receives a ProjectContext and returns Issues.
     # Rules depend on core (for the models + context) and utils (for
     # algorithms like glob matching and graph traversal).
@@ -119,7 +150,7 @@ architecture:
     # Analogous to bin/ but lives inside lib/ so it can be exported.
     mcp:
       paths: ["lib/src/mcp/**"]
-      can_depend_on: [core, rules, utils]
+      can_depend_on: [core, rules, analysis, utils]
 
   # ────────────────────────────────────────────────────────────
   # Banned imports — fine-grained constraints beyond layers
@@ -184,6 +215,15 @@ metrics:
   build_method_branches:
     warning: 3
     error: 6
+  number_of_methods:
+    warning: 15
+    error: 30
+  weighted_methods_per_class:
+    warning: 30
+    error: 80
+  lines_per_class:
+    warning: 300
+    error: 600
 # ──────────────────────────────────────────────────────────────
 # AI Slop Detection — tunables
 # ──────────────────────────────────────────────────────────────

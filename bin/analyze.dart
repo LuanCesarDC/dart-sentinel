@@ -20,6 +20,8 @@ Future<void> main(List<String> args) async {
   final noReport = results['no-report'] as bool;
   final saveBaseline = results['save-baseline'] as bool;
   final checkBaseline = results['check-baseline'] as bool;
+  final changedOnly = results['changed-only'] as bool;
+  final noCache = results['no-cache'] as bool;
   final files = results['files'] as List<String>;
 
   // Validate project
@@ -49,9 +51,27 @@ Future<void> main(List<String> args) async {
   if (handled) return;
 
   // ── Standard rule analysis ──
-  final issues = _runRuleAnalysis(context, category);
+  var issues = _runRuleAnalysis(context, category);
+
+  // Filter to changed files only
+  if (changedOnly) {
+    final changedFiles = _getChangedFiles(projectRoot);
+    if (changedFiles != null) {
+      issues = issues.where((i) => changedFiles.contains(i.file)).toList();
+      print('  Changed-only mode: filtering to ${changedFiles.length} changed files');
+    }
+  }
 
   stopwatch.stop();
+
+  // Update file hash cache
+  if (!noCache) {
+    final cache = FileHashCache(projectRoot);
+    for (final file in context.allFiles) {
+      cache.hasChanged(file); // populates currentHashes
+    }
+    cache.save();
+  }
 
   _printResults(issues, format, stopwatch.elapsed);
 
@@ -132,6 +152,9 @@ ArgParser _buildParser() {
         'metrics',
         'lint',
         'slop',
+        'models',
+        'testing',
+        'pub',
         'impact',
         'map',
         'migrations',
@@ -175,6 +198,16 @@ ArgParser _buildParser() {
       'check-baseline',
       negatable: false,
       help: 'Compare current issues against the saved baseline (CI mode).',
+    )
+    ..addFlag(
+      'changed-only',
+      negatable: false,
+      help: 'Only report issues in files changed according to git.',
+    )
+    ..addFlag(
+      'no-cache',
+      negatable: false,
+      help: 'Skip file hash cache and force full re-analysis.',
     );
 }
 
@@ -199,6 +232,22 @@ List<Issue> _runRuleAnalysis(ProjectContext context, String category) {
     SingleMethodClassRule(),
     PassthroughFunctionRule(),
     LazyNullCheckRule(),
+    ModelMissingMethodsRule(),
+    UnusedCodeRule(),
+    UntestedFilesRule(),
+    TestCoverageRule(),
+    TestQualityRule(),
+    ClassMetricsRule(),
+    PubspecRule(),
+    AvoidGlobalStateRule(),
+    NoMagicNumberRule(),
+    NoEqualThenElseRule(),
+    AvoidCommentedOutCodeRule(),
+    NoEqualArgumentsRule(),
+    AvoidSelfCompareRule(),
+    AvoidReturningWidgetsRule(),
+    FlutterAntiPatternsRule(),
+    MisusedDependenciesRule(),
   ];
   final runner = RuleRunner(rules: allRules, config: context.config);
   if (category == 'all') return runner.runAll(context);
@@ -465,6 +514,50 @@ Examples:
   dart run dart_sentinel -o migrations                      # migration progress
   dart run dart_sentinel --save-baseline                    # save ratchet baseline
   dart run dart_sentinel --check-baseline                   # CI ratchet check
+  dart run dart_sentinel --changed-only                     # only changed files
   dart run dart_sentinel:analyze                            # explicit script''',
   );
+}
+
+/// Returns the set of relative file paths changed according to git,
+/// or null if git is unavailable.
+Set<String>? _getChangedFiles(String projectRoot) {
+  try {
+    // Uncommitted changes + staged
+    final result = Process.runSync(
+      'git',
+      ['diff', '--name-only', 'HEAD', '--diff-filter=ACMR'],
+      workingDirectory: projectRoot,
+    );
+    if (result.exitCode != 0) return null;
+
+    final staged = Process.runSync(
+      'git',
+      ['diff', '--name-only', '--cached', '--diff-filter=ACMR'],
+      workingDirectory: projectRoot,
+    );
+
+    final untracked = Process.runSync(
+      'git',
+      ['ls-files', '--others', '--exclude-standard'],
+      workingDirectory: projectRoot,
+    );
+
+    final files = <String>{};
+    for (final output in [
+      result.stdout as String,
+      staged.stdout as String,
+      untracked.stdout as String,
+    ]) {
+      for (final line in output.split('\n')) {
+        final trimmed = line.trim();
+        if (trimmed.isNotEmpty && trimmed.endsWith('.dart')) {
+          files.add(trimmed);
+        }
+      }
+    }
+    return files;
+  } catch (_) {
+    return null;
+  }
 }

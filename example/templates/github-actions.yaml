@@ -1,0 +1,78 @@
+# Dart Sentinel — GitHub Actions Workflow Template
+#
+# Copy this file to your project's .github/workflows/ directory.
+# Adjust as needed for your project.
+
+name: Dart Sentinel Analysis
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed for --changed-only and baseline
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install Dart Sentinel
+        run: dart pub global activate dart_sentinel
+
+      - name: Run analysis
+        run: dart pub global run dart_sentinel --format json --output report.json
+
+      - name: Check baseline (ratchet)
+        run: dart pub global run dart_sentinel --check-baseline
+        continue-on-error: false
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: report.json
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('report.json', 'utf8'));
+            const summary = report.summary || {};
+            const total = summary.total || 0;
+            const errors = summary.errors || 0;
+            const warnings = summary.warnings || 0;
+            const infos = summary.infos || 0;
+
+            let body = `## 🔍 Dart Sentinel Report\n\n`;
+            body += `| Metric | Count |\n|--------|-------|\n`;
+            body += `| Errors | ${errors} |\n`;
+            body += `| Warnings | ${warnings} |\n`;
+            body += `| Info | ${infos} |\n`;
+            body += `| **Total** | **${total}** |\n\n`;
+
+            if (total === 0) {
+              body += `✅ No issues found!\n`;
+            } else {
+              body += `<details><summary>Details (${total} issues)</summary>\n\n`;
+              for (const issue of (report.issues || [])) {
+                body += `- **${issue.severity}** \`${issue.rule}\` ${issue.file}:${issue.line} — ${issue.message}\n`;
+              }
+              body += `\n</details>\n`;
+            }
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body,
+            });

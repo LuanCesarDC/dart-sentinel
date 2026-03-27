@@ -5,22 +5,19 @@
 ///
 /// ## Quick Start
 ///
-/// Add to your `pubspec.yaml`:
+/// Install globally:
 ///
-/// ```yaml
-/// dev_dependencies:
-///   dart_sentinel:
-///     git:
-///       url: https://github.com/LuanCesarDC/dart-linter-and-metrics.git
+/// ```bash
+/// dart pub global activate dart_sentinel
 /// ```
 ///
 /// Run:
 ///
 /// ```bash
-/// dart run dart_sentinel              # all rules
-/// dart run dart_sentinel -o arch      # architecture only
-/// dart run dart_sentinel -o metrics   # metrics only
-/// dart run dart_sentinel -f json      # JSON output
+/// dart_sentinel              # all rules
+/// dart_sentinel -o arch      # architecture only
+/// dart_sentinel -o metrics   # metrics only
+/// dart_sentinel -f json      # JSON output
 /// ```
 library dart_sentinel;
 
@@ -53,6 +50,22 @@ export 'src/rules/verbose_logging_rule.dart';
 export 'src/rules/single_method_class_rule.dart';
 export 'src/rules/passthrough_function_rule.dart';
 export 'src/rules/lazy_null_check_rule.dart';
+export 'src/rules/model_missing_methods_rule.dart';
+export 'src/rules/unused_code_rule.dart';
+export 'src/rules/untested_files_rule.dart';
+export 'src/rules/test_coverage_rule.dart';
+export 'src/rules/test_quality_rule.dart';
+export 'src/rules/class_metrics_rule.dart';
+export 'src/rules/pubspec_rule.dart';
+export 'src/rules/avoid_global_state_rule.dart';
+export 'src/rules/no_magic_number_rule.dart';
+export 'src/rules/no_equal_then_else_rule.dart';
+export 'src/rules/avoid_commented_out_code_rule.dart';
+export 'src/rules/no_equal_arguments_rule.dart';
+export 'src/rules/avoid_self_compare_rule.dart';
+export 'src/rules/avoid_returning_widgets_rule.dart';
+export 'src/rules/flutter_anti_patterns_rule.dart';
+export 'src/rules/misused_dependencies_rule.dart';
 
 // Analysis
 export 'src/analysis/dependency_mapper.dart';
@@ -70,3 +83,5 @@ export 'src/mcp/sentinel_server.dart';
 // Utils
 export 'src/utils/glob_matcher.dart';
 export 'src/utils/graph_utils.dart';
+export 'src/analysis/model_generator.dart';
+export 'src/core/file_hash_cache.dart';

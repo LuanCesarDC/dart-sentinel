@@ -1,0 +1,25 @@
+# Project Instructions — Dart Sentinel
+
+## Architecture Enforcement
+
+This project uses Dart Sentinel for deterministic architecture enforcement.
+All rules are defined in `analyzer.yaml` at the project root.
+
+Before writing or modifying Dart code:
+
+1. Read the architecture: Call `get_architecture` from dart-sentinel MCP.
+2. Check imports: Call `check_import` before adding any cross-layer import.
+3. After code generation: Call `analyze_file` on every new or modified file and fix ALL violations.
+
+## Key Rules
+
+- Layer boundaries are enforced (check `analyzer.yaml`)
+- Feature isolation — no cross-feature imports, use shared/core layers
+- Banned symbols — use design system components
+- Model classes in model paths need: toMap, fromMap, copyWith, ==, hashCode, toString
+- Dispose all resources (StreamSubscription, TextEditingController, AnimationController)
+- No empty catch blocks
+- No setState/context after await without mounted check
+- Cyclomatic complexity < 10, methods < 50 lines, files < 300 lines
+
+Treat violations as compile errors — never ignore them.

@@ -7,7 +7,7 @@ This example project demonstrates all violations that Dart Sentinel can detect.
 ```bash
 cd example
 dart pub get
-dart run dart_sentinel
+dart_sentinel
 ```
 
 ## Files

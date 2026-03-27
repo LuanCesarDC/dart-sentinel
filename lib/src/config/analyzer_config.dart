@@ -37,6 +37,15 @@ class AnalyzerConfig {
   /// Extra directories to scan beyond `lib/` (e.g., `integration_test/`, `bin/`).
   final List<String> extraScanDirs;
 
+  /// Model code generation configuration.
+  final ModelsConfig modelsConfig;
+
+  /// Testing enforcement configuration.
+  final TestingConfig testingConfig;
+
+  /// Banned dependency package names for pubspec validation.
+  final Set<String> bannedDependencies;
+
   const AnalyzerConfig({
     this.excludePatterns = const [],
     this.entrypoints = const [],
@@ -48,6 +57,9 @@ class AnalyzerConfig {
     this.metrics = const MetricsConfig(),
     this.aiSlop = const AiSlopConfig(),
     this.extraScanDirs = const [],
+    this.modelsConfig = const ModelsConfig(),
+    this.testingConfig = const TestingConfig(),
+    this.bannedDependencies = const {},
   });
 
   /// Load config from a YAML file. Falls back to defaults if file doesn't exist.
@@ -295,6 +307,36 @@ class AnalyzerConfig {
           'error',
           6,
         ),
+        numberOfMethodsWarning: _intOr(
+          metricsNode['number_of_methods'],
+          'warning',
+          15,
+        ),
+        numberOfMethodsError: _intOr(
+          metricsNode['number_of_methods'],
+          'error',
+          30,
+        ),
+        weightedMethodsPerClassWarning: _intOr(
+          metricsNode['weighted_methods_per_class'],
+          'warning',
+          30,
+        ),
+        weightedMethodsPerClassError: _intOr(
+          metricsNode['weighted_methods_per_class'],
+          'error',
+          60,
+        ),
+        linesPerClassWarning: _intOr(
+          metricsNode['lines_per_class'],
+          'warning',
+          200,
+        ),
+        linesPerClassError: _intOr(
+          metricsNode['lines_per_class'],
+          'error',
+          500,
+        ),
       );
     }
 
@@ -309,7 +351,17 @@ class AnalyzerConfig {
       metrics: metrics,
       aiSlop: AiSlopConfig.fromYaml(yaml['ai_slop']),
       extraScanDirs: extraScanDirs,
+      modelsConfig: ModelsConfig.fromYaml(yaml['models']),
+      testingConfig: TestingConfig.fromYaml(yaml['testing']),
+      bannedDependencies: _parseStringSet(yaml['banned_dependencies']),
     );
+  }
+
+  static Set<String> _parseStringSet(dynamic node) {
+    if (node is YamlList) {
+      return node.map((e) => e.toString()).toSet();
+    }
+    return const {};
   }
 
   static int _intOr(dynamic node, String key, int defaultValue) {
@@ -440,6 +492,12 @@ class MetricsConfig {
   final int buildMethodLocError;
   final int buildMethodBranchesWarning;
   final int buildMethodBranchesError;
+  final int numberOfMethodsWarning;
+  final int numberOfMethodsError;
+  final int weightedMethodsPerClassWarning;
+  final int weightedMethodsPerClassError;
+  final int linesPerClassWarning;
+  final int linesPerClassError;
 
   const MetricsConfig({
     this.cyclomaticComplexityWarning = 10,
@@ -456,6 +514,12 @@ class MetricsConfig {
     this.buildMethodLocError = 60,
     this.buildMethodBranchesWarning = 3,
     this.buildMethodBranchesError = 6,
+    this.numberOfMethodsWarning = 15,
+    this.numberOfMethodsError = 30,
+    this.weightedMethodsPerClassWarning = 30,
+    this.weightedMethodsPerClassError = 60,
+    this.linesPerClassWarning = 200,
+    this.linesPerClassError = 500,
   });
 }
 
@@ -700,6 +764,224 @@ class LazyNullCheckConfig {
       flagEmptyCollection: node['flag_empty_collection'] as bool? ?? true,
       ignoreMapAccess: node['ignore_map_access'] as bool? ?? true,
       ignoreNullAwareAccess: node['ignore_null_aware_access'] as bool? ?? true,
+    );
+  }
+}
+
+/// Configuration for model code generation.
+class ModelsConfig {
+  /// Glob patterns for paths that contain model classes.
+  final List<String> paths;
+
+  /// Name of the toMap method (e.g. 'toMap', 'toFirestore', 'toJson').
+  final String toMapName;
+
+  /// Name of the fromMap factory (e.g. 'fromMap', 'fromFirestore', 'fromJson').
+  final String fromMapName;
+
+  /// Name of the copyWith method.
+  final String copyWithName;
+
+  /// Whether to generate == and hashCode.
+  final bool equality;
+
+  /// Whether to generate toString().
+  final bool toStringMethod;
+
+  /// Serialization style: 'map', 'json', 'firestore'.
+  final String serialization;
+
+  /// Whether model fields must be final.
+  final bool immutable;
+
+  /// Field names to exclude from copyWith.
+  final List<String> excludeFromCopyWith;
+
+  /// Field names to exclude from serialization.
+  final List<String> excludeFromSerialization;
+
+  const ModelsConfig({
+    this.paths = const [],
+    this.toMapName = 'toMap',
+    this.fromMapName = 'fromMap',
+    this.copyWithName = 'copyWith',
+    this.equality = true,
+    this.toStringMethod = true,
+    this.serialization = 'map',
+    this.immutable = true,
+    this.excludeFromCopyWith = const [],
+    this.excludeFromSerialization = const [],
+  });
+
+  /// Whether any model paths are configured.
+  bool get isEnabled => paths.isNotEmpty;
+
+  factory ModelsConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const ModelsConfig();
+
+    final paths = <String>[];
+    final pathsNode = node['paths'];
+    if (pathsNode is YamlList) {
+      for (final p in pathsNode) {
+        paths.add(p.toString());
+      }
+    }
+
+    final generate = node['generate'];
+    String toMapName = 'toMap';
+    String fromMapName = 'fromMap';
+    String copyWithName = 'copyWith';
+    bool equality = true;
+    bool toStringMethod = true;
+
+    if (generate is YamlMap) {
+      toMapName = generate['to_map']?.toString() ?? 'toMap';
+      fromMapName = generate['from_map']?.toString() ?? 'fromMap';
+      copyWithName = generate['copy_with']?.toString() ?? 'copyWith';
+      equality = generate['equality'] as bool? ?? true;
+      toStringMethod = generate['to_string'] as bool? ?? true;
+    }
+
+    final excludeCW = <String>[];
+    final ecwNode = node['exclude_from_copy_with'];
+    if (ecwNode is YamlList) {
+      for (final e in ecwNode) {
+        excludeCW.add(e.toString());
+      }
+    }
+
+    final excludeSer = <String>[];
+    final esNode = node['exclude_from_serialization'];
+    if (esNode is YamlList) {
+      for (final e in esNode) {
+        excludeSer.add(e.toString());
+      }
+    }
+
+    return ModelsConfig(
+      paths: paths,
+      toMapName: toMapName,
+      fromMapName: fromMapName,
+      copyWithName: copyWithName,
+      equality: equality,
+      toStringMethod: toStringMethod,
+      serialization: node['serialization']?.toString() ?? 'map',
+      immutable: node['immutable'] as bool? ?? true,
+      excludeFromCopyWith: excludeCW,
+      excludeFromSerialization: excludeSer,
+    );
+  }
+}
+
+/// Configuration for testing enforcement.
+class TestingConfig {
+  /// Directory containing tests.
+  final String testDir;
+
+  /// Naming convention: 'suffix' (user_service.dart → user_service_test.dart).
+  final String convention;
+
+  /// Glob patterns for files to exclude from test requirements.
+  final List<String> exclude;
+
+  /// Glob patterns — only enforce tests for these paths.
+  final List<String> requireFor;
+
+  /// Coverage configuration.
+  final CoverageConfig coverage;
+
+  const TestingConfig({
+    this.testDir = 'test',
+    this.convention = 'suffix',
+    this.exclude = const [],
+    this.requireFor = const [],
+    this.coverage = const CoverageConfig(),
+  });
+
+  factory TestingConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const TestingConfig();
+
+    final exclude = <String>[];
+    final excludeNode = node['exclude'];
+    if (excludeNode is YamlList) {
+      for (final e in excludeNode) {
+        exclude.add(e.toString());
+      }
+    }
+
+    final requireFor = <String>[];
+    final reqNode = node['require_for'];
+    if (reqNode is YamlList) {
+      for (final r in reqNode) {
+        requireFor.add(r.toString());
+      }
+    }
+
+    return TestingConfig(
+      testDir: node['test_dir']?.toString() ?? 'test',
+      convention: node['convention']?.toString() ?? 'suffix',
+      exclude: exclude,
+      requireFor: requireFor,
+      coverage: CoverageConfig.fromYaml(node['coverage']),
+    );
+  }
+}
+
+/// Configuration for test coverage thresholds.
+class CoverageConfig {
+  /// Path to lcov.info file.
+  final String file;
+
+  /// Minimum global coverage percent.
+  final int globalMin;
+
+  /// Minimum per-file coverage percent.
+  final int perFileMin;
+
+  /// Glob patterns to exclude from coverage.
+  final List<String> exclude;
+
+  /// Path-specific coverage overrides (glob → min percent).
+  final Map<String, int> enforceFor;
+
+  const CoverageConfig({
+    this.file = 'coverage/lcov.info',
+    this.globalMin = 60,
+    this.perFileMin = 40,
+    this.exclude = const [],
+    this.enforceFor = const {},
+  });
+
+  factory CoverageConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const CoverageConfig();
+
+    final exclude = <String>[];
+    final exNode = node['exclude'];
+    if (exNode is YamlList) {
+      for (final e in exNode) {
+        exclude.add(e.toString());
+      }
+    }
+
+    final enforceFor = <String, int>{};
+    final efNode = node['enforce_for'];
+    if (efNode is YamlList) {
+      for (final item in efNode) {
+        if (item is YamlMap) {
+          for (final entry in item.entries) {
+            enforceFor[entry.key.toString()] =
+                int.tryParse(entry.value.toString()) ?? 60;
+          }
+        }
+      }
+    }
+
+    return CoverageConfig(
+      file: node['file']?.toString() ?? 'coverage/lcov.info',
+      globalMin: int.tryParse(node['global_min']?.toString() ?? '') ?? 60,
+      perFileMin: int.tryParse(node['per_file_min']?.toString() ?? '') ?? 40,
+      exclude: exclude,
+      enforceFor: enforceFor,
     );
   }
 }

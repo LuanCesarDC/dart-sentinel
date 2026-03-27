@@ -1,5 +1,3 @@
-import 'package:path/path.dart' as p;
-
 /// A simple glob matcher that supports:
 /// - `*` matches any single path segment (not crossing `/`)
 /// - `**` matches zero or more path segments
@@ -81,16 +79,4 @@ bool matchesAnyGlob(String path, List<String> patterns) {
     }
   }
   return false;
-}
-
-/// Checks if a file path is a generated Dart file.
-bool isGeneratedFile(String filePath) {
-  final name = p.basename(filePath);
-  return name.endsWith('.g.dart') ||
-      name.endsWith('.freezed.dart') ||
-      name.endsWith('.gr.dart') ||
-      name.endsWith('.g2.dart') ||
-      name.endsWith('.mocks.dart') ||
-      name.endsWith('.config.dart') ||
-      name.endsWith('.mapper.dart');
 }

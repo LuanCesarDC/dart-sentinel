@@ -61,8 +61,8 @@ class RuleRunner {
         'feature-isolation',
         'import-cycles',
       },
-      'dead': {'dead-files', 'dead-exports'},
-      'metrics': {'complexity', 'build-complexity'},
+      'dead': {'dead-files', 'dead-exports', 'unused-code'},
+      'metrics': {'complexity', 'build-complexity', 'class-metrics'},
       'lint': {'dispose-check', 'async-safety'},
       'slop': {
         'empty-catch',
@@ -73,6 +73,26 @@ class RuleRunner {
         'single-method-class',
         'passthrough-function',
         'lazy-null-check',
+        'avoid-global-state',
+        'no-magic-number',
+        'no-equal-then-else',
+        'avoid-commented-out-code',
+        'no-equal-arguments',
+        'avoid-self-compare',
+        'avoid-returning-widgets',
+        'flutter-anti-patterns',
+      },
+      'models': {
+        'model-missing-methods',
+      },
+      'testing': {
+        'untested-files',
+        'test-coverage',
+        'test-quality',
+      },
+      'pub': {
+        'pubspec',
+        'misused-dependencies',
       },
     };
 

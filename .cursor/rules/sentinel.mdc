@@ -1,0 +1,122 @@
+---
+description: Dart Sentinel architecture enforcement
+globs: ["**/*.dart", "analyzer.yaml"]
+alwaysApply: true
+---
+
+# Project Instructions
+
+Architecture is enforced by **Dart Sentinel** (`analyzer.yaml`). The AI agent has access to Sentinel via MCP.
+
+## Architecture
+
+- **utils**: `lib/src/utils/**` → (no deps)
+- **core**: `lib/src/core/**, lib/src/config/**` → utils
+- **analysis**: `lib/src/analysis/**` → core, utils
+- **rules**: `lib/src/rules/**` → core, utils
+- **output**: `lib/src/output/**` → core
+- **mcp**: `lib/src/mcp/**` → core, rules, analysis, utils
+
+## Import Restrictions
+- Rules must be independent — don't import other rule files.
+- Output formatters must not depend on rule implementations.
+- Utils must be pure algorithms — no I/O or internal dependencies.
+- Rules must not use dart:io — use ProjectContext for file data.
+
+## Thresholds
+- Cyclomatic complexity: warning 10, error 20
+- Lines per file: warning 300, error 600
+- Lines per method: warning 50, error 100
+- Max parameters: warning 5, error 7
+- Max nesting: warning 4, error 6
+- Build method LOC: warning 30, error 60
+- Build method branches: warning 3, error 6
+- Methods per class: warning 15, error 30
+- Weighted methods per class: warning 30, error 80
+- Lines per class: warning 300, error 600
+
+## Workflow — MANDATORY for every task
+
+1. **Before writing code**: call `get_architecture` to read layer boundaries.
+2. **Before adding an import**: call `check_import` to verify it's allowed.
+3. **After creating/modifying a file**: call `analyze_file` to check for violations.
+4. Fix ALL issues before moving on — treat violations as compile errors.
+5. **Before a big refactor**: call `impact_analysis` to understand blast radius.
+
+## MCP Tools (dart-sentinel server)
+
+| Tool | When to use |
+|------|-------------|
+| `get_architecture` | Before any architectural decision |
+| `check_import` | Before adding any cross-layer import |
+| `analyze_file` | After every file create/edit |
+| `analyze` | Full project scan |
+| `impact_analysis` | Before refactoring |
+| `dependency_map` | Visualize module structure |
+| `generate_model_scaffold` | Create model with copyWith, toMap, fromMap, ==, hashCode |
+| `generate_model_update` | Add fields to existing model |
+| `generate_test_scaffold` | Generate test stubs for a file |
+| `scan_hardcoded_strings` | Find hardcoded UI strings |
+| `l10n_status` | Check translation coverage |
+| `generate_l10n` | Write ARB translation files |
+| `migrations` | Track banned-symbol migration progress |
+
+## Code Quality
+
+- Dispose all resources (StreamSubscription, TextEditingController, AnimationController)
+- No empty catch blocks — handle, rethrow, or document why
+- No `setState`/`context` after `await` without `mounted` check
+- No generic names (`data`, `result`, `value`, `temp`, `item`)
+- No commented-out code blocks
+- No magic numbers — extract to named constants
+- No duplicate if/else branches
+
+**Treat Sentinel violations as compile errors — never ignore them.**
+
+---
+applyTo: "**/*.dart"
+---
+
+# Dart Sentinel — Checks for Dart files
+
+## Active Rules
+- **Errors** (block CI): `banned-imports`, `layer-dependency`
+- **Warnings**: `import-cycles`, `feature-isolation`, `dead-files`, `dead-exports`, `unused-code`, `complexity`, `build-complexity`, `class-metrics`, `dispose-check`, `async-safety`, `empty-catch`, `generic-naming`, `lazy-null-check`, `no-equal-then-else`, `no-equal-arguments`, `avoid-self-compare`, `avoid-global-state`, `avoid-returning-widgets`, `flutter-anti-patterns`, `test-quality`, `pubspec`
+- **Info**: `dead-todos`, `redundant-comments`, `verbose-logging`, `single-method-class`, `passthrough-function`, `avoid-commented-out-code`, `no-magic-number`, `untested-files`, `misused-dependencies`, `model-missing-methods`
+
+## Before writing code
+- Call `get_architecture` from dart-sentinel MCP to read layers and constraints.
+
+## Before adding any import
+- Call `check_import` with the source file path and the import URI.
+- If it returns a violation, find an alternative.
+
+## After creating or modifying any Dart file
+- Call `analyze_file` with the file path.
+- Fix ALL violations before considering the task done.
+
+### How to fix common violations
+
+| Violation | Fix |
+|-----------|-----|
+| `layer-dependency` | You imported from a forbidden layer. Move the import or restructure. |
+| `banned-imports` | This import is explicitly forbidden. Read the message for the reason. |
+| `complexity` | Method too complex. Extract helpers or simplify conditionals. |
+| `empty-catch` | Add error handling: `rethrow`, log the error, or add a `// deliberate` comment. |
+| `generic-naming` | Rename `data`/`result`/`item` to something domain-specific. |
+| `dispose-check` | Add `subscription.cancel()` or `controller.dispose()` in `dispose()`. |
+| `async-safety` | Add `if (!mounted) return;` after the `await`. |
+| `unused-code` | Remove the unused declaration, or export it if it's public API. |
+| `no-magic-number` | Extract `42` to `const _maxRetries = 42;`. |
+| `no-equal-then-else` | The if and else branches are identical — remove the conditional. |
+| `avoid-global-state` | Move top-level `var` into a class or make it `final`. |
+
+## When creating a model class
+- Call `generate_model_scaffold` with class name and fields to get `copyWith`, `toMap`, `fromMap`, `==`, `hashCode`, `toString`.
+
+## When creating tests
+- Call `generate_test_scaffold` with the source file path to get test stubs for all public methods.
+
+## When refactoring
+- Call `impact_analysis` with the file(s) you plan to change.
+- Review the blast radius before making breaking changes.

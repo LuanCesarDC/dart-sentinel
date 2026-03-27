@@ -54,6 +54,7 @@ class ProjectContext {
     required this.parsedUnits,
     required this.allFiles,
     required this.config,
+    required this.pubspecContent,
   });
 
   /// Build a [ProjectContext] by scanning the project at [projectRoot].
@@ -61,7 +62,11 @@ class ProjectContext {
     String projectRoot, {
     String? targetPath,
   }) async {
-    final packageName = _readPackageName(projectRoot);
+    final pubspecFile = File(p.join(projectRoot, 'pubspec.yaml'));
+    final pubspecContent = pubspecFile.existsSync()
+        ? pubspecFile.readAsStringSync()
+        : '';
+    final packageName = _readPackageNameFromContent(pubspecContent);
     final libRoot = p.join(projectRoot, 'lib');
     final config = AnalyzerConfig.load(projectRoot);
     final excludePatterns = _buildExcludePatterns(config);
@@ -86,22 +91,42 @@ class ProjectContext {
       parsedUnits: parseResult.parsedUnits,
       allFiles: allFiles,
       config: config,
+      pubspecContent: pubspecContent,
     );
   }
+
+  /// Raw content of pubspec.yaml, cached during build.
+  final String pubspecContent;
 
   /// Get the relative path of a file from the project root.
   String relativePath(String absolutePath) {
     return p.relative(absolutePath, from: projectRoot);
   }
 
+  /// Check if a file exists on disk.
+  bool fileExists(String path) => File(path).existsSync();
+
+  /// Check if a directory exists on disk.
+  bool directoryExists(String path) => Directory(path).existsSync();
+
+  /// Read a file's content as a string, or null if it doesn't exist.
+  String? readFile(String path) {
+    final f = File(path);
+    return f.existsSync() ? f.readAsStringSync() : null;
+  }
+
+  /// Read a file's content as lines, or null if it doesn't exist.
+  List<String>? readFileLines(String path) {
+    final f = File(path);
+    return f.existsSync() ? f.readAsLinesSync() : null;
+  }
+
   // ── Build helpers ──
 
-  static String _readPackageName(String projectRoot) {
-    final pubspecFile = File(p.join(projectRoot, 'pubspec.yaml'));
-    if (!pubspecFile.existsSync()) {
-      throw StateError('pubspec.yaml not found at $projectRoot');
+  static String _readPackageNameFromContent(String content) {
+    if (content.isEmpty) {
+      throw StateError('pubspec.yaml not found');
     }
-    final content = pubspecFile.readAsStringSync();
     final name = _extractPackageName(content);
     if (name == null) {
       throw StateError('Could not determine package name from pubspec.yaml');

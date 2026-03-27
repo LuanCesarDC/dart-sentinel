@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:stream_channel/stream_channel.dart';
 
@@ -34,6 +35,23 @@ import '../rules/verbose_logging_rule.dart';
 import '../rules/single_method_class_rule.dart';
 import '../rules/passthrough_function_rule.dart';
 import '../rules/lazy_null_check_rule.dart';
+import '../rules/model_missing_methods_rule.dart';
+import '../rules/unused_code_rule.dart';
+import '../rules/untested_files_rule.dart';
+import '../rules/test_coverage_rule.dart';
+import '../rules/test_quality_rule.dart';
+import '../rules/class_metrics_rule.dart';
+import '../rules/pubspec_rule.dart';
+import '../rules/avoid_global_state_rule.dart';
+import '../rules/no_magic_number_rule.dart';
+import '../rules/no_equal_then_else_rule.dart';
+import '../rules/avoid_commented_out_code_rule.dart';
+import '../rules/no_equal_arguments_rule.dart';
+import '../rules/avoid_self_compare_rule.dart';
+import '../rules/avoid_returning_widgets_rule.dart';
+import '../rules/flutter_anti_patterns_rule.dart';
+import '../rules/misused_dependencies_rule.dart';
+import '../analysis/model_generator.dart';
 
 /// MCP Server for Dart Sentinel.
 ///
@@ -70,6 +88,9 @@ base class SentinelMCPServer extends MCPServer
     registerTool(_scanHardcodedStringsTool, _handleScanHardcodedStrings);
     registerTool(_l10nStatusTool, _handleL10nStatus);
     registerTool(_generateL10nTool, _handleGenerateL10n);
+    registerTool(_generateModelScaffoldTool, _handleGenerateModelScaffold);
+    registerTool(_generateModelUpdateTool, _handleGenerateModelUpdate);
+    registerTool(_generateTestScaffoldTool, _handleGenerateTestScaffold);
   }
 
   // ── analyze ──
@@ -608,6 +629,345 @@ base class SentinelMCPServer extends MCPServer
     );
   }
 
+  // ── generate_model_scaffold ──
+
+  static final _generateModelScaffoldTool = Tool(
+    name: 'generate_model_scaffold',
+    description:
+        'Generate a complete model class with boilerplate methods '
+        '(copyWith, toMap, fromMap, ==, hashCode, toString). '
+        'Respects the project\'s configured method names and serialization style '
+        'from analyzer.yaml. Returns code that can be inserted directly.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'class_name': Schema.string(
+          description: 'The name of the model class to generate.',
+        ),
+        'fields': Schema.list(
+          items: ObjectSchema(
+            properties: {
+              'name': Schema.string(description: 'Field name.'),
+              'type': Schema.string(description: 'Dart type (e.g. String, int, List<String>).'),
+            },
+            required: ['name', 'type'],
+          ),
+          description: 'List of fields with name and type.',
+        ),
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+      },
+      required: ['class_name', 'fields'],
+    ),
+  );
+
+  Future<CallToolResult> _handleGenerateModelScaffold(
+    CallToolRequest request,
+  ) async {
+    final args = request.arguments ?? {};
+    final className = args['class_name'] as String?;
+    final fieldsList = args['fields'] as List<dynamic>?;
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+
+    if (className == null || className.isEmpty) {
+      return _errorResult('Missing "class_name" argument.');
+    }
+    if (fieldsList == null || fieldsList.isEmpty) {
+      return _errorResult('Missing "fields" argument.');
+    }
+
+    final config = AnalyzerConfig.load(projectRoot);
+    final generator = ModelGenerator(config.modelsConfig);
+
+    final fields = fieldsList.map((f) {
+      final map = f as Map<String, dynamic>;
+      final type = map['type'] as String? ?? 'dynamic';
+      return FieldInfo(
+        name: map['name'] as String? ?? '',
+        type: type,
+        isNullable: type.endsWith('?'),
+      );
+    }).toList();
+
+    final code = generator.generateFullClass(
+      className: className,
+      fields: fields,
+    );
+
+    final suggestedPath = _suggestModelPath(config, className);
+
+    return CallToolResult(
+      content: [
+        TextContent(
+          text: _prettyJson.convert({
+            'code': code,
+            'methods_generated': _listGeneratedMethods(config.modelsConfig),
+            'path_suggestion': suggestedPath,
+          }),
+        ),
+      ],
+    );
+  }
+
+  // ── generate_model_update ──
+
+  static final _generateModelUpdateTool = Tool(
+    name: 'generate_model_update',
+    description:
+        'Regenerate the sentinel-generated methods of an existing model class. '
+        'Reads the class, extracts fields, and regenerates the code block '
+        'between sentinel markers. Returns the full updated file content.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'file': Schema.string(
+          description: 'Absolute path to the model file to update.',
+        ),
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+      },
+      required: ['file'],
+    ),
+  );
+
+  Future<CallToolResult> _handleGenerateModelUpdate(
+    CallToolRequest request,
+  ) async {
+    final args = request.arguments ?? {};
+    final filePath = args['file'] as String?;
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+
+    if (filePath == null || filePath.isEmpty) {
+      return _errorResult('Missing "file" argument.');
+    }
+
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      return _errorResult('File not found: $filePath');
+    }
+
+    final config = AnalyzerConfig.load(projectRoot);
+    final generator = ModelGenerator(config.modelsConfig);
+
+    final context = await ProjectContext.build(projectRoot);
+    final unit = context.parsedUnits[filePath];
+    if (unit == null) {
+      return _errorResult('Could not parse file: $filePath');
+    }
+
+    // Find the first class declaration
+    ClassDeclaration? classDecl;
+    for (final decl in unit.declarations) {
+      if (decl is ClassDeclaration) {
+        classDecl = decl;
+        break;
+      }
+    }
+
+    if (classDecl == null) {
+      return _errorResult('No class found in file: $filePath');
+    }
+
+    final fields = ModelGenerator.extractFields(classDecl);
+    final className = classDecl.namePart.typeName.lexeme;
+
+    final fileContent = file.readAsStringSync();
+    final updated = generator.updateGeneratedSection(
+      fileContent: fileContent,
+      className: className,
+      fields: fields,
+    );
+
+    if (updated != null) {
+      return CallToolResult(
+        content: [
+          TextContent(
+            text: _prettyJson.convert({
+              'updated_code': updated,
+              'class_name': className,
+              'changed_methods': _listGeneratedMethods(config.modelsConfig),
+            }),
+          ),
+        ],
+      );
+    }
+
+    // No existing markers — generate and append before closing brace
+    final generated = generator.generate(className: className, fields: fields);
+    final classBody = classDecl.body;
+    if (classBody is! BlockClassBody) {
+      return _errorResult('Class body is not a block body: $filePath');
+    }
+    final classEnd = classBody.rightBracket.offset;
+    final newContent =
+        fileContent.substring(0, classEnd) +
+        '\n$generated' +
+        fileContent.substring(classEnd);
+
+    return CallToolResult(
+      content: [
+        TextContent(
+          text: _prettyJson.convert({
+            'updated_code': newContent,
+            'class_name': className,
+            'changed_methods': _listGeneratedMethods(config.modelsConfig),
+          }),
+        ),
+      ],
+    );
+  }
+
+  String _suggestModelPath(AnalyzerConfig config, String className) {
+    final snake = className
+        .replaceAllMapped(
+          RegExp(r'[A-Z]'),
+          (m) => '_${m.group(0)!.toLowerCase()}',
+        )
+        .substring(1); // remove leading underscore
+    final paths = config.modelsConfig.paths;
+    if (paths.isNotEmpty) {
+      final base = paths.first.replaceAll('/**', '').replaceAll('**', '');
+      return '$base/$snake.dart';
+    }
+    return 'lib/src/models/$snake.dart';
+  }
+
+  List<String> _listGeneratedMethods(ModelsConfig config) {
+    final methods = <String>[];
+    if (config.copyWithName.isNotEmpty) methods.add(config.copyWithName);
+    if (config.toMapName.isNotEmpty) methods.add(config.toMapName);
+    if (config.fromMapName.isNotEmpty) methods.add(config.fromMapName);
+    if (config.equality) methods.addAll(['==', 'hashCode']);
+    if (config.toStringMethod) methods.add('toString');
+    return methods;
+  }
+
+  // ── generate_test_scaffold ──
+
+  static final _generateTestScaffoldTool = Tool(
+    name: 'generate_test_scaffold',
+    description:
+        'Generate a test file scaffold for a Dart source file. '
+        'Extracts public classes and methods from the AST and generates '
+        'a test skeleton with group/test stubs for each.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'file': Schema.string(
+          description: 'Absolute path to the Dart source file to generate tests for.',
+        ),
+        'path': Schema.string(
+          description:
+              'Absolute path to the project root. '
+              'Defaults to the current working directory.',
+        ),
+      },
+      required: ['file'],
+    ),
+  );
+
+  Future<CallToolResult> _handleGenerateTestScaffold(
+    CallToolRequest request,
+  ) async {
+    final args = request.arguments ?? {};
+    final filePath = args['file'] as String?;
+    final projectRoot = args['path'] as String? ?? Directory.current.path;
+
+    if (filePath == null || filePath.isEmpty) {
+      return _errorResult('Missing "file" argument.');
+    }
+
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      return _errorResult('File not found: $filePath');
+    }
+
+    final context = await ProjectContext.build(projectRoot);
+    final unit = context.parsedUnits[filePath];
+    if (unit == null) {
+      return _errorResult('Could not parse file: $filePath');
+    }
+
+    final relativePath = context.relativePath(filePath);
+    final buf = StringBuffer();
+    buf.writeln("import 'package:test/test.dart';");
+
+    // Derive import for the source file
+    buf.writeln("import 'package:${_derivePackageImport(projectRoot, relativePath)}';");
+    buf.writeln();
+    buf.writeln('void main() {');
+
+    for (final decl in unit.declarations) {
+      if (decl is ClassDeclaration) {
+        final className = decl.namePart.typeName.lexeme;
+        if (className.startsWith('_')) continue;
+
+        buf.writeln("  group('$className', () {");
+
+        // Extract public methods
+        if (decl.body is BlockClassBody) {
+          final body = decl.body as BlockClassBody;
+          for (final member in body.members) {
+            if (member is MethodDeclaration) {
+              final methodName = member.name.lexeme;
+              if (methodName.startsWith('_')) continue;
+              buf.writeln("    test('$methodName', () {");
+              buf.writeln('      // TODO: implement test');
+              buf.writeln('    });');
+              buf.writeln();
+            }
+          }
+        }
+
+        buf.writeln('  });');
+        buf.writeln();
+      } else if (decl is FunctionDeclaration) {
+        final funcName = decl.name.lexeme;
+        if (funcName.startsWith('_')) continue;
+        buf.writeln("  test('$funcName', () {");
+        buf.writeln('    // TODO: implement test');
+        buf.writeln('  });');
+        buf.writeln();
+      }
+    }
+
+    buf.writeln('}');
+
+    // Suggest test file path
+    final testPath = relativePath
+        .replaceFirst('lib/', 'test/')
+        .replaceFirst('.dart', '_test.dart');
+
+    return CallToolResult(
+      content: [
+        TextContent(
+          text: _prettyJson.convert({
+            'test_code': buf.toString(),
+            'suggested_path': testPath,
+            'source_file': relativePath,
+          }),
+        ),
+      ],
+    );
+  }
+
+  String _derivePackageImport(String projectRoot, String relativePath) {
+    final pubspecFile = File('$projectRoot/pubspec.yaml');
+    if (pubspecFile.existsSync()) {
+      final content = pubspecFile.readAsStringSync();
+      final match = RegExp(r'^name:\s*(\S+)', multiLine: true).firstMatch(content);
+      if (match != null) {
+        final packageName = match.group(1)!;
+        final libPath = relativePath.replaceFirst('lib/', '');
+        return '$packageName/$libPath';
+      }
+    }
+    return relativePath;
+  }
+
   void _registerResources() {
     addResource(
       Resource(
@@ -719,6 +1079,22 @@ base class SentinelMCPServer extends MCPServer
       SingleMethodClassRule(),
       PassthroughFunctionRule(),
       LazyNullCheckRule(),
+      ModelMissingMethodsRule(),
+      UnusedCodeRule(),
+      UntestedFilesRule(),
+      TestCoverageRule(),
+      TestQualityRule(),
+      ClassMetricsRule(),
+      PubspecRule(),
+      AvoidGlobalStateRule(),
+      NoMagicNumberRule(),
+      NoEqualThenElseRule(),
+      AvoidCommentedOutCodeRule(),
+      NoEqualArgumentsRule(),
+      AvoidSelfCompareRule(),
+      AvoidReturningWidgetsRule(),
+      FlutterAntiPatternsRule(),
+      MisusedDependenciesRule(),
     ];
     final runner = RuleRunner(rules: allRules, config: context.config);
     if (category == 'all') return runner.runAll(context);

@@ -14,7 +14,11 @@ Dart Sentinel integrates with the Dart analysis server to show diagnostics in re
 
 ### Setup
 
-1. Add `dart_sentinel` as a dev dependency (see [Installation](#installation)).
+1. Add `dart_sentinel` via global activation:
+
+```bash
+dart pub global activate dart_sentinel
+```
 
 2. Enable the plugin in your `analysis_options.yaml`:
 
@@ -54,79 +58,78 @@ All single-file rules run as analysis server plugins:
 
 ## Installation
 
-Add to your project's `pubspec.yaml`:
-
-```yaml
-dev_dependencies:
-  dart_sentinel:
-    git:
-      url: https://github.com/LuanCesarDC/dart-sentinel
-```
-
-Or via local path (for development):
-
-```yaml
-dev_dependencies:
-  dart_sentinel:
-    path: ../dart_sentinel
-```
-
-Then:
+Install globally:
 
 ```bash
-dart pub get
+dart pub global activate dart_sentinel
 ```
+
+Ensure `~/.pub-cache/bin` is in your `PATH`. Then run from any Dart/Flutter project root:
+
+```bash
+dart_sentinel
+```
+
+> **Do not add `dart_sentinel` to your project's `pubspec.yaml`.** It uses `package:analyzer` internally at specific versions that will conflict with your project's own analyzer dependency. Global activation avoids this entirely.
 
 ## Usage
 
 ```bash
 # Run all rules
-dart run dart_sentinel
+dart_sentinel
 
 # Architecture rules only
-dart run dart_sentinel -o arch
+dart_sentinel -o arch
 
 # Dead code only
-dart run dart_sentinel -o dead
+dart_sentinel -o dead
 
 # Metrics only
-dart run dart_sentinel -o metrics
+dart_sentinel -o metrics
 
 # Lint rules only
-dart run dart_sentinel -o lint
+dart_sentinel -o lint
 
 # AI slop detection
-dart run dart_sentinel -o slop
+dart_sentinel -o slop
+
+# Testing enforcement
+dart_sentinel -o testing
 
 # JSON output (for CI)
-dart run dart_sentinel -f json
+dart_sentinel -f json
 
 # Markdown output (for PR comments)
-dart run dart_sentinel -f markdown
+dart_sentinel -f markdown
 
 # Specify project path
-dart run dart_sentinel -p /path/to/project
+dart_sentinel -p /path/to/project
 
 # Change impact analysis — hot spots
-dart run dart_sentinel -o impact
+dart_sentinel -o impact
 
 # Blast radius of specific files
-dart run dart_sentinel -o impact --files lib/src/core/issue.dart
+dart_sentinel -o impact --files lib/src/core/issue.dart
 
 # Dependency map (text summary)
-dart run dart_sentinel -o map
+dart_sentinel -o map
 
 # Dependency map (Mermaid diagram)
-dart run dart_sentinel -o map -f mermaid
+dart_sentinel -o map -f mermaid
 
 # Migration progress for banned-symbols
-dart run dart_sentinel -o migrations
+dart_sentinel -o migrations
 
 # Ratchet mode — save baseline
-dart run dart_sentinel --save-baseline
+dart_sentinel --save-baseline
 
 # Ratchet mode — CI check (fails if regressions)
-dart run dart_sentinel --check-baseline
+dart_sentinel --check-baseline
+
+# Generate AI integration files
+dart_sentinel generate-ai-config --tool copilot
+dart_sentinel generate-ai-config --tool cursor
+dart_sentinel generate-ai-config --tool all
 ```
 
 ## Configuration
@@ -281,13 +284,13 @@ Analyze the blast radius of file changes — how many files are affected transit
 
 ```bash
 # Show hot spots (files with the most dependents)
-dart run dart_sentinel -o impact
+dart_sentinel -o impact
 
 # Blast radius of a specific file
-dart run dart_sentinel -o impact --files lib/src/core/issue.dart
+dart_sentinel -o impact --files lib/src/core/issue.dart
 
 # JSON output
-dart run dart_sentinel -o impact --files lib/src/core/issue.dart -f json
+dart_sentinel -o impact --files lib/src/core/issue.dart -f json
 ```
 
 Example output:
@@ -305,10 +308,10 @@ Visualize the module structure and dependencies of your project.
 
 ```bash
 # Text summary
-dart run dart_sentinel -o map
+dart_sentinel -o map
 
 # Mermaid diagram (paste into GitHub PR, Notion, etc.)
-dart run dart_sentinel -o map -f mermaid
+dart_sentinel -o map -f mermaid
 ```
 
 The Mermaid output generates a valid diagram you can render anywhere:
@@ -327,8 +330,8 @@ graph TD
 Track gradual migration progress for `banned-symbols` rules. Shows remaining usages per symbol and which files still need updating.
 
 ```bash
-dart run dart_sentinel -o migrations
-dart run dart_sentinel -o migrations -f json
+dart_sentinel -o migrations
+dart_sentinel -o migrations -f json
 ```
 
 Example output:
@@ -353,8 +356,8 @@ Total remaining: 12
 Scan for hardcoded UI strings and check translation coverage across ARB files. Designed to work with AI agents for full-app translation workflows.
 
 ```bash
-dart run dart_sentinel -o l10n
-dart run dart_sentinel -o l10n -f json
+dart_sentinel -o l10n
+dart_sentinel -o l10n -f json
 ```
 
 Example output:
@@ -384,10 +387,10 @@ Ensure code quality only improves over time. Save a baseline of issue counts and
 
 ```bash
 # Save current state as baseline (commit this file)
-dart run dart_sentinel --save-baseline
+dart_sentinel --save-baseline
 
 # CI step: fail if any rule regressed
-dart run dart_sentinel --check-baseline
+dart_sentinel --check-baseline
 ```
 
 The baseline is saved to `.dart_sentinel/baseline.json`. Commit this file to your repo. On each CI run, `--check-baseline` compares current issues against the baseline:
@@ -398,7 +401,7 @@ The baseline is saved to `.dart_sentinel/baseline.json`. Commit this file to you
 ```yaml
 # GitHub Actions
 - name: Ratchet check
-  run: dart run dart_sentinel --check-baseline
+  run: dart_sentinel --check-baseline
 ```
 
 ## CI Integration
@@ -407,13 +410,13 @@ The baseline is saved to `.dart_sentinel/baseline.json`. Commit this file to you
 
 ```yaml
 - name: Run Dart Sentinel
-  run: dart run dart_sentinel -f json > lint_report.json
+  run: dart_sentinel -f json > lint_report.json
 
 - name: Check for errors
-  run: dart run dart_sentinel  # exit code 1 if there are errors
+  run: dart_sentinel  # exit code 1 if there are errors
 
 - name: Ratchet check
-  run: dart run dart_sentinel --check-baseline
+  run: dart_sentinel --check-baseline
 ```
 
 ### Pre-commit hook
@@ -422,7 +425,7 @@ Add to `.githooks/pre-commit`:
 
 ```bash
 #!/bin/sh
-dart run dart_sentinel -o arch
+dart_sentinel -o arch
 ```
 
 ## Starting a Project with AI Agents
@@ -449,14 +452,14 @@ Create `.vscode/mcp.json` so the AI agent can talk to Dart Sentinel:
   "servers": {
     "dart-sentinel": {
       "type": "stdio",
-      "command": "dart",
-      "args": ["run", "dart_sentinel:mcp_server"]
+      "command": "dart_sentinel",
+      "args": ["--mcp"]
     }
   }
 }
 ```
 
-> For **Cursor**, **Claude Code**, or other MCP-compatible tools, check their docs for the equivalent config. The command is the same: `dart run dart_sentinel:mcp_server`.
+> For **Cursor**, add to `.cursor/mcp.json` with `{"mcpServers": {"dart-sentinel": {"command": "dart_sentinel", "args": ["--mcp"]}}}`. For **Claude Code**, the command is the same: `dart_sentinel --mcp`.
 
 ### 3. Create instruction files for the AI agent
 
@@ -564,10 +567,10 @@ Lock in the quality bar so it never goes down:
 
 ```bash
 # Save current baseline (commit .dart_sentinel/baseline.json)
-dart run dart_sentinel --save-baseline
+dart_sentinel --save-baseline
 
 # CI step — fails if any rule has more issues than baseline
-dart run dart_sentinel --check-baseline
+dart_sentinel --check-baseline
 ```
 
 This means the AI can't introduce architectural regressions even if it doesn't call the MCP tools.
@@ -589,7 +592,7 @@ This means the AI can't introduce architectural regressions even if it doesn't c
 - **Keep `copilot-instructions.md` short and actionable.** The AI has limited context — bullet points > paragraphs.
 - **Always mention the MCP tools by name** (`get_architecture`, `check_import`, `analyze_file`) so the agent knows they exist.
 - **Use templates as starting points.** Customize `analyzer.yaml` to match your actual folder structure — templates are guides, not gospel.
-- **Run `dart run dart_sentinel` yourself periodically.** The AI agent won't always catch everything via MCP. A full scan catches cross-file issues (dead files, import cycles) that single-file analysis misses.
+- **Run `dart_sentinel` yourself periodically.** The AI agent won't always catch everything via MCP. A full scan catches cross-file issues (dead files, import cycles) that single-file analysis misses.
 - **Combine with `--save-baseline`** after big cleanup efforts to lock in the improvement.
 
 ---
@@ -600,13 +603,10 @@ Dart Sentinel exposes an MCP (Model Context Protocol) server so AI coding assist
 
 ### Setup
 
-**1. Add dart_sentinel as a dev dependency** (if not already):
+**1. Install Dart Sentinel globally** (if not already):
 
-```yaml
-dev_dependencies:
-  dart_sentinel:
-    git:
-      url: https://github.com/LuanCesarDC/dart-sentinel
+```bash
+dart pub global activate dart_sentinel
 ```
 
 **2. Create `.vscode/mcp.json`** in your project root:
@@ -616,14 +616,27 @@ dev_dependencies:
   "servers": {
     "dart-sentinel": {
       "type": "stdio",
-      "command": "dart",
-      "args": ["run", "dart_sentinel:mcp_server"]
+      "command": "dart_sentinel",
+      "args": ["--mcp"]
     }
   }
 }
 ```
 
-That's it. The AI agent will automatically discover the server and use it.
+For **Cursor**, add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "dart-sentinel": {
+      "command": "dart_sentinel",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+That's it. The AI agent will automatically discover the server and use its tools.
 
 ### Available Tools
 
@@ -673,9 +686,7 @@ When an AI agent generates code in your project, it can:
 You can also start the MCP server manually:
 
 ```bash
-dart run dart_sentinel --mcp
-# or
-dart run dart_sentinel:mcp_server
+dart_sentinel --mcp
 ```
 
 ## Programmatic Usage

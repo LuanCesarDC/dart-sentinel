@@ -1,0 +1,44 @@
+---
+description: Dart Sentinel architecture enforcement for Dart/Flutter files
+globs: ["**/*.dart", "analyzer.yaml"]
+alwaysApply: true
+---
+
+# Dart Sentinel — Architecture Enforcement
+
+This project uses Dart Sentinel for deterministic architecture enforcement.
+All rules are defined in `analyzer.yaml` at the project root.
+
+## Workflow
+
+1. **Before writing code**: Call `get_architecture` from dart-sentinel MCP to understand layers and boundaries.
+2. **Before adding imports**: Call `check_import` to verify the import is allowed.
+3. **After writing code**: Call `analyze_file` on every new or modified file. Fix ALL violations.
+
+## Architecture Rules
+
+- **Layer boundaries** are enforced — check `analyzer.yaml` for allowed dependencies between layers.
+- **Feature isolation** is enforced — features cannot import from other features. Use shared/core layers.
+- **Banned symbols** are enforced — use design system components instead of raw Flutter widgets.
+- **Model classes** in model paths must include `toMap`, `fromMap`, `copyWith`, `==`, `hashCode`, `toString`.
+
+## Code Quality Rules
+
+- Dispose all resources (StreamSubscription, TextEditingController, AnimationController)
+- No empty catch blocks — handle, rethrow, or document why it's safe to ignore
+- No `setState`/`context` usage after `await` without `mounted` check
+- Keep cyclomatic complexity under 10 per method
+- Keep methods under 50 lines, files under 300 lines
+- No generic names (`data`, `result`, `value`, `temp`) — use descriptive names
+
+## MCP Tools
+
+| Tool | When to use |
+|------|-------------|
+| `get_architecture` | Before any architectural decision |
+| `check_import` | Before adding any import |
+| `analyze_file` | After creating or modifying any file |
+| `analyze` | For full project scan |
+| `impact_analysis` | Before refactoring to understand blast radius |
+
+Treat Sentinel violations as blocking — equivalent to compile errors.
