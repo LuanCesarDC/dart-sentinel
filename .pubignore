@@ -1,2 +1,12 @@
 # Old-style analyzer plugin bootstrap (not needed — new API uses lib/main.dart)
 tool/analyzer_plugin/
+
+# Compiled snapshots
+*.dill
+
+# Analysis cache/reports
+.dart_sentinel/
+
+# Dev files
+plan.md
+.DS_Store

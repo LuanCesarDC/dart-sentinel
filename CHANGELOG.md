@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Fix dangling library doc comment in bin/dart_sentinel.dart
+- Fix unbraced if statement in redundant_comments_rule.dart
+- Reduce package size (exclude tool/analyzer_plugin from publication)
+
 ## 0.2.0
 
 - 35 rules across 8 categories (arch, dead, metrics, lint, slop, models, testing, pub)
