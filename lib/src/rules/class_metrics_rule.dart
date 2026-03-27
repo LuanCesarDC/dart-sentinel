@@ -89,65 +89,77 @@ class _ClassMetricsVisitor extends RecursiveAstVisitor<void> {
 
     // Check NOM
     if (nom >= metrics.numberOfMethodsError) {
-      issues.add(Issue(
-        rule: 'class-metrics',
-        message:
-            'class "$name" has $nom methods (limit: ${metrics.numberOfMethodsError})',
-        file: filePath,
-        line: line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'class-metrics',
+          message:
+              'class "$name" has $nom methods (limit: ${metrics.numberOfMethodsError})',
+          file: filePath,
+          line: line,
+          severity: Severity.error,
+        ),
+      );
     } else if (nom >= metrics.numberOfMethodsWarning) {
-      issues.add(Issue(
-        rule: 'class-metrics',
-        message:
-            'class "$name" has $nom methods (limit: ${metrics.numberOfMethodsWarning})',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'class-metrics',
+          message:
+              'class "$name" has $nom methods (limit: ${metrics.numberOfMethodsWarning})',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
 
     // Check WMC
     if (wmc >= metrics.weightedMethodsPerClassError) {
-      issues.add(Issue(
-        rule: 'class-metrics',
-        message:
-            'class "$name" has WMC of $wmc (limit: ${metrics.weightedMethodsPerClassError})',
-        file: filePath,
-        line: line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'class-metrics',
+          message:
+              'class "$name" has WMC of $wmc (limit: ${metrics.weightedMethodsPerClassError})',
+          file: filePath,
+          line: line,
+          severity: Severity.error,
+        ),
+      );
     } else if (wmc >= metrics.weightedMethodsPerClassWarning) {
-      issues.add(Issue(
-        rule: 'class-metrics',
-        message:
-            'class "$name" has WMC of $wmc (limit: ${metrics.weightedMethodsPerClassWarning})',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'class-metrics',
+          message:
+              'class "$name" has WMC of $wmc (limit: ${metrics.weightedMethodsPerClassWarning})',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
 
     // Check LOC per class
     if (loc >= metrics.linesPerClassError) {
-      issues.add(Issue(
-        rule: 'class-metrics',
-        message:
-            'class "$name" has $loc lines (limit: ${metrics.linesPerClassError})',
-        file: filePath,
-        line: line,
-        severity: Severity.error,
-      ));
+      issues.add(
+        Issue(
+          rule: 'class-metrics',
+          message:
+              'class "$name" has $loc lines (limit: ${metrics.linesPerClassError})',
+          file: filePath,
+          line: line,
+          severity: Severity.error,
+        ),
+      );
     } else if (loc >= metrics.linesPerClassWarning) {
-      issues.add(Issue(
-        rule: 'class-metrics',
-        message:
-            'class "$name" has $loc lines (limit: ${metrics.linesPerClassWarning})',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'class-metrics',
+          message:
+              'class "$name" has $loc lines (limit: ${metrics.linesPerClassWarning})',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 

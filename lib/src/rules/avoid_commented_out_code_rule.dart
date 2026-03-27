@@ -61,14 +61,15 @@ class AvoidCommentedOutCodeRule extends AnalyzerRule {
           consecutiveCodeComments++;
         } else {
           if (consecutiveCodeComments >= 3) {
-            issues.add(Issue(
-              rule: name,
-              message:
-                  '$consecutiveCodeComments lines of commented-out code',
-              file: relativePath,
-              line: blockStart,
-              severity: Severity.info,
-            ));
+            issues.add(
+              Issue(
+                rule: name,
+                message: '$consecutiveCodeComments lines of commented-out code',
+                file: relativePath,
+                line: blockStart,
+                severity: Severity.info,
+              ),
+            );
           }
           consecutiveCodeComments = 0;
         }
@@ -76,13 +77,15 @@ class AvoidCommentedOutCodeRule extends AnalyzerRule {
 
       // Check trailing block
       if (consecutiveCodeComments >= 3) {
-        issues.add(Issue(
-          rule: name,
-          message: '$consecutiveCodeComments lines of commented-out code',
-          file: relativePath,
-          line: blockStart,
-          severity: Severity.info,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message: '$consecutiveCodeComments lines of commented-out code',
+            file: relativePath,
+            line: blockStart,
+            severity: Severity.info,
+          ),
+        );
       }
     }
 

@@ -30,15 +30,17 @@ class AvoidGlobalStateRule extends AnalyzerRule {
 
           for (final v in vars.variables) {
             final line = unit.lineInfo.getLocation(v.offset).lineNumber;
-            issues.add(Issue(
-              rule: name,
-              message:
-                  'top-level mutable variable "${v.name.lexeme}" — '
-                  'prefer final or const',
-              file: relativePath,
-              line: line,
-              severity: Severity.warning,
-            ));
+            issues.add(
+              Issue(
+                rule: name,
+                message:
+                    'top-level mutable variable "${v.name.lexeme}" — '
+                    'prefer final or const',
+                file: relativePath,
+                line: line,
+                severity: Severity.warning,
+              ),
+            );
           }
         }
       }
@@ -68,15 +70,17 @@ class _StaticMutableVisitor extends RecursiveAstVisitor<void> {
 
     for (final v in vars.variables) {
       final line = unit.lineInfo.getLocation(v.offset).lineNumber;
-      issues.add(Issue(
-        rule: 'avoid-global-state',
-        message:
-            'static mutable field "${v.name.lexeme}" — '
-            'prefer final or const',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'avoid-global-state',
+          message:
+              'static mutable field "${v.name.lexeme}" — '
+              'prefer final or const',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
   }
 }

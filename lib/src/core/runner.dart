@@ -82,18 +82,9 @@ class RuleRunner {
         'avoid-returning-widgets',
         'flutter-anti-patterns',
       },
-      'models': {
-        'model-missing-methods',
-      },
-      'testing': {
-        'untested-files',
-        'test-coverage',
-        'test-quality',
-      },
-      'pub': {
-        'pubspec',
-        'misused-dependencies',
-      },
+      'models': {'model-missing-methods'},
+      'testing': {'untested-files', 'test-coverage', 'test-quality'},
+      'pub': {'pubspec', 'misused-dependencies'},
     };
 
     final ruleNames = categoryMap[category] ?? {};

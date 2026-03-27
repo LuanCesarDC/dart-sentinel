@@ -53,11 +53,7 @@ class _EqualArgsVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    _checkArgs(
-      node.argumentList,
-      node.constructorName.toSource(),
-      node.offset,
-    );
+    _checkArgs(node.argumentList, node.constructorName.toSource(), node.offset);
     super.visitInstanceCreationExpression(node);
   }
 
@@ -77,14 +73,15 @@ class _EqualArgsVisitor extends RecursiveAstVisitor<void> {
 
       if (!seen.add(source)) {
         final line = unit.lineInfo.getLocation(offset).lineNumber;
-        issues.add(Issue(
-          rule: 'no-equal-arguments',
-          message:
-              'same argument "$source" passed twice to "$callName"',
-          file: filePath,
-          line: line,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: 'no-equal-arguments',
+            message: 'same argument "$source" passed twice to "$callName"',
+            file: filePath,
+            line: line,
+            severity: Severity.warning,
+          ),
+        );
         break;
       }
     }

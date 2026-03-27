@@ -32,28 +32,32 @@ class PubspecRule extends AnalyzerRule {
 
     // ── avoid-dependency-overrides ──
     if (yaml.containsKey('dependency_overrides')) {
-      issues.add(Issue(
-        rule: 'pubspec',
-        message: 'pubspec.yaml contains dependency_overrides section',
-        file: filePath,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'pubspec',
+          message: 'pubspec.yaml contains dependency_overrides section',
+          file: filePath,
+          severity: Severity.warning,
+        ),
+      );
     }
 
     // ── prefer-publish-to-none ──
     // If there's no `publish_to` and the package has no version or has
     // flutter dependency (likely an app, not a package), warn.
     final hasPublishTo = yaml.containsKey('publish_to');
-    final hasFlutter = yaml['dependencies'] is YamlMap &&
+    final hasFlutter =
+        yaml['dependencies'] is YamlMap &&
         (yaml['dependencies'] as YamlMap).containsKey('flutter');
     if (!hasPublishTo && hasFlutter) {
-      issues.add(Issue(
-        rule: 'pubspec',
-        message:
-            'Flutter app missing "publish_to: none" in pubspec.yaml',
-        file: filePath,
-        severity: Severity.info,
-      ));
+      issues.add(
+        Issue(
+          rule: 'pubspec',
+          message: 'Flutter app missing "publish_to: none" in pubspec.yaml',
+          file: filePath,
+          severity: Severity.info,
+        ),
+      );
     }
 
     // ── Check dependencies and dev_dependencies ──
@@ -100,12 +104,14 @@ class PubspecRule extends AnalyzerRule {
             value.containsKey('git')) {
           // Still check banned
           if (bannedDeps.contains(name)) {
-            issues.add(Issue(
-              rule: 'pubspec',
-              message: 'banned dependency "$name" found in $section',
-              file: filePath,
-              severity: Severity.error,
-            ));
+            issues.add(
+              Issue(
+                rule: 'pubspec',
+                message: 'banned dependency "$name" found in $section',
+                file: filePath,
+                severity: Severity.error,
+              ),
+            );
           }
           continue;
         }
@@ -118,37 +124,42 @@ class PubspecRule extends AnalyzerRule {
         _checkVersion(name, value, section, filePath, issues);
       } else if (value == null) {
         // `any` implicit
-        issues.add(Issue(
-          rule: 'pubspec',
-          message:
-              '$section "$name" has no version constraint (any)',
-          file: filePath,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: 'pubspec',
+            message: '$section "$name" has no version constraint (any)',
+            file: filePath,
+            severity: Severity.warning,
+          ),
+        );
       }
 
       // ── banned-dependencies ──
       if (bannedDeps.contains(name)) {
-        issues.add(Issue(
-          rule: 'pubspec',
-          message: 'banned dependency "$name" found in $section',
-          file: filePath,
-          severity: Severity.error,
-        ));
+        issues.add(
+          Issue(
+            rule: 'pubspec',
+            message: 'banned dependency "$name" found in $section',
+            file: filePath,
+            severity: Severity.error,
+          ),
+        );
       }
     }
 
     // ── dependencies-ordering ──
     for (int i = 1; i < names.length; i++) {
       if (names[i].compareTo(names[i - 1]) < 0) {
-        issues.add(Issue(
-          rule: 'pubspec',
-          message:
-              '$section are not in alphabetical order '
-              '("${names[i]}" before "${names[i - 1]}")',
-          file: filePath,
-          severity: Severity.info,
-        ));
+        issues.add(
+          Issue(
+            rule: 'pubspec',
+            message:
+                '$section are not in alphabetical order '
+                '("${names[i]}" before "${names[i - 1]}")',
+            file: filePath,
+            severity: Severity.info,
+          ),
+        );
         break; // one warning is enough
       }
     }
@@ -165,12 +176,14 @@ class PubspecRule extends AnalyzerRule {
 
     // ── avoid-any-version ──
     if (trimmed == 'any' || trimmed.isEmpty) {
-      issues.add(Issue(
-        rule: 'pubspec',
-        message: '$section "$name" uses "any" version constraint',
-        file: filePath,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'pubspec',
+          message: '$section "$name" uses "any" version constraint',
+          file: filePath,
+          severity: Severity.warning,
+        ),
+      );
       return;
     }
 
@@ -181,13 +194,15 @@ class PubspecRule extends AnalyzerRule {
         !trimmed.startsWith('>=') &&
         !trimmed.startsWith('<=') &&
         trimmed != 'any') {
-      issues.add(Issue(
-        rule: 'pubspec',
-        message:
-            '$section "$name" version "$trimmed" — prefer caret syntax (^)',
-        file: filePath,
-        severity: Severity.info,
-      ));
+      issues.add(
+        Issue(
+          rule: 'pubspec',
+          message:
+              '$section "$name" version "$trimmed" — prefer caret syntax (^)',
+          file: filePath,
+          severity: Severity.info,
+        ),
+      );
     }
   }
 }

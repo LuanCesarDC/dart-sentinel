@@ -15,12 +15,12 @@ class FileHashCache {
   Map<String, String> _currentHashes = {};
 
   FileHashCache(this.projectRoot)
-      : _cachePath = p.join(
-          projectRoot,
-          '.dart_sentinel',
-          'cache',
-          'file_hashes.json',
-        );
+    : _cachePath = p.join(
+        projectRoot,
+        '.dart_sentinel',
+        'cache',
+        'file_hashes.json',
+      );
 
   /// Load the previously stored hashes from disk.
   void load() {

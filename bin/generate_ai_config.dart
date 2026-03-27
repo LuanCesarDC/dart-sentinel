@@ -13,11 +13,7 @@ Future<void> main(List<String> args) async {
       allowed: ['copilot', 'cursor', 'claude', 'windsurf', 'all'],
       defaultsTo: 'all',
     )
-    ..addOption(
-      'project',
-      abbr: 'p',
-      help: 'Path to the project root.',
-    )
+    ..addOption('project', abbr: 'p', help: 'Path to the project root.')
     ..addFlag('dry-run', negatable: false, help: 'Preview without writing.')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show help.');
 
@@ -152,10 +148,7 @@ List<_Layer> _parseLayers(YamlMap yaml) {
       if (entry.value is YamlMap)
         _Layer(
           '${entry.key}',
-          (entry.value['paths'] as YamlList?)
-                  ?.map((e) => '$e')
-                  .toList() ??
-              [],
+          (entry.value['paths'] as YamlList?)?.map((e) => '$e').toList() ?? [],
           (entry.value['can_depend_on'] as YamlList?)
                   ?.map((e) => '$e')
                   .toList() ??
@@ -229,9 +222,7 @@ Map<String, _MetricThreshold> _parseMetrics(YamlMap yaml) {
 Map<String, String> _parseRules(YamlMap yaml) {
   final rules = yaml['rules'];
   if (rules is! YamlMap) return {};
-  return {
-    for (final entry in rules.entries) '${entry.key}': '${entry.value}',
-  };
+  return {for (final entry in rules.entries) '${entry.key}': '${entry.value}'};
 }
 
 YamlMap? _loadYaml(String projectRoot) {
@@ -316,8 +307,9 @@ String _buildProjectInstructions(_ProjectConfig config) {
     buf.writeln('## Architecture');
     buf.writeln();
     for (final layer in config.layers) {
-      final deps =
-          layer.canDependOn.isEmpty ? '(no deps)' : layer.canDependOn.join(', ');
+      final deps = layer.canDependOn.isEmpty
+          ? '(no deps)'
+          : layer.canDependOn.join(', ');
       buf.writeln('- **${layer.name}**: `${layer.paths.join(', ')}` → $deps');
     }
     buf.writeln();
@@ -445,7 +437,9 @@ String _buildSentinelInstructions(_ProjectConfig config) {
       }
     }
     if (errors.isNotEmpty) {
-      buf.writeln('- **Errors** (block CI): ${errors.map((r) => '`$r`').join(', ')}');
+      buf.writeln(
+        '- **Errors** (block CI): ${errors.map((r) => '`$r`').join(', ')}',
+      );
     }
     if (warnings.isNotEmpty) {
       buf.writeln('- **Warnings**: ${warnings.map((r) => '`$r`').join(', ')}');

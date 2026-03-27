@@ -58,7 +58,9 @@ Future<void> main(List<String> args) async {
     final changedFiles = _getChangedFiles(projectRoot);
     if (changedFiles != null) {
       issues = issues.where((i) => changedFiles.contains(i.file)).toList();
-      print('  Changed-only mode: filtering to ${changedFiles.length} changed files');
+      print(
+        '  Changed-only mode: filtering to ${changedFiles.length} changed files',
+      );
     }
   }
 
@@ -388,11 +390,7 @@ void _runL10n(ProjectContext context, String format) {
   }
 
   // Console output
-  print([
-    '  L10n Analysis',
-    '  ${'═' * 56}',
-    '',
-  ].join('\n'));
+  print(['  L10n Analysis', '  ${'═' * 56}', ''].join('\n'));
 
   if (strings.isNotEmpty) {
     print('  Hardcoded Strings (${strings.length}):');
@@ -410,13 +408,15 @@ void _runL10n(ProjectContext context, String format) {
   }
 
   if (status.languages.isNotEmpty) {
-    print([
-      '  Translation Coverage:',
-      '',
-      '    Base language: ${status.baseLanguage}',
-      '    Total keys: ${status.totalKeys}',
-      '',
-    ].join('\n'));
+    print(
+      [
+        '  Translation Coverage:',
+        '',
+        '    Base language: ${status.baseLanguage}',
+        '    Total keys: ${status.totalKeys}',
+        '',
+      ].join('\n'),
+    );
     for (final lang in status.languages) {
       final count = status.translatedCount[lang] ?? 0;
       final pct = status.totalKeys > 0
@@ -524,24 +524,26 @@ Examples:
 Set<String>? _getChangedFiles(String projectRoot) {
   try {
     // Uncommitted changes + staged
-    final result = Process.runSync(
-      'git',
-      ['diff', '--name-only', 'HEAD', '--diff-filter=ACMR'],
-      workingDirectory: projectRoot,
-    );
+    final result = Process.runSync('git', [
+      'diff',
+      '--name-only',
+      'HEAD',
+      '--diff-filter=ACMR',
+    ], workingDirectory: projectRoot);
     if (result.exitCode != 0) return null;
 
-    final staged = Process.runSync(
-      'git',
-      ['diff', '--name-only', '--cached', '--diff-filter=ACMR'],
-      workingDirectory: projectRoot,
-    );
+    final staged = Process.runSync('git', [
+      'diff',
+      '--name-only',
+      '--cached',
+      '--diff-filter=ACMR',
+    ], workingDirectory: projectRoot);
 
-    final untracked = Process.runSync(
-      'git',
-      ['ls-files', '--others', '--exclude-standard'],
-      workingDirectory: projectRoot,
-    );
+    final untracked = Process.runSync('git', [
+      'ls-files',
+      '--others',
+      '--exclude-standard',
+    ], workingDirectory: projectRoot);
 
     final files = <String>{};
     for (final output in [

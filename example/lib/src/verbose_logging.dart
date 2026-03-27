@@ -24,11 +24,13 @@ void traceApiCall(String endpoint, int statusCode) {
 
 // ✅ Correct: Single structured log
 void correctLogging(String userId) {
-  print([
-    '=== Login Debug ===',
-    'User ID: $userId',
-    'Timestamp: ${DateTime.now()}',
-    'Platform: android',
-    '===================',
-  ].join('\n'));
+  print(
+    [
+      '=== Login Debug ===',
+      'User ID: $userId',
+      'Timestamp: ${DateTime.now()}',
+      'Platform: android',
+      '===================',
+    ].join('\n'),
+  );
 }

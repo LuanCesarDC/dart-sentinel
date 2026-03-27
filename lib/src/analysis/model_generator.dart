@@ -28,9 +28,7 @@ class ModelGenerator {
     buffer.writeln();
     buffer.writeln('  $beginMarker');
 
-    final effectiveFields = fields
-        .where((f) => !f.isStatic)
-        .toList();
+    final effectiveFields = fields.where((f) => !f.isStatic).toList();
 
     if (config.copyWithName.isNotEmpty) {
       _writeCopyWith(buffer, className, effectiveFields);
@@ -97,12 +95,14 @@ class ModelGenerator {
       if (member.isStatic) continue;
       for (final variable in member.fields.variables) {
         final type = member.fields.type?.toSource() ?? 'dynamic';
-        fields.add(FieldInfo(
-          name: variable.name.lexeme,
-          type: type,
-          isNullable: type.endsWith('?'),
-          isStatic: member.isStatic,
-        ));
+        fields.add(
+          FieldInfo(
+            name: variable.name.lexeme,
+            type: type,
+            isNullable: type.endsWith('?'),
+            isStatic: member.isStatic,
+          ),
+        );
       }
     }
     return fields;
@@ -154,9 +154,7 @@ class ModelGenerator {
 
     buffer.write('  $className ${config.copyWithName}({');
     for (final f in copyFields) {
-      final baseType = f.isNullable
-          ? f.type
-          : '${f.type}?';
+      final baseType = f.isNullable ? f.type : '${f.type}?';
       buffer.write('$baseType ${f.name}, ');
     }
     buffer.writeln('}) => $className(');
@@ -297,11 +295,9 @@ class ModelGenerator {
     return "map['${field.name}']";
   }
 
-  bool _isListType(String type) =>
-      type.startsWith('List<') || type == 'List';
+  bool _isListType(String type) => type.startsWith('List<') || type == 'List';
 
-  bool _isMapType(String type) =>
-      type.startsWith('Map<') || type == 'Map';
+  bool _isMapType(String type) => type.startsWith('Map<') || type == 'Map';
 
   String _extractGenericType(String type) {
     final start = type.indexOf('<');

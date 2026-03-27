@@ -80,8 +80,9 @@ class RedundantCommentsRule extends AnalyzerRule {
       if (RegExp(
         r'^//\s*(TODO|FIXME|HACK|XXX)\b',
         caseSensitive: false,
-      ).hasMatch(line))
+      ).hasMatch(line)) {
         continue;
+      }
 
       if (!_matchesTrivialPattern(line)) continue;
 

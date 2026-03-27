@@ -16,8 +16,7 @@ class TestCoverageRule extends AnalyzerRule {
   @override
   List<Issue> run(ProjectContext context) {
     final coverageConfig = context.config.testingConfig.coverage;
-    final lcovPath =
-        '${context.projectRoot}/${coverageConfig.file}';
+    final lcovPath = '${context.projectRoot}/${coverageConfig.file}';
 
     final lcovContent = context.readFile(lcovPath);
     if (lcovContent == null) return [];
@@ -43,8 +42,7 @@ class TestCoverageRule extends AnalyzerRule {
       // Check per-file minimum
       if (pct < coverageConfig.perFileMin) {
         // Check if excluded
-        if (coverageConfig.exclude
-            .any((e) => GlobMatcher(e).matches(file))) {
+        if (coverageConfig.exclude.any((e) => GlobMatcher(e).matches(file))) {
           continue;
         }
 
@@ -59,8 +57,7 @@ class TestCoverageRule extends AnalyzerRule {
                   '$file has ${pct.toStringAsFixed(0)}% coverage '
                   '(min: ${threshold.toStringAsFixed(0)}%)',
               file: file,
-              severity:
-                  pct == 0 ? Severity.error : Severity.warning,
+              severity: pct == 0 ? Severity.error : Severity.warning,
             ),
           );
         }

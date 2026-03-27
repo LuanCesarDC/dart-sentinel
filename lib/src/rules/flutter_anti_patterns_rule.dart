@@ -63,15 +63,17 @@ class _FlutterPatternVisitor extends RecursiveAstVisitor<void> {
             arg.name.label.name == 'shrinkWrap' &&
             arg.expression.toSource() == 'true') {
           final line = unit.lineInfo.getLocation(arg.offset).lineNumber;
-          issues.add(Issue(
-            rule: 'flutter-anti-patterns',
-            message:
-                '$typeName with shrinkWrap: true — '
-                'consider using Sliver variants instead',
-            file: filePath,
-            line: line,
-            severity: Severity.warning,
-          ));
+          issues.add(
+            Issue(
+              rule: 'flutter-anti-patterns',
+              message:
+                  '$typeName with shrinkWrap: true — '
+                  'consider using Sliver variants instead',
+              file: filePath,
+              line: line,
+              severity: Severity.warning,
+            ),
+          );
         }
       }
     }
@@ -90,14 +92,16 @@ class _FlutterPatternVisitor extends RecursiveAstVisitor<void> {
               );
               if (childArgs.isEmpty) {
                 final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-                issues.add(Issue(
-                  rule: 'flutter-anti-patterns',
-                  message:
-                      '$typeName(child: $childType()) — use Spacer() instead',
-                  file: filePath,
-                  line: line,
-                  severity: Severity.info,
-                ));
+                issues.add(
+                  Issue(
+                    rule: 'flutter-anti-patterns',
+                    message:
+                        '$typeName(child: $childType()) — use Spacer() instead',
+                    file: filePath,
+                    line: line,
+                    severity: Severity.info,
+                  ),
+                );
               }
             }
           }
@@ -113,15 +117,17 @@ class _FlutterPatternVisitor extends RecursiveAstVisitor<void> {
           // Check if it's a method call creating a new future inline
           if (expr is MethodInvocation || expr is InstanceCreationExpression) {
             final line = unit.lineInfo.getLocation(arg.offset).lineNumber;
-            issues.add(Issue(
-              rule: 'flutter-anti-patterns',
-              message:
-                  'FutureBuilder receives a new Future on every build — '
-                  'store the Future in a variable (e.g. in initState)',
-              file: filePath,
-              line: line,
-              severity: Severity.warning,
-            ));
+            issues.add(
+              Issue(
+                rule: 'flutter-anti-patterns',
+                message:
+                    'FutureBuilder receives a new Future on every build — '
+                    'store the Future in a variable (e.g. in initState)',
+                file: filePath,
+                line: line,
+                severity: Severity.warning,
+              ),
+            );
           }
         }
       }
@@ -149,28 +155,31 @@ class _FlutterPatternVisitor extends RecursiveAstVisitor<void> {
           final first = stmts.first;
           if (!_isSuperCall(first, 'initState')) {
             final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-            issues.add(Issue(
-              rule: 'flutter-anti-patterns',
-              message:
-                  'super.initState() should be the first call in initState()',
-              file: filePath,
-              line: line,
-              severity: Severity.warning,
-            ));
+            issues.add(
+              Issue(
+                rule: 'flutter-anti-patterns',
+                message:
+                    'super.initState() should be the first call in initState()',
+                file: filePath,
+                line: line,
+                severity: Severity.warning,
+              ),
+            );
           }
         } else if (methodName == 'dispose') {
           // super.dispose() should be called last
           final last = stmts.last;
           if (!_isSuperCall(last, 'dispose')) {
             final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-            issues.add(Issue(
-              rule: 'flutter-anti-patterns',
-              message:
-                  'super.dispose() should be the last call in dispose()',
-              file: filePath,
-              line: line,
-              severity: Severity.warning,
-            ));
+            issues.add(
+              Issue(
+                rule: 'flutter-anti-patterns',
+                message: 'super.dispose() should be the last call in dispose()',
+                file: filePath,
+                line: line,
+                severity: Severity.warning,
+              ),
+            );
           }
         }
       }

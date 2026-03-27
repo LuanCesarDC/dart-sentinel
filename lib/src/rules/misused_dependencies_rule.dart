@@ -79,12 +79,14 @@ class MisusedDependenciesRule extends AnalyzerRule {
       if (dep == 'flutter' || dep == 'flutter_localizations') continue;
       if (_indirectPackages.contains(dep)) continue;
       if (!libImports.contains(dep) && !testImports.contains(dep)) {
-        issues.add(Issue(
-          rule: name,
-          message: 'dependency "$dep" is not imported anywhere',
-          file: filePath,
-          severity: Severity.info,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message: 'dependency "$dep" is not imported anywhere',
+            file: filePath,
+            severity: Severity.info,
+          ),
+        );
       }
     }
 
@@ -93,13 +95,14 @@ class MisusedDependenciesRule extends AnalyzerRule {
       if (dep == 'flutter' || dep == 'flutter_localizations') continue;
       if (_indirectPackages.contains(dep)) continue;
       if (!libImports.contains(dep) && testImports.contains(dep)) {
-        issues.add(Issue(
-          rule: name,
-          message:
-              '"$dep" is only used in tests — move to dev_dependencies',
-          file: filePath,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message: '"$dep" is only used in tests — move to dev_dependencies',
+            file: filePath,
+            severity: Severity.warning,
+          ),
+        );
       }
     }
 
@@ -107,13 +110,14 @@ class MisusedDependenciesRule extends AnalyzerRule {
     for (final dep in devDeps) {
       if (_indirectPackages.contains(dep)) continue;
       if (libImports.contains(dep)) {
-        issues.add(Issue(
-          rule: name,
-          message:
-              '"$dep" is imported in lib/ — move to dependencies',
-          file: filePath,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message: '"$dep" is imported in lib/ — move to dependencies',
+            file: filePath,
+            severity: Severity.warning,
+          ),
+        );
       }
     }
 
@@ -121,23 +125,27 @@ class MisusedDependenciesRule extends AnalyzerRule {
     final allDeclared = {...deps, ...devDeps, ownPackage, 'dart', 'flutter'};
     for (final pkg in libImports) {
       if (!allDeclared.contains(pkg)) {
-        issues.add(Issue(
-          rule: name,
-          message: 'package "$pkg" is imported but not in pubspec.yaml',
-          file: filePath,
-          severity: Severity.error,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message: 'package "$pkg" is imported but not in pubspec.yaml',
+            file: filePath,
+            severity: Severity.error,
+          ),
+        );
       }
     }
     for (final pkg in testImports) {
       if (!allDeclared.contains(pkg)) {
-        issues.add(Issue(
-          rule: name,
-          message:
-              'package "$pkg" is imported in tests but not in pubspec.yaml',
-          file: filePath,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: name,
+            message:
+                'package "$pkg" is imported in tests but not in pubspec.yaml',
+            file: filePath,
+            severity: Severity.warning,
+          ),
+        );
       }
     }
 

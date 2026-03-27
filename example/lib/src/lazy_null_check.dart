@@ -8,7 +8,8 @@ int itemCount(int? count) {
 }
 
 bool isEnabled(bool? flag) {
-  return flag ?? false; // lazy: should default be false or should caller decide?
+  return flag ??
+      false; // lazy: should default be false or should caller decide?
 }
 
 List<String> getTags(List<String>? tags) {

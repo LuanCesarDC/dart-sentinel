@@ -57,7 +57,8 @@ class UnusedCodeRule extends AnalyzerRule {
     final issues = <Issue>[];
     for (final decl in declarations) {
       if (decl.isPrivate) continue; // Skip private; only matters within file
-      if (!reachable.contains(decl.file)) continue; // Not reachable = dead-files handles this
+      if (!reachable.contains(decl.file))
+        continue; // Not reachable = dead-files handles this
 
       // Check: is this symbol name referenced in any file that imports the declaring file?
       final importers = reachableFromAll([decl.file], revGraph);
@@ -69,7 +70,10 @@ class UnusedCodeRule extends AnalyzerRule {
         if (refs != null && refs.contains(decl.name)) {
           // Check show/hide combinators
           if (_isSymbolVisibleViaImport(
-            context, importer, decl.file, decl.name,
+            context,
+            importer,
+            decl.file,
+            decl.name,
           )) {
             used = true;
             break;
@@ -89,8 +93,7 @@ class UnusedCodeRule extends AnalyzerRule {
         issues.add(
           Issue(
             rule: name,
-            message:
-                "${decl.kind} '${decl.name}' is declared but never used",
+            message: "${decl.kind} '${decl.name}' is declared but never used",
             file: context.relativePath(decl.file),
             line: decl.line,
             severity: defaultSeverity,
@@ -111,66 +114,86 @@ class UnusedCodeRule extends AnalyzerRule {
     for (final decl in unit.declarations) {
       switch (decl) {
         case ClassDeclaration():
-          symbols.add(_DeclaredSymbol(
-            name: decl.namePart.typeName.lexeme,
-            file: file,
-            line: unit.lineInfo.getLocation(decl.offset).lineNumber,
-            kind: 'Class',
-          ));
+          symbols.add(
+            _DeclaredSymbol(
+              name: decl.namePart.typeName.lexeme,
+              file: file,
+              line: unit.lineInfo.getLocation(decl.offset).lineNumber,
+              kind: 'Class',
+            ),
+          );
         case FunctionDeclaration():
-          symbols.add(_DeclaredSymbol(
-            name: decl.name.lexeme,
-            file: file,
-            line: unit.lineInfo.getLocation(decl.offset).lineNumber,
-            kind: decl.isGetter ? 'Getter' : decl.isSetter ? 'Setter' : 'Function',
-          ));
+          symbols.add(
+            _DeclaredSymbol(
+              name: decl.name.lexeme,
+              file: file,
+              line: unit.lineInfo.getLocation(decl.offset).lineNumber,
+              kind: decl.isGetter
+                  ? 'Getter'
+                  : decl.isSetter
+                  ? 'Setter'
+                  : 'Function',
+            ),
+          );
         case EnumDeclaration():
-          symbols.add(_DeclaredSymbol(
-            name: decl.namePart.typeName.lexeme,
-            file: file,
-            line: unit.lineInfo.getLocation(decl.offset).lineNumber,
-            kind: 'Enum',
-          ));
+          symbols.add(
+            _DeclaredSymbol(
+              name: decl.namePart.typeName.lexeme,
+              file: file,
+              line: unit.lineInfo.getLocation(decl.offset).lineNumber,
+              kind: 'Enum',
+            ),
+          );
         case MixinDeclaration():
-          symbols.add(_DeclaredSymbol(
-            name: decl.name.lexeme,
-            file: file,
-            line: unit.lineInfo.getLocation(decl.offset).lineNumber,
-            kind: 'Mixin',
-          ));
+          symbols.add(
+            _DeclaredSymbol(
+              name: decl.name.lexeme,
+              file: file,
+              line: unit.lineInfo.getLocation(decl.offset).lineNumber,
+              kind: 'Mixin',
+            ),
+          );
         case TypeAlias():
-          symbols.add(_DeclaredSymbol(
-            name: decl.name.lexeme,
-            file: file,
-            line: unit.lineInfo.getLocation(decl.offset).lineNumber,
-            kind: 'Typedef',
-          ));
+          symbols.add(
+            _DeclaredSymbol(
+              name: decl.name.lexeme,
+              file: file,
+              line: unit.lineInfo.getLocation(decl.offset).lineNumber,
+              kind: 'Typedef',
+            ),
+          );
         case TopLevelVariableDeclaration():
           for (final v in decl.variables.variables) {
-            symbols.add(_DeclaredSymbol(
-              name: v.name.lexeme,
-              file: file,
-              line: unit.lineInfo.getLocation(v.offset).lineNumber,
-              kind: 'Variable',
-            ));
+            symbols.add(
+              _DeclaredSymbol(
+                name: v.name.lexeme,
+                file: file,
+                line: unit.lineInfo.getLocation(v.offset).lineNumber,
+                kind: 'Variable',
+              ),
+            );
           }
         case ExtensionDeclaration():
           final extName = decl.name;
           if (extName != null) {
-            symbols.add(_DeclaredSymbol(
-              name: extName.lexeme,
-              file: file,
-              line: unit.lineInfo.getLocation(decl.offset).lineNumber,
-              kind: 'Extension',
-            ));
+            symbols.add(
+              _DeclaredSymbol(
+                name: extName.lexeme,
+                file: file,
+                line: unit.lineInfo.getLocation(decl.offset).lineNumber,
+                kind: 'Extension',
+              ),
+            );
           }
         case ExtensionTypeDeclaration():
-          symbols.add(_DeclaredSymbol(
-            name: decl.primaryConstructor.typeName.lexeme,
-            file: file,
-            line: unit.lineInfo.getLocation(decl.offset).lineNumber,
-            kind: 'ExtensionType',
-          ));
+          symbols.add(
+            _DeclaredSymbol(
+              name: decl.primaryConstructor.typeName.lexeme,
+              file: file,
+              line: unit.lineInfo.getLocation(decl.offset).lineNumber,
+              kind: 'ExtensionType',
+            ),
+          );
       }
     }
     return symbols;
@@ -206,15 +229,11 @@ class UnusedCodeRule extends AnalyzerRule {
       // Check combinators
       for (final combinator in directive.combinators) {
         if (combinator is ShowCombinator) {
-          final shown = combinator.shownNames
-              .map((n) => n.name)
-              .toSet();
+          final shown = combinator.shownNames.map((n) => n.name).toSet();
           if (!shown.contains(symbolName)) return false;
         }
         if (combinator is HideCombinator) {
-          final hidden = combinator.hiddenNames
-              .map((n) => n.name)
-              .toSet();
+          final hidden = combinator.hiddenNames.map((n) => n.name).toSet();
           if (hidden.contains(symbolName)) return false;
         }
       }

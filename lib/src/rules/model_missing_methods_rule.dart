@@ -130,8 +130,9 @@ class _ModelClassVisitor extends RecursiveAstVisitor<void> {
         if (field.isStatic) continue;
         for (final variable in field.fields.variables) {
           if (!field.fields.isFinal && !field.fields.isConst) {
-            final fieldLine =
-                unit.lineInfo.getLocation(variable.offset).lineNumber;
+            final fieldLine = unit.lineInfo
+                .getLocation(variable.offset)
+                .lineNumber;
             issues.add(
               Issue(
                 rule: 'model-missing-methods',

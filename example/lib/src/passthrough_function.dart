@@ -17,8 +17,7 @@ String _formatDate(DateTime date, String pattern) {
 }
 
 // ⚠ passthrough_function: Just delegates to _formatDate
-String formatDate(DateTime date, String pattern) =>
-    _formatDate(date, pattern);
+String formatDate(DateTime date, String pattern) => _formatDate(date, pattern);
 
 // ✅ Correct: Adds default value — not a pure passthrough
 void log(String message, [int level = 0]) => _logMessage(message, level);

@@ -86,15 +86,17 @@ class _ReturningWidgetsVisitor extends RecursiveAstVisitor<void> {
     }
 
     final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-    issues.add(Issue(
-      rule: 'avoid-returning-widgets',
-      message:
-          'method "$methodName" returns Widget — '
-          'consider extracting to a separate Widget class',
-      file: filePath,
-      line: line,
-      severity: Severity.info,
-    ));
+    issues.add(
+      Issue(
+        rule: 'avoid-returning-widgets',
+        message:
+            'method "$methodName" returns Widget — '
+            'consider extracting to a separate Widget class',
+        file: filePath,
+        line: line,
+        severity: Severity.info,
+      ),
+    );
 
     super.visitMethodDeclaration(node);
   }

@@ -33,12 +33,12 @@ class HardcodedString {
   });
 
   Map<String, dynamic> toJson() => {
-        'file': file,
-        'line': line,
-        'column': column,
-        'value': value,
-        'context': context,
-      };
+    'file': file,
+    'line': line,
+    'column': column,
+    'value': value,
+    'context': context,
+  };
 }
 
 /// Current state of a translation key across languages.
@@ -71,18 +71,18 @@ class L10nStatus {
   });
 
   Map<String, dynamic> toJson() => {
-        'baseLanguage': baseLanguage,
-        'languages': languages,
-        'totalKeys': totalKeys,
-        'translatedCount': translatedCount,
-        'missingKeys': missingKeys,
-        'coverage': {
-          for (final lang in languages)
-            lang: totalKeys > 0
-                ? '${((translatedCount[lang] ?? 0) / totalKeys * 100).toStringAsFixed(1)}%'
-                : '0%',
-        },
-      };
+    'baseLanguage': baseLanguage,
+    'languages': languages,
+    'totalKeys': totalKeys,
+    'translatedCount': translatedCount,
+    'missingKeys': missingKeys,
+    'coverage': {
+      for (final lang in languages)
+        lang: totalKeys > 0
+            ? '${((translatedCount[lang] ?? 0) / totalKeys * 100).toStringAsFixed(1)}%'
+            : '0%',
+    },
+  };
 }
 
 /// Scans a Dart/Flutter project for hardcoded UI strings and l10n status.
@@ -149,7 +149,8 @@ class L10nScanner {
     final allTranslations = <String, Map<String, String>>{};
     for (final file in arbFiles) {
       final lang = _langFromArbPath(file.path);
-      final content = json.decode(file.readAsStringSync()) as Map<String, dynamic>;
+      final content =
+          json.decode(file.readAsStringSync()) as Map<String, dynamic>;
       final strings = <String, String>{};
       for (final entry in content.entries) {
         // Skip ARB metadata keys (start with @@ or @)
@@ -197,8 +198,8 @@ class L10nScanner {
     Map<String, Map<String, String>> translations, {
     bool merge = true,
   }) {
-    final arbDir = _findArbDirectory() ??
-        p.join(_context.projectRoot, 'lib', 'l10n');
+    final arbDir =
+        _findArbDirectory() ?? p.join(_context.projectRoot, 'lib', 'l10n');
 
     // Ensure directory exists
     Directory(arbDir).createSync(recursive: true);
@@ -226,13 +227,12 @@ class L10nScanner {
 
       // Write sorted
       final sorted = Map.fromEntries(
-        existing.entries.toList()
-          ..sort((a, b) {
-            // @@locale first, then @metadata after their key, then alphabetical
-            if (a.key == '@@locale') return -1;
-            if (b.key == '@@locale') return 1;
-            return a.key.compareTo(b.key);
-          }),
+        existing.entries.toList()..sort((a, b) {
+          // @@locale first, then @metadata after their key, then alphabetical
+          if (a.key == '@@locale') return -1;
+          if (b.key == '@@locale') return 1;
+          return a.key.compareTo(b.key);
+        }),
       );
 
       file.writeAsStringSync(
@@ -270,7 +270,9 @@ class L10nScanner {
     final l10nYaml = File(p.join(_context.projectRoot, 'l10n.yaml'));
     if (l10nYaml.existsSync()) {
       final content = l10nYaml.readAsStringSync();
-      final match = RegExp(r'template-arb-file:\s*app_(\w+)\.arb').firstMatch(content);
+      final match = RegExp(
+        r'template-arb-file:\s*app_(\w+)\.arb',
+      ).firstMatch(content);
       if (match != null) return match.group(1);
     }
     return null;
@@ -303,12 +305,7 @@ const _uiNamedParams = {
 };
 
 /// Constructors where the first positional argument is UI text.
-const _uiConstructors = {
-  'Text',
-  'SelectableText',
-  'TextSpan',
-  'Tab',
-};
+const _uiConstructors = {'Text', 'SelectableText', 'TextSpan', 'Tab'};
 
 class _HardcodedStringVisitor extends RecursiveAstVisitor<void> {
   final String file;
@@ -364,13 +361,15 @@ class _HardcodedStringVisitor extends RecursiveAstVisitor<void> {
       final value = expr.stringValue;
       if (value != null && _isTranslatableString(value)) {
         final loc = unit.lineInfo.getLocation(expr.offset);
-        strings.add(HardcodedString(
-          file: file,
-          line: loc.lineNumber,
-          column: loc.columnNumber,
-          value: value,
-          context: widgetContext,
-        ));
+        strings.add(
+          HardcodedString(
+            file: file,
+            line: loc.lineNumber,
+            column: loc.columnNumber,
+            value: value,
+            context: widgetContext,
+          ),
+        );
       }
     }
 
@@ -387,13 +386,15 @@ class _HardcodedStringVisitor extends RecursiveAstVisitor<void> {
       final value = buffer.toString();
       if (_isTranslatableString(value)) {
         final loc = unit.lineInfo.getLocation(expr.offset);
-        strings.add(HardcodedString(
-          file: file,
-          line: loc.lineNumber,
-          column: loc.columnNumber,
-          value: value,
-          context: widgetContext,
-        ));
+        strings.add(
+          HardcodedString(
+            file: file,
+            line: loc.lineNumber,
+            column: loc.columnNumber,
+            value: value,
+            context: widgetContext,
+          ),
+        );
       }
     }
   }
@@ -405,9 +406,11 @@ class _HardcodedStringVisitor extends RecursiveAstVisitor<void> {
     if (trimmed.length < 2) return false;
 
     // Skip URLs, paths, keys
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return false;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://'))
+      return false;
     if (trimmed.startsWith('/') || trimmed.startsWith('assets/')) return false;
-    if (trimmed.contains(RegExp(r'^[a-z_]+\.[a-z_]+$'))) return false; // keys like "user.name"
+    if (trimmed.contains(RegExp(r'^[a-z_]+\.[a-z_]+$')))
+      return false; // keys like "user.name"
 
     // Skip strings that are only symbols/punctuation
     if (trimmed.replaceAll(RegExp(r'[\s\W\d]'), '').isEmpty) return false;

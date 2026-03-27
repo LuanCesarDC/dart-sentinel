@@ -50,13 +50,15 @@ class _MagicNumberVisitor extends RecursiveAstVisitor<void> {
   void visitIntegerLiteral(IntegerLiteral node) {
     if (_isExempt(node, node.value ?? 0)) return;
     final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-    issues.add(Issue(
-      rule: 'no-magic-number',
-      message: 'magic number ${node.value} — extract to a named constant',
-      file: filePath,
-      line: line,
-      severity: Severity.info,
-    ));
+    issues.add(
+      Issue(
+        rule: 'no-magic-number',
+        message: 'magic number ${node.value} — extract to a named constant',
+        file: filePath,
+        line: line,
+        severity: Severity.info,
+      ),
+    );
     super.visitIntegerLiteral(node);
   }
 
@@ -64,24 +66,29 @@ class _MagicNumberVisitor extends RecursiveAstVisitor<void> {
   void visitDoubleLiteral(DoubleLiteral node) {
     if (_isExempt(node, node.value)) return;
     final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-    issues.add(Issue(
-      rule: 'no-magic-number',
-      message: 'magic number ${node.value} — extract to a named constant',
-      file: filePath,
-      line: line,
-      severity: Severity.info,
-    ));
+    issues.add(
+      Issue(
+        rule: 'no-magic-number',
+        message: 'magic number ${node.value} — extract to a named constant',
+        file: filePath,
+        line: line,
+        severity: Severity.info,
+      ),
+    );
     super.visitDoubleLiteral(node);
   }
 
   bool _isExempt(AstNode node, num value) {
-    if (value is int && NoMagicNumberRule._allowedInt.contains(value)) return true;
-    if (value is double && NoMagicNumberRule._allowedDouble.contains(value)) return true;
+    if (value is int && NoMagicNumberRule._allowedInt.contains(value))
+      return true;
+    if (value is double && NoMagicNumberRule._allowedDouble.contains(value))
+      return true;
 
     // Allow in const declarations
     AstNode? parent = node.parent;
     while (parent != null) {
-      if (parent is VariableDeclarationList && (parent.isConst || parent.isFinal)) {
+      if (parent is VariableDeclarationList &&
+          (parent.isConst || parent.isFinal)) {
         return true;
       }
       if (parent is VariableDeclaration) {

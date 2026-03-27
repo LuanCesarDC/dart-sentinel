@@ -46,15 +46,17 @@ class _SelfCompareVisitor extends RecursiveAstVisitor<void> {
     if (_comparisonOps.contains(op)) {
       if (node.leftOperand.toSource() == node.rightOperand.toSource()) {
         final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-        issues.add(Issue(
-          rule: 'avoid-self-compare',
-          message:
-              'both sides of "$op" are identical: '
-              '${node.leftOperand.toSource()}',
-          file: filePath,
-          line: line,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: 'avoid-self-compare',
+            message:
+                'both sides of "$op" are identical: '
+                '${node.leftOperand.toSource()}',
+            file: filePath,
+            line: line,
+            severity: Severity.warning,
+          ),
+        );
       }
     }
 

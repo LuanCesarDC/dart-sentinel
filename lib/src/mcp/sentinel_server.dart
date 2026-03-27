@@ -595,9 +595,7 @@ base class SentinelMCPServer extends MCPServer
       final lang = entry.key;
       final values = entry.value;
       if (values is Map<String, dynamic>) {
-        translations[lang] = values.map(
-          (k, v) => MapEntry(k, v.toString()),
-        );
+        translations[lang] = values.map((k, v) => MapEntry(k, v.toString()));
       }
     }
 
@@ -647,7 +645,9 @@ base class SentinelMCPServer extends MCPServer
           items: ObjectSchema(
             properties: {
               'name': Schema.string(description: 'Field name.'),
-              'type': Schema.string(description: 'Dart type (e.g. String, int, List<String>).'),
+              'type': Schema.string(
+                description: 'Dart type (e.g. String, int, List<String>).',
+              ),
             },
             required: ['name', 'type'],
           ),
@@ -857,7 +857,8 @@ base class SentinelMCPServer extends MCPServer
     inputSchema: ObjectSchema(
       properties: {
         'file': Schema.string(
-          description: 'Absolute path to the Dart source file to generate tests for.',
+          description:
+              'Absolute path to the Dart source file to generate tests for.',
         ),
         'path': Schema.string(
           description:
@@ -896,7 +897,9 @@ base class SentinelMCPServer extends MCPServer
     buf.writeln("import 'package:test/test.dart';");
 
     // Derive import for the source file
-    buf.writeln("import 'package:${_derivePackageImport(projectRoot, relativePath)}';");
+    buf.writeln(
+      "import 'package:${_derivePackageImport(projectRoot, relativePath)}';",
+    );
     buf.writeln();
     buf.writeln('void main() {');
 
@@ -958,7 +961,10 @@ base class SentinelMCPServer extends MCPServer
     final pubspecFile = File('$projectRoot/pubspec.yaml');
     if (pubspecFile.existsSync()) {
       final content = pubspecFile.readAsStringSync();
-      final match = RegExp(r'^name:\s*(\S+)', multiLine: true).firstMatch(content);
+      final match = RegExp(
+        r'^name:\s*(\S+)',
+        multiLine: true,
+      ).firstMatch(content);
       if (match != null) {
         final packageName = match.group(1)!;
         final libPath = relativePath.replaceFirst('lib/', '');

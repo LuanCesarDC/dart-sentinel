@@ -46,13 +46,16 @@ class _EqualBranchVisitor extends RecursiveAstVisitor<void> {
     if (elseBranch != null && elseBranch is! IfStatement) {
       if (thenBranch.toSource() == elseBranch.toSource()) {
         final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-        issues.add(Issue(
-          rule: 'no-equal-then-else',
-          message: 'if/else branches have identical bodies — condition is redundant',
-          file: filePath,
-          line: line,
-          severity: Severity.warning,
-        ));
+        issues.add(
+          Issue(
+            rule: 'no-equal-then-else',
+            message:
+                'if/else branches have identical bodies — condition is redundant',
+            file: filePath,
+            line: line,
+            severity: Severity.warning,
+          ),
+        );
       }
     }
 
@@ -63,14 +66,15 @@ class _EqualBranchVisitor extends RecursiveAstVisitor<void> {
   void visitConditionalExpression(ConditionalExpression node) {
     if (node.thenExpression.toSource() == node.elseExpression.toSource()) {
       final line = unit.lineInfo.getLocation(node.offset).lineNumber;
-      issues.add(Issue(
-        rule: 'no-equal-then-else',
-        message:
-            'ternary has identical then/else — condition is redundant',
-        file: filePath,
-        line: line,
-        severity: Severity.warning,
-      ));
+      issues.add(
+        Issue(
+          rule: 'no-equal-then-else',
+          message: 'ternary has identical then/else — condition is redundant',
+          file: filePath,
+          line: line,
+          severity: Severity.warning,
+        ),
+      );
     }
 
     super.visitConditionalExpression(node);
