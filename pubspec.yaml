@@ -2,7 +2,7 @@ name: dart_sentinel
 description: >
   Static analysis and metrics tool for Dart/Flutter projects.
   Detects dead files, enforces architecture rules, computes metrics, and applies custom lint rules.
-version: 0.2.0
+version: 0.2.1
 homepage: https://github.com/LuanCesarDC/dart-sentinel
 repository: https://github.com/LuanCesarDC/dart-sentinel
 issue_tracker: https://github.com/LuanCesarDC/dart-sentinel/issues
