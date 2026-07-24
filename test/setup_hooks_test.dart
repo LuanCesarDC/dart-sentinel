@@ -76,6 +76,27 @@ void main() {
     },
   );
 
+  test(
+    'fails gracefully and does not overwrite malformed settings.json',
+    () async {
+      File(
+        p.join(fixtureDir.path, 'analyzer.yaml'),
+      ).writeAsStringSync('rules: {}\n');
+      Directory(p.join(fixtureDir.path, '.claude')).createSync();
+      const malformed = '[1, 2, 3]';
+      settingsFile().writeAsStringSync(malformed);
+
+      final result = await runSetupHooks();
+
+      expect(result.exitCode, isNot(0));
+      expect(
+        result.stderr,
+        contains('settings.json'),
+      );
+      expect(settingsFile().readAsStringSync(), equals(malformed));
+    },
+  );
+
   test('running twice does not duplicate hook entries', () async {
     File(
       p.join(fixtureDir.path, 'analyzer.yaml'),

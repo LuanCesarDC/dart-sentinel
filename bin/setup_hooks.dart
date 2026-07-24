@@ -49,7 +49,29 @@ Map<String, dynamic> _readSettings(File file) {
   if (!file.existsSync()) return {};
   final content = file.readAsStringSync();
   if (content.trim().isEmpty) return {};
-  return jsonDecode(content) as Map<String, dynamic>;
+
+  Object? decoded;
+  try {
+    decoded = jsonDecode(content);
+  } on FormatException catch (e) {
+    stderr.writeln(
+      'Could not parse ${file.path} — it does not contain valid JSON '
+      '($e). Fix or remove the file, then run `dart_sentinel setup-hooks` '
+      'again.',
+    );
+    exit(1);
+  }
+
+  if (decoded is! Map<String, dynamic>) {
+    stderr.writeln(
+      'Could not use ${file.path} — its top-level JSON value must be an '
+      'object (found ${decoded.runtimeType}). Fix or remove the file, '
+      'then run `dart_sentinel setup-hooks` again.',
+    );
+    exit(1);
+  }
+
+  return decoded;
 }
 
 List<dynamic> _mergeHookEntry(
