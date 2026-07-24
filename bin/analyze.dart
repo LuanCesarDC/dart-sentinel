@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:dart_sentinel/dart_sentinel.dart';
 
+import 'rule_registry.dart';
+
 Future<void> main(List<String> args) async {
   final parser = _buildParser();
   final results = parser.parse(args);
@@ -214,44 +216,7 @@ ArgParser _buildParser() {
 }
 
 List<Issue> _runRuleAnalysis(ProjectContext context, String category) {
-  final allRules = <AnalyzerRule>[
-    DeadFilesRule(),
-    DeadExportsRule(),
-    BannedImportsRule(),
-    BannedSymbolsRule(),
-    LayerDependencyRule(),
-    FeatureIsolationRule(),
-    ImportCycleRule(),
-    ComplexityRule(),
-    BuildComplexityRule(),
-    DisposeCheckRule(),
-    AsyncSafetyRule(),
-    EmptyCatchRule(),
-    DeadTodosRule(),
-    GenericNamingRule(),
-    RedundantCommentsRule(),
-    VerboseLoggingRule(),
-    SingleMethodClassRule(),
-    PassthroughFunctionRule(),
-    LazyNullCheckRule(),
-    ModelMissingMethodsRule(),
-    UnusedCodeRule(),
-    UntestedFilesRule(),
-    TestCoverageRule(),
-    TestQualityRule(),
-    ClassMetricsRule(),
-    PubspecRule(),
-    AvoidGlobalStateRule(),
-    NoMagicNumberRule(),
-    NoEqualThenElseRule(),
-    AvoidCommentedOutCodeRule(),
-    NoEqualArgumentsRule(),
-    AvoidSelfCompareRule(),
-    AvoidReturningWidgetsRule(),
-    FlutterAntiPatternsRule(),
-    MisusedDependenciesRule(),
-  ];
-  final runner = RuleRunner(rules: allRules, config: context.config);
+  final runner = RuleRunner(rules: allSentinelRules(), config: context.config);
   if (category == 'all') return runner.runAll(context);
   return runner.runCategory(context, category);
 }
