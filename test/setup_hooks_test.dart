@@ -97,6 +97,27 @@ void main() {
     },
   );
 
+  test(
+    'fails gracefully and does not overwrite settings.json with invalid JSON syntax',
+    () async {
+      File(
+        p.join(fixtureDir.path, 'analyzer.yaml'),
+      ).writeAsStringSync('rules: {}\n');
+      Directory(p.join(fixtureDir.path, '.claude')).createSync();
+      const invalidJson = '{invalid json';
+      settingsFile().writeAsStringSync(invalidJson);
+
+      final result = await runSetupHooks();
+
+      expect(result.exitCode, isNot(0));
+      expect(
+        result.stderr,
+        contains('settings.json'),
+      );
+      expect(settingsFile().readAsStringSync(), equals(invalidJson));
+    },
+  );
+
   test('running twice does not duplicate hook entries', () async {
     File(
       p.join(fixtureDir.path, 'analyzer.yaml'),
