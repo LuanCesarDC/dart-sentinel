@@ -56,6 +56,35 @@ All single-file rules run as analysis server plugins:
 
 > **Note:** Cross-file rules (dead-files, dead-exports, import-cycles) and config-dependent rules (feature-isolation, layer-dependency, banned-imports) are only available via the CLI.
 
+## Claude Code Hooks
+
+For projects using Claude Code, Dart Sentinel can enforce your architecture
+automatically — no MCP tool calls to remember, no manual CLI runs.
+
+```bash
+dart_sentinel setup-hooks
+```
+
+This writes two hooks into `.claude/settings.json`:
+
+- **PostToolUse** (`hook-edit`) — after every `Edit`/`Write` on a `.dart`
+  file, Sentinel analyzes just that file. If it introduces an error-severity
+  violation, Claude sees it immediately and has to fix it before continuing —
+  the same way a compile error would stop it.
+- **Stop** (`hook-stop`) — when Claude finishes responding, Sentinel runs a
+  full project scan and compares it against `.dart_sentinel/baseline.json`
+  (Ratchet Mode). If anything regressed, Claude is told exactly what and has
+  to keep working. If nothing regressed, you get a one-line summary of what
+  was caught and fixed during the session.
+
+Requires `analyzer.yaml` to already exist (`setup-hooks` will tell you if it
+doesn't). Accept a new baseline explicitly once you're happy with the current
+state:
+
+```bash
+dart_sentinel --save-baseline
+```
+
 ## Installation
 
 Install globally:

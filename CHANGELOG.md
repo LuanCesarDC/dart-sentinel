@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add `dart_sentinel setup-hooks` to wire Claude Code PostToolUse/Stop hooks
+  automatically, closing the enforcement loop without relying on MCP tool
+  calls.
+
 ## 0.2.1
 
 - Fix dangling library doc comment in bin/dart_sentinel.dart
