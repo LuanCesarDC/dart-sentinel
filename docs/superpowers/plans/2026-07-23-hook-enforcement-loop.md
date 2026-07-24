@@ -426,6 +426,128 @@ git commit -m "feat: add hook-edit PostToolUse hook for Claude Code"
 
 ---
 
+### Task 2b: Fix `ComplexityRule` file-LOC bug (discovered during Task 2)
+
+> Inserted mid-execution: Task 2's implementer found that `ComplexityRule._countLoc`
+> has never worked correctly (pre-existing, unrelated to this branch), which made
+> Task 2's "blocks a file with an error-severity violation" test fail. The user
+> chose to fix the root cause now rather than route around it in the test.
+
+**Files:**
+- Modify: `lib/src/core/project_context.dart` — cache each file's raw source text alongside its parsed AST.
+- Modify: `lib/src/rules/complexity_rule.dart:67-83` (`_countLoc`) — count from raw source text instead of `unit.toSource()`.
+- Test: `test/rule_registry_test.dart` is unaffected; extend/add a focused unit test for `_countLoc` if none exists (check `test/plugin/complexity_plugin_test.dart` first — if it already covers file LOC, extend it; if not, add a new `test/complexity_rule_test.dart`).
+
+**Root cause:** `CompilationUnit.toSource()` is the analyzer's AST unparser — it does not preserve original formatting or line breaks, so it collapses any file into ~1 line. `_countLoc` splits that single line on `\n`, so the file-LOC warning/error has never fired for any file in this project, however large.
+
+**Fix:** `package:analyzer`'s `parseFile(...)` (used in `ProjectContext._tryParseFile`, `lib/src/core/project_context.dart:262-271`) returns a `ParseStringResult`, which has both `.unit` (the AST, already used) and `.content` (the original source text, currently discarded). Capture `.content` alongside `.unit` and expose it on `ProjectContext` so `ComplexityRule` can read real lines without touching `dart:io` (rules must not use `dart:io` directly — this keeps file access inside `ProjectContext`, per `CLAUDE.md`).
+
+**Interfaces:**
+- Produces: `Map<String, String> fileContents` — new field on `ProjectContext`, keyed the same way as `parsedUnits` (absolute file path → content). `ComplexityRule._countLoc` reads `context.fileContents[file]` instead of `unit.toSource()`.
+
+- [ ] **Step 1: Write the failing test**
+
+Add to `test/plugin/complexity_plugin_test.dart` if that file already builds a `ProjectContext`/rule-level fixture, otherwise create `test/complexity_rule_test.dart` following the temp-project pattern used in `test/dispose_check_test.dart` (temp dir, `pubspec.yaml`, `lib/`, `ProjectContext.build`). The test must assert the *real* line count is used:
+
+```dart
+test('counts actual source lines, not AST-unparsed lines', () async {
+  final tmpDir = await Directory.systemTemp.createTemp('complexity_loc_test_');
+  addTearDown(() => tmpDir.deleteSync(recursive: true));
+
+  File(p.join(tmpDir.path, 'pubspec.yaml')).writeAsStringSync('''
+name: fixture_app
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+''');
+  final libDir = Directory(p.join(tmpDir.path, 'lib'))..createSync();
+
+  // 610 real lines — must trip the 600-line error threshold.
+  final lines = List.generate(610, (i) => 'final v$i = $i;');
+  File(p.join(libDir.path, 'huge.dart')).writeAsStringSync(lines.join('\n'));
+
+  final context = await ProjectContext.build(tmpDir.path);
+  final issues = ComplexityRule().run(context);
+
+  final locIssue = issues.where((i) => i.message.contains('lines of code'));
+  expect(locIssue, isNotEmpty);
+  expect(locIssue.first.severity, Severity.error);
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `dart test <the test file>`
+Expected: FAIL — no "lines of code" issue is found (current buggy behavior collapses the file to 1 line, well under the 300-line warning threshold).
+
+- [ ] **Step 3: Add `fileContents` to `ProjectContext`**
+
+In `lib/src/core/project_context.dart`, change `_tryParseFile` to also return the source content, and thread it through `_parseAndBuildGraph` into a new field:
+
+```dart
+static ({CompilationUnit unit, String content})? _tryParseFile(String file) {
+  try {
+    final result = parseFile(
+      path: file,
+      featureSet: FeatureSet.latestLanguageVersion(),
+    );
+    return (unit: result.unit, content: result.content);
+  } catch (_) {
+    return null;
+  }
+}
+```
+
+Update `_parseAndBuildGraph`'s return record to add `Map<String, String> fileContents`, populate it (`fileContents[file] = parsed.content;`) alongside `parsedUnits[file] = parsed.unit;`, and add the corresponding `final Map<String, String> fileContents;` field + constructor parameter to `ProjectContext`, wired the same way `parsedUnits` already is (check every call site that constructs `ProjectContext._(...)` and the `_parseAndBuildGraph` return type/callers — mirror `parsedUnits` exactly).
+
+- [ ] **Step 4: Fix `_countLoc`**
+
+In `lib/src/rules/complexity_rule.dart`, replace:
+
+```dart
+  int _countLoc(String file, ProjectContext context) {
+    final unit = context.parsedUnits[file];
+    if (unit == null) return 0;
+
+    final source = unit.toSource();
+    final lines = source.split('\n');
+```
+
+with:
+
+```dart
+  int _countLoc(String file, ProjectContext context) {
+    final source = context.fileContents[file];
+    if (source == null) return 0;
+
+    final lines = source.split('\n');
+```
+
+(the rest of the method — filtering blank/comment lines — is unchanged).
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `dart test <the test file>`
+Expected: PASS
+
+- [ ] **Step 6: Run the full suite, including Task 2's hook-edit tests**
+
+Run: `dart test`
+Expected: all tests pass, including `test/hook_edit_test.dart`'s "blocks a file with an error-severity violation" (now trips for the right reason).
+
+- [ ] **Step 7: Self-check with Sentinel on this repo**
+
+Run: `dart run bin/dart_sentinel.dart --no-report`
+Expected: this repo's `analyzer.yaml` overrides `complexity` to `warning` severity project-wide (`analyzer.yaml:61`), so any newly-surfaced file-LOC issues in this repo (e.g. `lib/src/mcp/sentinel_server.dart`, `lib/src/config/analyzer_config.dart`) appear as **warnings, not errors** — confirm the run still exits 0 (no new errors). Do not split or refactor any files to reduce these warnings; that's out of scope for this fix.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add lib/src/core/project_context.dart lib/src/rules/complexity_rule.dart <test file>
+git commit -m "fix: count real source lines instead of AST-unparsed lines in ComplexityRule"
+```
+
+---
+
 ### Task 3: `hook-stop` — Stop hook with ratchet summary
 
 **Files:**
