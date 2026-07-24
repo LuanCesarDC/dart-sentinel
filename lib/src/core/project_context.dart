@@ -37,6 +37,9 @@ class ProjectContext {
   /// Cached parsed compilation units: file → AST.
   final Map<String, CompilationUnit> parsedUnits;
 
+  /// Cached raw source text: file → original file content.
+  final Map<String, String> fileContents;
+
   /// All dart files discovered in the project (absolute paths).
   final List<String> allFiles;
 
@@ -52,6 +55,7 @@ class ProjectContext {
     required this.importGraph,
     required this.rawImports,
     required this.parsedUnits,
+    required this.fileContents,
     required this.allFiles,
     required this.config,
     required this.pubspecContent,
@@ -89,6 +93,7 @@ class ProjectContext {
       importGraph: parseResult.importGraph,
       rawImports: parseResult.rawImports,
       parsedUnits: parseResult.parsedUnits,
+      fileContents: parseResult.fileContents,
       allFiles: allFiles,
       config: config,
       pubspecContent: pubspecContent,
@@ -220,20 +225,24 @@ class ProjectContext {
     Map<String, Set<String>> importGraph,
     Map<String, Set<String>> rawImports,
     Map<String, CompilationUnit> parsedUnits,
+    Map<String, String> fileContents,
   })
   _parseAndBuildGraph(List<String> files, _ImportResolver resolver) {
     final importGraph = <String, Set<String>>{};
     final rawImports = <String, Set<String>>{};
     final parsedUnits = <String, CompilationUnit>{};
+    final fileContents = <String, String>{};
 
     for (final file in files) {
-      final unit = _tryParseFile(file);
-      if (unit == null) {
+      final parsed = _tryParseFile(file);
+      if (parsed == null) {
         importGraph[file] = {};
         rawImports[file] = {};
         continue;
       }
+      final unit = parsed.unit;
       parsedUnits[file] = unit;
+      fileContents[file] = parsed.content;
       final resolved = <String>{};
       final raw = <String>{};
 
@@ -256,15 +265,17 @@ class ProjectContext {
       importGraph: importGraph,
       rawImports: rawImports,
       parsedUnits: parsedUnits,
+      fileContents: fileContents,
     );
   }
 
-  static CompilationUnit? _tryParseFile(String file) {
+  static ({CompilationUnit unit, String content})? _tryParseFile(String file) {
     try {
-      return parseFile(
+      final result = parseFile(
         path: file,
         featureSet: FeatureSet.latestLanguageVersion(),
-      ).unit;
+      );
+      return (unit: result.unit, content: result.content);
     } catch (_) {
       return null;
     }

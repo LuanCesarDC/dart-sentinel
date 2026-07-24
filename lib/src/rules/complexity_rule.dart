@@ -65,10 +65,9 @@ class ComplexityRule extends AnalyzerRule {
   }
 
   int _countLoc(String file, ProjectContext context) {
-    final unit = context.parsedUnits[file];
-    if (unit == null) return 0;
+    final source = context.fileContents[file];
+    if (source == null) return 0;
 
-    final source = unit.toSource();
     final lines = source.split('\n');
 
     int count = 0;
