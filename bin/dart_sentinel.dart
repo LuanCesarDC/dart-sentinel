@@ -4,9 +4,11 @@
 // `dart_sentinel --mcp`                    → MCP server over stdio
 // `dart_sentinel generate-ai-config`       → Generate AI integration files
 // `dart_sentinel hook-edit`                → Claude Code PostToolUse hook
+// `dart_sentinel hook-stop`                → Claude Code Stop hook
 import 'analyze.dart' as analyze;
 import 'generate_ai_config.dart' as gen_ai;
 import 'hook_edit.dart' as hook_edit;
+import 'hook_stop.dart' as hook_stop;
 import 'mcp_server.dart' as mcp;
 
 Future<void> main(List<String> args) async {
@@ -16,6 +18,8 @@ Future<void> main(List<String> args) async {
     await gen_ai.main(args.sublist(1));
   } else if (args.isNotEmpty && args.first == 'hook-edit') {
     await hook_edit.main(args.sublist(1));
+  } else if (args.isNotEmpty && args.first == 'hook-stop') {
+    await hook_stop.main(args.sublist(1));
   } else {
     await analyze.main(args);
   }
