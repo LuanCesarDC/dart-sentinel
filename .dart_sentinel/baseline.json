@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "timestamp": "2026-07-24T17:31:52.690227",
+  "total": 170,
+  "rules": {
+    "async-safety": 2,
+    "class-metrics": 18,
+    "complexity": 51,
+    "lazy-null-check": 2,
+    "no-magic-number": 26,
+    "untested-files": 70,
+    "unused-code": 1
+  }
+}
