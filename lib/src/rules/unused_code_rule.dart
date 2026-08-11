@@ -57,8 +57,9 @@ class UnusedCodeRule extends AnalyzerRule {
     final issues = <Issue>[];
     for (final decl in declarations) {
       if (decl.isPrivate) continue; // Skip private; only matters within file
-      if (!reachable.contains(decl.file))
+      if (!reachable.contains(decl.file)) {
         continue; // Not reachable = dead-files handles this
+      }
 
       // Check: is this symbol name referenced in any file that imports the declaring file?
       final importers = reachableFromAll([decl.file], revGraph);

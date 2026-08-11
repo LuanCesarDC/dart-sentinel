@@ -2,6 +2,35 @@
 
 Static analysis, metrics, and architecture enforcement tool for Dart/Flutter projects.
 
+Requires Dart SDK `^3.9.0` (works standalone or inside any Flutter project).
+
+## Where do I start?
+
+| You want... | Go to |
+|---|---|
+| Diagnostics inline in VS Code / Android Studio / IntelliJ, no CLI | [IDE Plugin](#ide-plugin-analysis-server) |
+| Your architecture enforced automatically inside **Claude Code** | [Claude Code Hooks](#claude-code-hooks) |
+| Copilot, Cursor, or another AI agent to know your architecture via MCP | [MCP Server](#mcp-server-ai-agent-integration) |
+| A step-by-step guide to wire Sentinel into a new AI-assisted project | [Starting a Project with AI Agents](#starting-a-project-with-ai-agents) |
+| Just the CLI, run manually or in CI | [Installation](#installation) → [Usage](#usage) |
+| A ready-made `analyzer.yaml` for your architecture (BLoC, Riverpod, Clean, etc.) | [Architecture Templates](#architecture-templates) |
+
+## Table of Contents
+
+- [IDE Plugin (Analysis Server)](#ide-plugin-analysis-server)
+- [Claude Code Hooks](#claude-code-hooks)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Rules](#rules)
+- [Analysis Tools](#analysis-tools) (impact analysis, dependency map, migrations, l10n, ratchet mode)
+- [CI Integration](#ci-integration)
+- [Starting a Project with AI Agents](#starting-a-project-with-ai-agents)
+- [MCP Server (AI Agent Integration)](#mcp-server-ai-agent-integration)
+- [Programmatic Usage](#programmatic-usage)
+- [Package Structure](#package-structure)
+- [Architecture Templates](#architecture-templates)
+
 ## VS Code Extension
 
 Install the companion extension for inline diagnostics, quick navigation, and a summary dashboard directly in your editor:
@@ -60,6 +89,11 @@ All single-file rules run as analysis server plugins:
 
 For projects using Claude Code, Dart Sentinel can enforce your architecture
 automatically — no MCP tool calls to remember, no manual CLI runs.
+
+You need an `analyzer.yaml` first — see [Configuration](#configuration) to
+write one by hand, or [Architecture Templates](#architecture-templates) to
+start from one matching your stack (BLoC, Riverpod, Clean Architecture,
+etc.). Then, from your project root:
 
 ```bash
 dart_sentinel setup-hooks

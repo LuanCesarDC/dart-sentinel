@@ -343,8 +343,9 @@ class SentinelPlugin extends ServerPlugin {
       if (RegExp(
         r'^//\s*(TODO|FIXME|HACK|XXX)\b',
         caseSensitive: false,
-      ).hasMatch(trimmed))
+      ).hasMatch(trimmed)) {
         return;
+      }
       if (!_matchesTrivialPattern(trimmed)) return;
 
       final msg = 'Comment restates the code — remove or add insight.';
@@ -635,8 +636,9 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
     AstNode? current = node.parent;
     while (current != null) {
       if (current is FunctionExpression &&
-          current.parent is! FunctionDeclaration)
+          current.parent is! FunctionDeclaration) {
         return true;
+      }
       if (current is FunctionDeclaration || current is MethodDeclaration) {
         return false;
       }

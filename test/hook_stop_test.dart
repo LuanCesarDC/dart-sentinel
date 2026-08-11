@@ -17,8 +17,9 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 ''');
     Directory(p.join(fixtureDir.path, 'lib')).createSync();
-    File(p.join(fixtureDir.path, 'lib', 'clean.dart'))
-        .writeAsStringSync('int add(int a, int b) => a + b;\n');
+    File(
+      p.join(fixtureDir.path, 'lib', 'clean.dart'),
+    ).writeAsStringSync('int add(int a, int b) => a + b;\n');
   });
 
   tearDown(() {
@@ -37,8 +38,9 @@ environment:
 
     expect(result.exitCode, 0);
     expect(
-      File(p.join(fixtureDir.path, '.dart_sentinel', 'baseline.json'))
-          .existsSync(),
+      File(
+        p.join(fixtureDir.path, '.dart_sentinel', 'baseline.json'),
+      ).existsSync(),
       isTrue,
     );
   });
@@ -52,31 +54,39 @@ environment:
     expect(result.stdout, contains('Ratchet passed'));
   });
 
-  test('blocks when a new error-severity issue regresses the baseline', () async {
-    await runHookStop(); // creates baseline with just clean.dart
+  test(
+    'blocks when a new error-severity issue regresses the baseline',
+    () async {
+      await runHookStop(); // creates baseline with just clean.dart
 
-    // Introduce a file-LOC error-severity violation.
-    final lines = List.generate(610, (i) => 'final v$i = $i;');
-    File(p.join(fixtureDir.path, 'lib', 'huge.dart'))
-        .writeAsStringSync(lines.join('\n'));
+      // Introduce a file-LOC error-severity violation.
+      final lines = List.generate(610, (i) => 'final v$i = $i;');
+      File(
+        p.join(fixtureDir.path, 'lib', 'huge.dart'),
+      ).writeAsStringSync(lines.join('\n'));
 
-    final result = await runHookStop();
+      final result = await runHookStop();
 
-    expect(result.exitCode, 2);
-    expect(result.stderr, contains('Ratchet failed'));
-  });
+      expect(result.exitCode, 2);
+      expect(result.stderr, contains('Ratchet failed'));
+    },
+  );
 
-  test('allows immediately when stop_hook_active is true, even with a regression', () async {
-    await runHookStop(); // creates baseline
+  test(
+    'allows immediately when stop_hook_active is true, even with a regression',
+    () async {
+      await runHookStop(); // creates baseline
 
-    final lines = List.generate(610, (i) => 'final v$i = $i;');
-    File(p.join(fixtureDir.path, 'lib', 'huge.dart'))
-        .writeAsStringSync(lines.join('\n'));
+      final lines = List.generate(610, (i) => 'final v$i = $i;');
+      File(
+        p.join(fixtureDir.path, 'lib', 'huge.dart'),
+      ).writeAsStringSync(lines.join('\n'));
 
-    final result = await runHookStop(stopHookActive: true);
+      final result = await runHookStop(stopHookActive: true);
 
-    expect(result.exitCode, 0);
-  });
+      expect(result.exitCode, 0);
+    },
+  );
 }
 
 Future<ProcessResult> _run({

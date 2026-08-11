@@ -79,10 +79,12 @@ class _MagicNumberVisitor extends RecursiveAstVisitor<void> {
   }
 
   bool _isExempt(AstNode node, num value) {
-    if (value is int && NoMagicNumberRule._allowedInt.contains(value))
+    if (value is int && NoMagicNumberRule._allowedInt.contains(value)) {
       return true;
-    if (value is double && NoMagicNumberRule._allowedDouble.contains(value))
+    }
+    if (value is double && NoMagicNumberRule._allowedDouble.contains(value)) {
       return true;
+    }
 
     // Allow in const declarations
     AstNode? parent = node.parent;

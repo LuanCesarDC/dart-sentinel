@@ -31,3 +31,9 @@ doc/api/
 vscode_extension/out/
 vscode_extension/node_modules/
 vscode_extension/*.vsix
+
+# Internal working notes — not part of the published package or public repo
+POC_EXPERIMENTS.md
+REBUILD_PLAN.md
+setup_poc.sh
+docs/findings/

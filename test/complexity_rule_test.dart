@@ -8,7 +8,9 @@ import 'package:test/test.dart';
 
 void main() {
   test('counts actual source lines, not AST-unparsed lines', () async {
-    final tmpDir = await Directory.systemTemp.createTemp('complexity_loc_test_');
+    final tmpDir = await Directory.systemTemp.createTemp(
+      'complexity_loc_test_',
+    );
     addTearDown(() => tmpDir.deleteSync(recursive: true));
 
     File(p.join(tmpDir.path, 'pubspec.yaml')).writeAsStringSync('''

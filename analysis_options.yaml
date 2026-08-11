@@ -5,6 +5,7 @@ analyzer:
 linter:
   rules:
     - prefer_relative_imports
+    - curly_braces_in_flow_control_structures
 
 # The new plugin API below requires Dart 3.10+ / Flutter 3.38+.
 # Uncomment when your Dart SDK supports it:

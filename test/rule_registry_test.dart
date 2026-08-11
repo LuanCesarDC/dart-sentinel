@@ -1,4 +1,3 @@
-import 'package:dart_sentinel/dart_sentinel.dart';
 import 'package:test/test.dart';
 
 import '../bin/rule_registry.dart';
@@ -8,7 +7,11 @@ void main() {
     final rules = allSentinelRules();
     final names = rules.map((r) => r.name).toList();
 
-    expect(names.toSet().length, names.length, reason: 'no duplicate rule names');
+    expect(
+      names.toSet().length,
+      names.length,
+      reason: 'no duplicate rule names',
+    );
     expect(names, contains('dead-files'));
     expect(names, contains('layer-dependency'));
     expect(names, contains('dispose-check'));

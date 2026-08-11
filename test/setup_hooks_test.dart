@@ -89,10 +89,7 @@ void main() {
       final result = await runSetupHooks();
 
       expect(result.exitCode, isNot(0));
-      expect(
-        result.stderr,
-        contains('settings.json'),
-      );
+      expect(result.stderr, contains('settings.json'));
       expect(settingsFile().readAsStringSync(), equals(malformed));
     },
   );
@@ -110,10 +107,7 @@ void main() {
       final result = await runSetupHooks();
 
       expect(result.exitCode, isNot(0));
-      expect(
-        result.stderr,
-        contains('settings.json'),
-      );
+      expect(result.stderr, contains('settings.json'));
       expect(settingsFile().readAsStringSync(), equals(invalidJson));
     },
   );

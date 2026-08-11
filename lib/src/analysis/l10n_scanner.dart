@@ -406,11 +406,13 @@ class _HardcodedStringVisitor extends RecursiveAstVisitor<void> {
     if (trimmed.length < 2) return false;
 
     // Skip URLs, paths, keys
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://'))
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return false;
+    }
     if (trimmed.startsWith('/') || trimmed.startsWith('assets/')) return false;
-    if (trimmed.contains(RegExp(r'^[a-z_]+\.[a-z_]+$')))
+    if (trimmed.contains(RegExp(r'^[a-z_]+\.[a-z_]+$'))) {
       return false; // keys like "user.name"
+    }
 
     // Skip strings that are only symbols/punctuation
     if (trimmed.replaceAll(RegExp(r'[\s\W\d]'), '').isEmpty) return false;
