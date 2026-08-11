@@ -10,3 +10,10 @@ tool/analyzer_plugin/
 # Dev files
 plan.md
 .DS_Store
+
+# Internal working notes — not part of the published package
+POC_EXPERIMENTS.md
+REBUILD_PLAN.md
+setup_poc.sh
+docs/findings/
+docs/superpowers/
