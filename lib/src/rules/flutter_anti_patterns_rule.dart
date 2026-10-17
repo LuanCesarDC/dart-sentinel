@@ -1,3 +1,4 @@
+import '../core/ast_compat.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
@@ -59,9 +60,8 @@ class _FlutterPatternVisitor extends RecursiveAstVisitor<void> {
     // ── avoid-shrink-wrap-in-lists ──
     if (typeName == 'ListView' || typeName == 'GridView') {
       for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression &&
-            arg.name.label.name == 'shrinkWrap' &&
-            arg.expression.toSource() == 'true') {
+        if (arg.argumentName == 'shrinkWrap' &&
+            arg.valueExpression.toSource() == 'true') {
           final line = unit.lineInfo.getLocation(arg.offset).lineNumber;
           issues.add(
             Issue(
@@ -81,14 +81,14 @@ class _FlutterPatternVisitor extends RecursiveAstVisitor<void> {
     // ── avoid-expanded-as-spacer ──
     if (typeName == 'Expanded' || typeName == 'Flexible') {
       for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'child') {
-          final child = arg.expression;
+        if (arg.argumentName == 'child') {
+          final child = arg.valueExpression;
           if (child is InstanceCreationExpression) {
             final childType = child.constructorName.type.name.lexeme;
             if (childType == 'SizedBox' || childType == 'Container') {
               // Check if child has no meaningful args besides key
               final childArgs = child.argumentList.arguments.where(
-                (a) => a is! NamedExpression || a.name.label.name != 'key',
+                (a) => a.argumentName != 'key',
               );
               if (childArgs.isEmpty) {
                 final line = unit.lineInfo.getLocation(node.offset).lineNumber;
@@ -112,8 +112,8 @@ class _FlutterPatternVisitor extends RecursiveAstVisitor<void> {
     // ── pass-existing-future-to-future-builder ──
     if (typeName == 'FutureBuilder') {
       for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'future') {
-          final expr = arg.expression;
+        if (arg.argumentName == 'future') {
+          final expr = arg.valueExpression;
           // Check if it's a method call creating a new future inline
           if (expr is MethodInvocation || expr is InstanceCreationExpression) {
             final line = unit.lineInfo.getLocation(arg.offset).lineNumber;

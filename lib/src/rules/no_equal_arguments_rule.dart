@@ -1,3 +1,4 @@
+import '../core/ast_compat.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
@@ -72,7 +73,7 @@ class _EqualArgsVisitor extends RecursiveAstVisitor<void> {
     if (_isIgnoredCall(callName)) return;
 
     // Only check positional args (named args are self-documenting)
-    final positional = args.where((a) => a is! NamedExpression).toList();
+    final positional = args.where((a) => !a.isNamedArgument).toList();
     if (positional.length < 2) return;
 
     final seen = <String>{};

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Breaking
+
+- Migrated to **analyzer 14** (`^14.5.0`), `analysis_server_plugin ^0.3.24`,
+  `analyzer_plugin ^0.14.18`. The minimum Dart SDK is now **3.11**. Dropping
+  analyzer 10–12 is deliberate: the AST changed incompatibly in 13
+  (`NamedExpression`/`SimpleFormalParameter`/`DefaultFormalParameter` removed),
+  so one codebase can't span both. Every direct dependency is now on its
+  latest version.
+- CI: Dart stable + beta, `dart pub downgrade` (lowest constraints), an
+  up-to-date-dependencies check, `pub publish --dry-run`, a weekly scheduled
+  run, and a false-positive guard against the official Flutter `compass_app`
+  (`tool/real_world_check.sh`). Dependabot keeps pub and Actions fresh.
+- `flutter_official` template: `domain/` may depend on `data/` (use cases use
+  repositories, as in the official guide).
+
 - `layer-dependency`: when several layers match a file, the **most specific**
   pattern wins (e.g. `lib/core/*/model/**` over `lib/core/**`), regardless of
   declaration order. Relative imports (`../view_model/x.dart`) are now checked

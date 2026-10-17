@@ -52,7 +52,7 @@ class GenericNamingPluginRule extends AnalysisRule {
   ) {
     final visitor = _Visitor(this);
     registry.addVariableDeclaration(this, visitor);
-    registry.addSimpleFormalParameter(this, visitor);
+    registry.addRegularFormalParameter(this, visitor);
     registry.addFunctionDeclaration(this, visitor);
     registry.addMethodDeclaration(this, visitor);
   }
@@ -71,7 +71,7 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   @override
-  void visitSimpleFormalParameter(SimpleFormalParameter node) {
+  void visitRegularFormalParameter(RegularFormalParameter node) {
     final name = node.name?.lexeme;
     if (name == null) return;
     if (!GenericNamingPluginRule._defaultDenyVariables.contains(name)) return;

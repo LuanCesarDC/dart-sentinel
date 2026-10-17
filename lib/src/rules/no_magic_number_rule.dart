@@ -97,14 +97,14 @@ class _MagicNumberVisitor extends RecursiveAstVisitor<void> {
         parent = parent.parent;
         continue;
       }
-      if (parent is NamedExpression || parent is ArgumentList) {
+      if (parent is NamedArgument || parent is ArgumentList) {
         // Named args like `width: 300` are common in Flutter
         return true;
       }
       if (parent is ListLiteral || parent is SetOrMapLiteral) {
         return true;
       }
-      if (parent is DefaultFormalParameter) return true;
+      if (parent is FormalParameterDefaultClause) return true;
       if (parent is ConstructorDeclaration) return true;
       if (parent is Annotation) return true;
       break;

@@ -1,3 +1,4 @@
+import '../core/ast_compat.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -323,18 +324,18 @@ class _HardcodedStringVisitor extends RecursiveAstVisitor<void> {
       final args = node.argumentList.arguments;
       if (args.isNotEmpty) {
         final first = args.first;
-        if (first is! NamedExpression) {
-          _checkExpression(first, name);
+        if (!first.isNamedArgument) {
+          _checkExpression(first.valueExpression, name);
         }
       }
     }
 
     // Check named parameters for label:, hintText:, title:, etc.
     for (final arg in node.argumentList.arguments) {
-      if (arg is NamedExpression) {
-        final paramName = arg.name.label.name;
+      final paramName = arg.argumentName;
+      if (paramName != null) {
         if (_uiNamedParams.contains(paramName)) {
-          _checkExpression(arg.expression, '$name.$paramName');
+          _checkExpression(arg.valueExpression, '$name.$paramName');
         }
       }
     }

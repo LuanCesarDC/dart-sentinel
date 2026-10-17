@@ -1,3 +1,4 @@
+import '../core/ast_compat.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
@@ -95,7 +96,7 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
   Set<String> _formalParamFields(ConstructorDeclaration constructor) {
     final result = <String>{};
     for (final param in constructor.parameters.parameters) {
-      final actual = param is DefaultFormalParameter ? param.parameter : param;
+      final actual = param;
       if (actual is FieldFormalParameter) {
         result.add(actual.name.lexeme);
       } else if (actual is SuperFormalParameter) {
@@ -121,10 +122,7 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
 
   Set<String> _constructorParamNames(ConstructorDeclaration constructor) {
     return constructor.parameters.parameters
-        .map((p) {
-          final actual = p is DefaultFormalParameter ? p.parameter : p;
-          return actual.name?.lexeme;
-        })
+        .map((param) => param.name?.lexeme)
         .whereType<String>()
         .toSet();
   }
@@ -404,7 +402,7 @@ class _OnDisposeVisitor extends RecursiveAstVisitor<void> {
   void visitMethodInvocation(MethodInvocation node) {
     if (node.methodName.name == 'onDispose') {
       for (final argument in node.argumentList.arguments) {
-        _collectFrom(argument);
+        _collectFrom(argument.valueExpression);
       }
     }
     super.visitMethodInvocation(node);

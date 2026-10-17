@@ -1,3 +1,4 @@
+import '../core/ast_compat.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
@@ -74,7 +75,7 @@ class _TestQualityVisitor extends RecursiveAstVisitor<void> {
 
     // Check for skipped tests
     for (final arg in args) {
-      if (arg is NamedExpression && arg.name.label.name == 'skip') {
+      if (arg.argumentName == 'skip') {
         issues.add(
           Issue(
             rule: 'test-quality',
@@ -110,8 +111,8 @@ class _TestQualityVisitor extends RecursiveAstVisitor<void> {
         callback = arg;
         break;
       }
-      if (arg is NamedExpression && arg.expression is FunctionExpression) {
-        callback = arg.expression;
+      if (arg.isNamedArgument && arg.valueExpression is FunctionExpression) {
+        callback = arg.valueExpression;
         break;
       }
     }

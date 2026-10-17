@@ -52,9 +52,10 @@ architecture:
     routing:
       paths: ["lib/routing/**"]
       can_depend_on: ["ui", "domain", "data", "config", "utils"]
+    # Use cases sit between UI and data, so they depend on repositories.
     domain:
       paths: ["lib/domain/**"]
-      can_depend_on: ["utils"]
+      can_depend_on: ["data", "utils"]
     data:
       paths: ["lib/data/**"]
       can_depend_on: ["domain", "config", "utils"]

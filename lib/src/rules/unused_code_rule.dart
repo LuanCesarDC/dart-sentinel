@@ -193,7 +193,7 @@ class UnusedCodeRule extends AnalyzerRule {
         case ExtensionTypeDeclaration():
           symbols.add(
             _DeclaredSymbol(
-              name: decl.primaryConstructor.typeName.lexeme,
+              name: decl.namePart.typeName.lexeme,
               file: file,
               line: unit.lineInfo.getLocation(decl.offset).lineNumber,
               kind: 'ExtensionType',

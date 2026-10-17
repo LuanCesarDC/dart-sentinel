@@ -58,9 +58,7 @@ class _Visitor extends SimpleAstVisitor<void> {
     for (final member in members) {
       if (member is! ConstructorDeclaration) continue;
       for (final param in member.parameters.parameters) {
-        final actual = param is DefaultFormalParameter
-            ? param.parameter
-            : param;
+        final actual = param;
         if (actual is FieldFormalParameter) result.add(actual.name.lexeme);
         if (actual is SuperFormalParameter) result.add(actual.name.lexeme);
       }

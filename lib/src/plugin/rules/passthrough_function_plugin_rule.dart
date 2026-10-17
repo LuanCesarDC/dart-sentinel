@@ -1,3 +1,4 @@
+import '../../core/ast_compat.dart';
 import 'package:analyzer/analysis_rule/analysis_rule.dart';
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
@@ -104,10 +105,7 @@ class _Visitor extends SimpleAstVisitor<void> {
     if (args.length != paramNames.length) return false;
 
     for (var i = 0; i < args.length; i++) {
-      Expression argExpr = args[i];
-      if (argExpr is NamedExpression) {
-        argExpr = argExpr.expression;
-      }
+      final argExpr = args[i].valueExpression;
       if (argExpr is! SimpleIdentifier) return false;
       if (argExpr.name != paramNames[i]) return false;
     }

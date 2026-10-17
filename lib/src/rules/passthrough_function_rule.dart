@@ -1,3 +1,4 @@
+import '../core/ast_compat.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
@@ -128,11 +129,8 @@ class _PassthroughVisitor extends RecursiveAstVisitor<void> {
 
   bool _isPassthrough(ArgumentList argList, List<String> paramNames) {
     final argNames = argList.arguments.map((a) {
-      if (a is NamedExpression) {
-        final expr = a.expression;
-        return expr is SimpleIdentifier ? expr.name : null;
-      }
-      return a is SimpleIdentifier ? a.name : null;
+      final expr = a.valueExpression;
+      return expr is SimpleIdentifier ? expr.name : null;
     }).toList();
 
     if (argNames.length != paramNames.length) return false;

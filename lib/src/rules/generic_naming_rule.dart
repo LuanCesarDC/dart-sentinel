@@ -68,25 +68,25 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
   }
 
   @override
-  void visitSimpleFormalParameter(SimpleFormalParameter node) {
+  void visitRegularFormalParameter(RegularFormalParameter node) {
     final name = node.name?.lexeme;
     if (name == null || !config.denyVariableNames.contains(name)) {
-      super.visitSimpleFormalParameter(node);
+      super.visitRegularFormalParameter(node);
       return;
     }
 
     if (config.allowInLambdas && _isInLambda(node)) {
-      super.visitSimpleFormalParameter(node);
+      super.visitRegularFormalParameter(node);
       return;
     }
 
     if (_isDictatedByFramework(node)) {
-      super.visitSimpleFormalParameter(node);
+      super.visitRegularFormalParameter(node);
       return;
     }
 
     _report(name, node.name!.offset, 'parameter');
-    super.visitSimpleFormalParameter(node);
+    super.visitRegularFormalParameter(node);
   }
 
   @override
@@ -152,7 +152,7 @@ bool _isConstOrField(VariableDeclaration node) {
 
 /// Named parameters are part of the caller's API, constructor parameters
 /// mirror their fields, and overrides inherit names from the supertype.
-bool _isDictatedByFramework(SimpleFormalParameter node) {
+bool _isDictatedByFramework(RegularFormalParameter node) {
   if (node.isNamed) return true;
   final owner = node.thisOrAncestorMatching(
     (ancestor) =>

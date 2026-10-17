@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Weekly: catch breakage from new analyzer / SDK releases early.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -31,23 +37,43 @@ jobs:
       - name: Run tests
         run: dart test
 
-      - name: Run Dart Sentinel
+      - name: Run Dart Sentinel (ratchet-free self check)
         run: dart run dart_sentinel
 
-  # Run the published constraint range against its oldest and newest analyzer
-  # so an analyzer bump can't silently break the package.
-  analyzer-compat:
+  # Lowest versions the pubspec constraints allow must still build and pass.
+  minimum-versions:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        analyzer: ["10.0.0", "any"]
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - name: Pin analyzer
-        if: matrix.analyzer != 'any'
-        run: |
-          printf 'dependency_overrides:\n  analyzer: %s\n' "${{ matrix.analyzer }}" >> pubspec.yaml
-      - run: dart pub get
+      - run: dart pub downgrade
+      - run: dart analyze
       - run: dart test
+
+  # Every dependency must support its latest version (pub.dev scoring).
+  up-to-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - name: No outdated direct dependencies
+        run: dart pub outdated --no-dev-dependencies | tee /dev/stderr | grep -q 'Found no outdated packages'
+
+  # What pub.dev will accept: layout, license, package size.
+  publish-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - run: dart pub publish --dry-run
+
+  # False-positive guard on real code: the official Flutter compass_app.
+  real-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - run: ./tool/real_world_check.sh

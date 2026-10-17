@@ -2,7 +2,7 @@
 
 Static analysis, metrics, and architecture enforcement tool for Dart/Flutter projects.
 
-Requires Dart SDK `^3.9.0` (works standalone or inside any Flutter project).
+Requires Dart SDK `^3.11.0` (works standalone or inside any Flutter project).
 
 ## 60-second start
 
