@@ -1,4 +1,5 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:path/path.dart' as p;
 
 import '../config/analyzer_config.dart';
 import '../core/issue.dart';
@@ -42,7 +43,7 @@ class LayerDependencyRule extends AnalyzerRule {
     final issues = <Issue>[];
     for (final directive in unit.directives) {
       if (directive is! ImportDirective) continue;
-      final issue = _checkLayerImport(directive, source, context);
+      final issue = _checkLayerImport(directive, source, file, context);
       if (issue != null) issues.add(issue);
     }
     return issues;
@@ -51,6 +52,7 @@ class LayerDependencyRule extends AnalyzerRule {
   Issue? _checkLayerImport(
     ImportDirective directive,
     ({String relativePath, CompilationUnit unit, LayerDefinition layer}) source,
+    String sourceFile,
     ProjectContext context,
   ) {
     final layerConfig = context.config.layerConfig!;
@@ -58,7 +60,7 @@ class LayerDependencyRule extends AnalyzerRule {
     if (uri == null) return null;
     if (uri.startsWith('dart:')) return null;
 
-    final importRelative = _resolveToRelative(uri, context);
+    final importRelative = _resolveToRelative(uri, sourceFile, context);
     if (importRelative == null) return null;
 
     final targetLayer = _findLayer(importRelative, layerConfig);
@@ -78,21 +80,36 @@ class LayerDependencyRule extends AnalyzerRule {
     );
   }
 
+  /// The most specific layer matching [relativePath]: when `lib/core/**` and
+  /// `lib/core/*/model/**` both match, the longer literal pattern wins, so
+  /// declaration order in `analyzer.yaml` doesn't matter.
   LayerDefinition? _findLayer(String relativePath, LayerConfig config) {
+    LayerDefinition? best;
+    var bestSpecificity = -1;
     for (final layer in config.layers.values) {
-      if (matchesAnyGlob(relativePath, layer.paths)) {
-        return layer;
+      for (final pattern in layer.paths) {
+        if (!matchesAnyGlob(relativePath, [pattern])) continue;
+        final specificity = pattern.replaceAll(RegExp(r'[*?{},]'), '').length;
+        if (specificity > bestSpecificity) {
+          best = layer;
+          bestSpecificity = specificity;
+        }
       }
     }
-    return null;
+    return best;
   }
 
-  String? _resolveToRelative(String uri, ProjectContext context) {
+  String? _resolveToRelative(
+    String uri,
+    String sourceFile,
+    ProjectContext context,
+  ) {
     if (uri.startsWith('package:${context.packageName}/')) {
       return 'lib/${uri.substring('package:${context.packageName}/'.length)}';
     }
-    // For relative imports, we'd need the source file path, but since
-    // we're just checking layers, we can check the resolved graph
-    return null;
+    if (uri.contains(':')) return null; // other packages and dart: imports
+    return context.relativePath(
+      p.normalize(p.join(p.dirname(sourceFile), uri)),
+    );
   }
 }

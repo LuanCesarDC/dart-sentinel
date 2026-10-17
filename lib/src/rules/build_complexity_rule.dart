@@ -126,50 +126,48 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
   }
 }
 
+/// Counts decision points in a build method, weighted by how hard they are
+/// to read: a flat `switch` (statement or expression) counts once however many
+/// cases it has, while an `if`/loop nested inside another decision costs one
+/// extra per level of nesting.
 class _BranchCounter extends RecursiveAstVisitor<void> {
   int count = 0;
+  int _depth = 0;
 
-  @override
-  void visitIfStatement(IfStatement node) {
-    count++;
-    super.visitIfStatement(node);
+  void _enter(AstNode node, {required bool nests, required int weight}) {
+    count += weight + _depth;
+    if (nests) _depth++;
+    node.visitChildren(this);
+    if (nests) _depth--;
   }
 
   @override
-  void visitIfElement(IfElement node) {
-    count++;
-    super.visitIfElement(node);
-  }
+  void visitIfStatement(IfStatement node) =>
+      _enter(node, nests: true, weight: 1);
 
   @override
-  void visitForStatement(ForStatement node) {
-    count++;
-    super.visitForStatement(node);
-  }
+  void visitIfElement(IfElement node) => _enter(node, nests: true, weight: 1);
 
   @override
-  void visitForElement(ForElement node) {
-    count++;
-    super.visitForElement(node);
-  }
+  void visitForStatement(ForStatement node) =>
+      _enter(node, nests: true, weight: 1);
 
   @override
-  void visitWhileStatement(WhileStatement node) {
-    count++;
-    super.visitWhileStatement(node);
-  }
-
-  // A switch counts once however many cases it has, so an exhaustive switch
-  // over an enum weighs less than the equivalent chain of nested ifs.
-  @override
-  void visitSwitchStatement(SwitchStatement node) {
-    count++;
-    super.visitSwitchStatement(node);
-  }
+  void visitForElement(ForElement node) => _enter(node, nests: true, weight: 1);
 
   @override
-  void visitConditionalExpression(ConditionalExpression node) {
-    count++;
-    super.visitConditionalExpression(node);
-  }
+  void visitWhileStatement(WhileStatement node) =>
+      _enter(node, nests: true, weight: 1);
+
+  @override
+  void visitSwitchStatement(SwitchStatement node) =>
+      _enter(node, nests: false, weight: 1);
+
+  @override
+  void visitSwitchExpression(SwitchExpression node) =>
+      _enter(node, nests: false, weight: 1);
+
+  @override
+  void visitConditionalExpression(ConditionalExpression node) =>
+      _enter(node, nests: true, weight: 1);
 }

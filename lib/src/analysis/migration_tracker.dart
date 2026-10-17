@@ -1,5 +1,5 @@
 import '../core/project_context.dart';
-import '../rules/banned_symbols_rule.dart';
+import '../core/issue.dart';
 
 /// Tracks migration progress for banned-symbols rules.
 ///
@@ -8,7 +8,11 @@ import '../rules/banned_symbols_rule.dart';
 class MigrationTracker {
   final ProjectContext context;
 
-  MigrationTracker(this.context);
+  /// Produces the current banned-symbol violations. Injected so this module
+  /// doesn't depend on the rules layer — callers pass `BannedSymbolsRule().run`.
+  final List<Issue> Function(ProjectContext context) findViolations;
+
+  MigrationTracker(this.context, {required this.findViolations});
 
   /// Compute migration progress for all banned-symbol configs.
   MigrationReport track() {
@@ -18,8 +22,7 @@ class MigrationTracker {
     }
 
     // Run banned-symbols rule to get current violations
-    final rule = BannedSymbolsRule();
-    final issues = rule.run(context);
+    final issues = findViolations(context);
 
     final migrations = <MigrationEntry>[];
     for (final config in configs) {

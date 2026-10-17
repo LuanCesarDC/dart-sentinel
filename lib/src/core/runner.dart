@@ -107,6 +107,15 @@ class RuleRunner {
     return runner.runAll(context);
   }
 
+  /// Run the rules of every category in [categories] (union).
+  List<Issue> runCategories(
+    ProjectContext context,
+    Iterable<String> categories,
+  ) {
+    final selected = categories.expand(_filterByCategory).toSet().toList();
+    return RuleRunner(rules: selected, config: config).runAll(context);
+  }
+
   List<AnalyzerRule> _filterByCategory(String category) {
     final ruleNames = ruleCategories[category] ?? {};
     return rules.where((r) => ruleNames.contains(r.name)).toList();

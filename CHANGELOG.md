@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- `layer-dependency`: when several layers match a file, the **most specific**
+  pattern wins (e.g. `lib/core/*/model/**` over `lib/core/**`), regardless of
+  declaration order. Relative imports (`../view_model/x.dart`) are now checked
+  too — before, only `package:` imports were.
+- `build-complexity`: a `switch` statement or expression counts once however
+  many cases it has; `if`/loops/ternaries cost one extra per nesting level.
+  Default limits are calibrated for widgets: warning 6, error 12 (was 3 / 6).
+- `-o` accepts comma-separated lists and repeated flags (`-o arch,lint`,
+  `-o arch -o lint`).
 - Severity profiles: `profile: strict | normal | quiet` (default `normal`
   demotes `untested-files`, `generic-naming`, `no-magic-number` to `info`).
 - Suppression comments: `// sentinel-ignore: rule — reason` (line) and

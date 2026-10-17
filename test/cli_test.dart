@@ -71,4 +71,20 @@ void main() {
     final result = await _sentinel(['rules', '-p', root.path]);
     expect(result.stdout, matches(RegExp(r'○ dead-files\s+dead\s+off')));
   });
+
+  test('-o accepts comma-separated and repeated categories', () async {
+    final root = _project({'lib/main.dart': 'void main() {}\n'});
+    for (final args in [
+      ['-o', 'arch,lint'],
+      ['-o', 'arch', '-o', 'lint'],
+    ]) {
+      final result = await _sentinel([...args, '--no-report', '-p', root.path]);
+      expect(
+        result.stderr,
+        isNot(contains('FormatException')),
+        reason: '$args',
+      );
+      expect(result.exitCode, 0, reason: '$args');
+    }
+  });
 }

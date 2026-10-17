@@ -28,7 +28,8 @@ Future<void> main(List<String> args) async {
   }
 
   final projectRoot = results['project'] as String? ?? Directory.current.path;
-  final category = results['only'] as String;
+  final categories = results['only'] as List<String>;
+  final category = categories.join(',');
   final format = results['format'] as String;
   final outputPath = results['output'] as String?;
   final noReport = results['no-report'] as bool;
@@ -63,11 +64,16 @@ Future<void> main(List<String> args) async {
 
   // ── Special analysis modes ──
 
-  final handled = _trySpecialMode(category, context, files, format);
+  final handled = _trySpecialMode(
+    categories.length == 1 ? category : '',
+    context,
+    files,
+    format,
+  );
   if (handled) return;
 
   // ── Standard rule analysis ──
-  var issues = _runRuleAnalysis(context, category);
+  var issues = _runRuleAnalysis(context, categories);
 
   // Filter to changed files only
   if (changedOnly) {
@@ -178,10 +184,13 @@ void _handleRatchet({
 
 ArgParser _buildParser() {
   return ArgParser()
-    ..addOption(
+    ..addMultiOption(
       'only',
       abbr: 'o',
-      help: 'Run only a specific category of rules.',
+      splitCommas: true,
+      help:
+          'Run only these categories (comma-separated or repeat the flag, '
+          'e.g. -o arch,lint).',
       allowed: [
         'arch',
         'dead',
@@ -197,7 +206,7 @@ ArgParser _buildParser() {
         'l10n',
         'all',
       ],
-      defaultsTo: 'all',
+      defaultsTo: ['all'],
     )
     ..addOption(
       'format',
@@ -247,10 +256,10 @@ ArgParser _buildParser() {
     );
 }
 
-List<Issue> _runRuleAnalysis(ProjectContext context, String category) {
+List<Issue> _runRuleAnalysis(ProjectContext context, List<String> categories) {
   final runner = RuleRunner(rules: allSentinelRules(), config: context.config);
-  if (category == 'all') return runner.runAll(context);
-  return runner.runCategory(context, category);
+  if (categories.contains('all')) return runner.runAll(context);
+  return runner.runCategories(context, categories);
 }
 
 void _printResults(List<Issue> issues, String format, Duration elapsed) {
@@ -350,7 +359,10 @@ void _runMap(ProjectContext context, String format) {
 }
 
 void _runMigrations(ProjectContext context, String format) {
-  final tracker = MigrationTracker(context);
+  final tracker = MigrationTracker(
+    context,
+    findViolations: BannedSymbolsRule().run,
+  );
   final report = tracker.track();
   if (format == 'json') {
     print(const JsonEncoder.withIndent('  ').convert(report.toJson()));

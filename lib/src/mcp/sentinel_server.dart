@@ -424,7 +424,10 @@ base class SentinelMCPServer extends MCPServer
     }
 
     final context = await ProjectContext.build(projectRoot);
-    final tracker = MigrationTracker(context);
+    final tracker = MigrationTracker(
+      context,
+      findViolations: BannedSymbolsRule().run,
+    );
     final report = tracker.track();
 
     return CallToolResult(

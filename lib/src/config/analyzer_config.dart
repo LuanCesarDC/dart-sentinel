@@ -338,12 +338,12 @@ class AnalyzerConfig {
         buildMethodBranchesWarning: _intOr(
           metricsNode['build_method_branches'],
           'warning',
-          3,
+          6,
         ),
         buildMethodBranchesError: _intOr(
           metricsNode['build_method_branches'],
           'error',
-          6,
+          12,
         ),
         numberOfMethodsWarning: _intOr(
           metricsNode['number_of_methods'],
@@ -628,8 +628,8 @@ class MetricsConfig {
     this.maxNestingError = 6,
     this.buildMethodLocWarning = 30,
     this.buildMethodLocError = 60,
-    this.buildMethodBranchesWarning = 3,
-    this.buildMethodBranchesError = 6,
+    this.buildMethodBranchesWarning = 6,
+    this.buildMethodBranchesError = 12,
     this.numberOfMethodsWarning = 15,
     this.numberOfMethodsError = 30,
     this.weightedMethodsPerClassWarning = 30,
