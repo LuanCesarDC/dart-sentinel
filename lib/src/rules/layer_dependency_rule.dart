@@ -66,14 +66,19 @@ class LayerDependencyRule extends AnalyzerRule {
     final targetLayer = _findLayer(importRelative, layerConfig);
     if (targetLayer == null) return null;
     if (source.layer.name == targetLayer.name) return null;
-    if (source.layer.canDependOn.contains(targetLayer.name)) return null;
+    final denied = source.layer.deniedFile(importRelative);
+    if (denied == null && source.layer.canDependOn.contains(targetLayer.name)) {
+      return null;
+    }
 
     final line = source.unit.lineInfo.getLocation(directive.offset).lineNumber;
     return Issue(
       rule: name,
-      message:
-          'Layer "${source.layer.name}" cannot depend on "${targetLayer.name}" '
-          '(import: $uri)',
+      message: denied == null
+          ? 'Layer "${source.layer.name}" cannot depend on '
+                '"${targetLayer.name}" (import: $uri)'
+          : 'Layer "${source.layer.name}" cannot import files matching '
+                '"$denied" (import: $uri)',
       file: source.relativePath,
       line: line,
       severity: defaultSeverity,

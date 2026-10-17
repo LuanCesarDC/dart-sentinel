@@ -38,6 +38,9 @@ Future<void> main(List<String> args) async {
   final changedOnly = results['changed-only'] as bool;
   final noCache = results['no-cache'] as bool;
   final files = results['files'] as List<String>;
+  final profile = results['profile'] as String?;
+  final failOnRegression = results['fail-on-regression'] as bool;
+  final selfCheckMode = results['self-check'] as bool;
 
   // Validate project
   if (!File('$projectRoot/pubspec.yaml').existsSync()) {
@@ -55,8 +58,13 @@ Future<void> main(List<String> args) async {
   final stopwatch = Stopwatch()..start();
 
   // Build project context
-  final context = await ProjectContext.build(projectRoot);
+  final context = await ProjectContext.build(projectRoot, profile: profile);
   _reportConfigProblems(context);
+
+  if (selfCheckMode) {
+    _runSelfCheck(context);
+    return;
+  }
 
   _console.log(
     '  Scanned ${context.allFiles.length} files (${context.entrypoints.length} entrypoints)',
@@ -69,6 +77,7 @@ Future<void> main(List<String> args) async {
     context,
     files,
     format,
+    migrationOptions: (save: saveBaseline, failOnRegression: failOnRegression),
   );
   if (handled) return;
 
@@ -143,8 +152,9 @@ bool _trySpecialMode(
   String category,
   ProjectContext context,
   List<String> files,
-  String format,
-) {
+  String format, {
+  required ({bool save, bool failOnRegression}) migrationOptions,
+}) {
   switch (category) {
     case 'impact':
       _runImpact(context, files, format);
@@ -153,7 +163,7 @@ bool _trySpecialMode(
       _runMap(context, format);
       return true;
     case 'migrations':
-      _runMigrations(context, format);
+      _runMigrations(context, format, migrationOptions);
       return true;
     case 'l10n':
       _runL10n(context, format);
@@ -227,6 +237,24 @@ ArgParser _buildParser() {
     ..addMultiOption(
       'files',
       help: 'Files to analyze for impact (used with -o impact).',
+    )
+    ..addOption(
+      'profile',
+      help:
+          'Severity/threshold profile (overrides `profile:` in analyzer.yaml).',
+      allowed: ['strict', 'normal', 'flutter', 'quiet'],
+    )
+    ..addFlag(
+      'fail-on-regression',
+      negatable: false,
+      help:
+          'With -o migrations: exit 1 if a migration has more usages than '
+          'the saved baseline (save one with --save-baseline).',
+    )
+    ..addFlag(
+      'self-check',
+      negatable: false,
+      help: 'Report analyzer.yaml patterns that match nothing, then exit.',
     )
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show help.')
     ..addFlag(
@@ -358,7 +386,25 @@ void _runMap(ProjectContext context, String format) {
   print('');
 }
 
-void _runMigrations(ProjectContext context, String format) {
+void _runSelfCheck(ProjectContext context) {
+  final messages = selfCheck(context);
+  if (messages.isEmpty) {
+    _console.log(
+      '✔ Every banned_imports / deny_files pattern matches something.',
+    );
+    return;
+  }
+  for (final message in messages) {
+    stderr.writeln('⚠ $message');
+  }
+  exit(1);
+}
+
+void _runMigrations(
+  ProjectContext context,
+  String format,
+  ({bool save, bool failOnRegression}) options,
+) {
   final tracker = MigrationTracker(
     context,
     findViolations: BannedSymbolsRule().run,
@@ -370,6 +416,31 @@ void _runMigrations(ProjectContext context, String format) {
     print(report.toText());
   }
   print('');
+  if (options.failOnRegression) _failOnMigrationRegression(report, context);
+  if (options.save) {
+    MigrationBaseline.save(report, context.projectRoot);
+    print('Migration baseline saved to ${MigrationBaseline.fileName}');
+  }
+}
+
+void _failOnMigrationRegression(
+  MigrationReport report,
+  ProjectContext context,
+) {
+  final regressions = MigrationBaseline.regressions(
+    report,
+    context.projectRoot,
+  );
+  if (regressions == null) {
+    stderr.writeln(
+      'No migration baseline. Run `-o migrations --save-baseline` first.',
+    );
+    exit(1);
+  }
+  if (regressions.isEmpty) return;
+  stderr.writeln('Migration regressed:');
+  regressions.forEach((line) => stderr.writeln('  $line'));
+  exit(1);
 }
 
 void _runL10n(ProjectContext context, String format) {

@@ -24,6 +24,7 @@ Future<void> main(List<String> args) async {
     _checkPubspec(projectRoot),
     _checkAnalyzerYaml(projectRoot),
     _checkHooks(projectRoot),
+    await _checkPatterns(projectRoot),
   ];
 
   var failed = false;
@@ -127,4 +128,15 @@ _Check _checkHooks(String projectRoot) {
   return _Check('Claude Code hooks missing', _Status.warn, [
     'Without hooks Sentinel is advisory only. Run `dart_sentinel setup-hooks`.',
   ]);
+}
+
+Future<_Check> _checkPatterns(String projectRoot) async {
+  if (!File(p.join(projectRoot, 'pubspec.yaml')).existsSync()) {
+    return _Check('Config patterns not checked', _Status.warn);
+  }
+  final messages = selfCheck(await ProjectContext.build(projectRoot));
+  if (messages.isEmpty) {
+    return _Check('Every config pattern is live', _Status.ok);
+  }
+  return _Check('Config patterns that match nothing', _Status.warn, messages);
 }

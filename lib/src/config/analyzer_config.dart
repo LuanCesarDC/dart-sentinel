@@ -5,6 +5,7 @@ import 'package:yaml/yaml.dart';
 
 import '../core/issue.dart';
 import '../utils/did_you_mean.dart';
+import '../utils/glob_matcher.dart';
 
 /// Configuration for the analyzer, loaded from `analyzer.yaml`.
 class AnalyzerConfig {
@@ -76,20 +77,22 @@ class AnalyzerConfig {
   });
 
   /// Load config from a YAML file. Falls back to defaults if file doesn't exist.
-  factory AnalyzerConfig.load(String projectRoot) {
+  ///
+  /// [profile] overrides the `profile:` key (used by `--profile`).
+  factory AnalyzerConfig.load(String projectRoot, {String? profile}) {
     final configPath = p.join(projectRoot, 'analyzer.yaml');
     final file = File(configPath);
 
     // No (or empty) file still gets the default profile applied.
     final yaml = file.existsSync() ? loadYaml(file.readAsStringSync()) : null;
     if (yaml is! YamlMap) {
-      return AnalyzerConfig._fromYaml(YamlMap());
+      return AnalyzerConfig._fromYaml(YamlMap(), profileOverride: profile);
     }
 
-    return AnalyzerConfig._fromYaml(yaml);
+    return AnalyzerConfig._fromYaml(yaml, profileOverride: profile);
   }
 
-  factory AnalyzerConfig._fromYaml(YamlMap yaml) {
+  factory AnalyzerConfig._fromYaml(YamlMap yaml, {String? profileOverride}) {
     // Exclude patterns
     final excludePatterns = <String>[];
     final excludeNode = yaml['exclude'];
@@ -141,7 +144,7 @@ class AnalyzerConfig {
         ruleSeverities[ruleName] = severity;
       }
     }
-    final profile = _parseProfile(yaml['profile'], problems);
+    final profile = _parseProfile(profileOverride ?? yaml['profile'], problems);
     for (final entry in profile.severities.entries) {
       if (ruleSeverities.containsKey(entry.key) ||
           disabledRules.contains(entry.key)) {
@@ -231,6 +234,7 @@ class AnalyzerConfig {
               name: name,
               paths: paths,
               canDependOn: canDependOn,
+              denyFiles: _parseStringList(value['deny_files']),
             );
           }
         }
@@ -288,92 +292,109 @@ class AnalyzerConfig {
 
     // Metrics
     final metricsNode = yaml['metrics'];
-    MetricsConfig metrics = const MetricsConfig();
+    final base = profile.metrics;
+    MetricsConfig metrics = base;
     if (metricsNode is YamlMap) {
       metrics = MetricsConfig(
         cyclomaticComplexityWarning: _intOr(
           metricsNode['cyclomatic_complexity'],
           'warning',
-          10,
+          base.cyclomaticComplexityWarning,
         ),
         cyclomaticComplexityError: _intOr(
           metricsNode['cyclomatic_complexity'],
           'error',
-          20,
+          base.cyclomaticComplexityError,
         ),
         linesPerFileWarning: _intOr(
           metricsNode['lines_per_file'],
           'warning',
-          300,
+          base.linesPerFileWarning,
         ),
-        linesPerFileError: _intOr(metricsNode['lines_per_file'], 'error', 600),
+        linesPerFileError: _intOr(
+          metricsNode['lines_per_file'],
+          'error',
+          base.linesPerFileError,
+        ),
         linesPerMethodWarning: _intOr(
           metricsNode['lines_per_method'],
           'warning',
-          50,
+          base.linesPerMethodWarning,
         ),
         linesPerMethodError: _intOr(
           metricsNode['lines_per_method'],
           'error',
-          100,
+          base.linesPerMethodError,
         ),
         maxParametersWarning: _intOr(
           metricsNode['max_parameters'],
           'warning',
-          4,
+          base.maxParametersWarning,
         ),
-        maxParametersError: _intOr(metricsNode['max_parameters'], 'error', 7),
-        maxNestingWarning: _intOr(metricsNode['max_nesting'], 'warning', 4),
-        maxNestingError: _intOr(metricsNode['max_nesting'], 'error', 6),
+        maxParametersError: _intOr(
+          metricsNode['max_parameters'],
+          'error',
+          base.maxParametersError,
+        ),
+        maxNestingWarning: _intOr(
+          metricsNode['max_nesting'],
+          'warning',
+          base.maxNestingWarning,
+        ),
+        maxNestingError: _intOr(
+          metricsNode['max_nesting'],
+          'error',
+          base.maxNestingError,
+        ),
         buildMethodLocWarning: _intOr(
           metricsNode['build_method_loc'],
           'warning',
-          30,
+          base.buildMethodLocWarning,
         ),
         buildMethodLocError: _intOr(
           metricsNode['build_method_loc'],
           'error',
-          60,
+          base.buildMethodLocError,
         ),
         buildMethodBranchesWarning: _intOr(
           metricsNode['build_method_branches'],
           'warning',
-          6,
+          base.buildMethodBranchesWarning,
         ),
         buildMethodBranchesError: _intOr(
           metricsNode['build_method_branches'],
           'error',
-          12,
+          base.buildMethodBranchesError,
         ),
         numberOfMethodsWarning: _intOr(
           metricsNode['number_of_methods'],
           'warning',
-          15,
+          base.numberOfMethodsWarning,
         ),
         numberOfMethodsError: _intOr(
           metricsNode['number_of_methods'],
           'error',
-          30,
+          base.numberOfMethodsError,
         ),
         weightedMethodsPerClassWarning: _intOr(
           metricsNode['weighted_methods_per_class'],
           'warning',
-          30,
+          base.weightedMethodsPerClassWarning,
         ),
         weightedMethodsPerClassError: _intOr(
           metricsNode['weighted_methods_per_class'],
           'error',
-          60,
+          base.weightedMethodsPerClassError,
         ),
         linesPerClassWarning: _intOr(
           metricsNode['lines_per_class'],
           'warning',
-          200,
+          base.linesPerClassWarning,
         ),
         linesPerClassError: _intOr(
           metricsNode['lines_per_class'],
           'error',
-          500,
+          base.linesPerClassError,
         ),
       );
     }
@@ -419,6 +440,27 @@ class AnalyzerConfig {
         'generic-naming': Severity.info,
         'no-magic-number': Severity.info,
       },
+    ),
+    // `normal` plus limits calibrated for widget code, which is wide and
+    // shallow: deeper trees, longer build methods, more small methods.
+    'flutter': _Profile(
+      severities: {
+        'untested-files': Severity.info,
+        'generic-naming': Severity.info,
+        'no-magic-number': Severity.info,
+      },
+      metrics: MetricsConfig(
+        maxNestingWarning: 5,
+        maxNestingError: 8,
+        buildMethodLocWarning: 40,
+        buildMethodLocError: 80,
+        buildMethodBranchesWarning: 8,
+        buildMethodBranchesError: 16,
+        numberOfMethodsWarning: 20,
+        numberOfMethodsError: 40,
+        linesPerClassWarning: 300,
+        linesPerClassError: 600,
+      ),
     ),
     'quiet': _Profile(
       disabled: {
@@ -466,6 +508,9 @@ class AnalyzerConfig {
     return match == null ? '' : " — did you mean '$match'?";
   }
 
+  static List<String> _parseStringList(dynamic node) =>
+      node is YamlList ? [for (final item in node) item.toString()] : const [];
+
   static Set<String> _parseStringSet(dynamic node) {
     if (node is YamlList) {
       return node.map((e) => e.toString()).toSet();
@@ -485,7 +530,14 @@ class _Profile {
   final Map<String, Severity> severities;
   final Set<String> disabled;
 
-  const _Profile({this.severities = const {}, this.disabled = const {}});
+  /// Metric limits used where `analyzer.yaml` doesn't set its own.
+  final MetricsConfig metrics;
+
+  const _Profile({
+    this.severities = const {},
+    this.disabled = const {},
+    this.metrics = const MetricsConfig(),
+  });
 }
 
 /// Configuration for a single banned-symbol rule.
@@ -562,11 +614,25 @@ class LayerDefinition {
   final List<String> paths;
   final List<String> canDependOn;
 
+  /// File globs that stay off-limits even when the target layer is allowed
+  /// (e.g. `*_repository.dart`). A pattern without `/` matches file names.
+  final List<String> denyFiles;
+
   const LayerDefinition({
     required this.name,
     required this.paths,
     required this.canDependOn,
+    this.denyFiles = const [],
   });
+
+  /// The `deny_files` pattern that [relativePath] matches, if any.
+  String? deniedFile(String relativePath) {
+    for (final pattern in denyFiles) {
+      final glob = pattern.contains('/') ? pattern : '**/$pattern';
+      if (matchesAnyGlob(relativePath, [glob])) return pattern;
+    }
+    return null;
+  }
 }
 
 /// Configuration for feature isolation enforcement.

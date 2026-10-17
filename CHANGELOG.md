@@ -1,11 +1,25 @@
 # Changelog
 
-## Unreleased
+## 0.5.1
+
+### Added
+
+- `layers.<name>.deny_files` — "may depend on layer X, except `*_repository.dart`"
+  without a second `banned_imports` rule. A pattern without `/` matches file
+  names anywhere.
+- `--profile flutter` (and `profile: flutter`) — `normal` plus limits
+  calibrated for widget code.
+- `--self-check` (also in `doctor`) — reports `banned_imports` / `deny_files`
+  patterns that match nothing.
+- Ratchet failures now list the files that got worse, per rule. Baselines are
+  version 2 and carry per-file counts; older ones still work, without the list.
+- `-o migrations --save-baseline` / `--fail-on-regression` — fail CI when a
+  migration has more usages than the saved baseline.
 
 ### Fixed
 
-- `banned_imports` now resolves relative imports (`../model/x.dart`), so one
-  `deny` entry catches both the `package:` and relative spelling.
+- `banned_imports` resolves relative imports (`../model/x.dart`), so one
+  `deny` entry catches both the `package:` and the relative spelling.
 
 ## 0.5.0
 

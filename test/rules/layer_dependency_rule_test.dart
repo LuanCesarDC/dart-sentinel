@@ -41,5 +41,32 @@ void main() {
       });
       expect(issues, hasLength(1));
     });
+
+    test(
+      'deny_files blocks a file inside an otherwise allowed layer',
+      () async {
+        const config = '''
+architecture:
+  layers:
+    view:
+      paths: ["lib/v/**"]
+      can_depend_on: ["model"]
+      deny_files: ["*_repository.dart"]
+    model:
+      paths: ["lib/m/**"]
+      can_depend_on: []
+''';
+        final issues = await runRule(LayerDependencyRule(), {
+          'analyzer.yaml': config,
+          'lib/m/user.dart': 'class User {}\n',
+          'lib/m/user_repository.dart': 'class UserRepository {}\n',
+          'lib/v/ok.dart': "import '../m/user.dart';\nclass Ok {}\n",
+          'lib/v/bad.dart':
+              "import '../m/user_repository.dart';\nclass Bad {}\n",
+        });
+        expect(issues.single.file, 'lib/v/bad.dart');
+        expect(issues.single.message, contains('*_repository.dart'));
+      },
+    );
   });
 }

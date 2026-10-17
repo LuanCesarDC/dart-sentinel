@@ -31,6 +31,7 @@ export 'src/core/suppressions.dart';
 // Config
 export 'src/config/analyzer_config.dart';
 export 'src/config/layer_coverage.dart';
+export 'src/config/self_check.dart';
 export 'src/utils/did_you_mean.dart';
 export 'src/utils/template_advisor.dart';
 
@@ -74,8 +75,10 @@ export 'src/rules/misused_dependencies_rule.dart';
 // Analysis
 export 'src/analysis/dependency_mapper.dart';
 export 'src/analysis/impact_analyzer.dart';
+export 'src/analysis/migration_baseline.dart';
 export 'src/analysis/migration_tracker.dart';
 export 'src/analysis/ratchet.dart';
+export 'src/analysis/ratchet_explainer.dart';
 export 'src/analysis/l10n_scanner.dart';
 
 // Output

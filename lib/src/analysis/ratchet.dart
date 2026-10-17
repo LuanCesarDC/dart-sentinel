@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../core/issue.dart';
+import 'ratchet_explainer.dart';
 
 /// Ratchet Mode — baseline enforcement that only allows improvement.
 ///
@@ -49,8 +50,12 @@ class Ratchet {
     final currentCounts = _countByRule(issues);
     final regressions = _findRegressions(currentCounts, baselineCounts);
     final improvements = _findImprovements(currentCounts, baselineCounts);
+    final culprits = RatchetExplainer.findCulprits(
+      issues,
+      baselineJson['files'],
+    );
 
-    return _buildResult(regressions, improvements);
+    return _buildResult(regressions, improvements, culprits);
   }
 
   static List<RatchetRegression> _findRegressions(
@@ -82,6 +87,7 @@ class Ratchet {
   static RatchetResult _buildResult(
     List<RatchetRegression> regressions,
     Map<String, int> improvements,
+    Map<String, Map<String, int>> culprits,
   ) {
     if (regressions.isEmpty) {
       final improvementMsg = improvements.isEmpty
@@ -101,20 +107,24 @@ class Ratchet {
               '  ${r.rule}: ${r.baseline} → ${r.current} (+${r.current - r.baseline})',
         )
         .join('\n');
+    final detail = RatchetExplainer.explain([
+      for (final r in regressions) r.rule,
+    ], culprits);
     return RatchetResult(
       passed: false,
       regressions: regressions,
       improvements: improvements,
-      message: 'Ratchet failed — regressions detected:\n$regMsg',
+      message: 'Ratchet failed — regressions detected:\n$regMsg$detail',
     );
   }
 
   static Map<String, dynamic> _buildBaseline(List<Issue> issues) {
     return {
-      'version': 1,
+      'version': 2,
       'timestamp': DateTime.now().toIso8601String(),
       'total': issues.length,
       'rules': _countByRule(issues),
+      'files': RatchetExplainer.countByRuleAndFile(issues),
     };
   }
 

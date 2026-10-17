@@ -35,11 +35,17 @@ Dart Sentinel found blocking violations in lib/ui/home/home_view.dart:
 
 ## Noise control
 
-- **Profiles** — `profile: strict | normal | quiet` in `analyzer.yaml`.
+- **Profiles** — `profile: strict | normal | flutter | quiet` in
+  `analyzer.yaml`, or `--profile flutter` on the command line. `flutter` is
+  `normal` plus limits calibrated for widget code (build method 40/80 LOC and
+  8/16 branches, nesting 5/8, 20/40 methods and 300/600 lines per class).
   `normal` (default) keeps `untested-files`, `generic-naming` and
   `no-magic-number` at `info`; `quiet` turns them (and `redundant-comments`,
   `verbose-logging`) off; `strict` reports everything. Entries under `rules:`
   always beat the profile.
+- **Dead patterns** — `dart_sentinel --self-check` (also run by `doctor`)
+  lists `banned_imports` / `deny_files` patterns that match nothing, so a
+  project can't look clean just because a rule isn't checking what you think.
 - **Turn a rule off** — `rules: <name>: off`. `dart_sentinel rules` shows what
   is on.
 - **Suppress one finding** — put a comment on the offending line or the line
@@ -288,6 +294,8 @@ ai_slop:
 
 # Architecture rules
 architecture:
+  # Patterns match every spelling of an import: `package:app/x.dart`,
+  # `lib/x.dart` and a relative `../x.dart` all hit the same `deny`.
   banned_imports:
     - paths: ["lib/features/**/viewmodel/**"]
       deny: ["package:cloud_firestore/**"]
@@ -446,6 +454,14 @@ dart_sentinel -o migrations
 dart_sentinel -o migrations -f json
 ```
 
+To fail CI when a migration goes backwards (not just when it finishes), save
+a migration baseline once and gate on it:
+
+```bash
+dart_sentinel -o migrations --save-baseline      # writes .dart_sentinel/migrations.json
+dart_sentinel -o migrations --fail-on-regression # exit 1 if any migration grew
+```
+
 Example output:
 ```
 Migration Progress
@@ -508,7 +524,9 @@ dart_sentinel --check-baseline
 The baseline is saved to `.dart_sentinel/baseline.json`. Commit this file to your repo. On each CI run, `--check-baseline` compares current issues against the baseline:
 
 - **Pass**: No rule has more issues than the baseline (improvements are fine)
-- **Fail** (exit code 1): Any rule has more issues → regression detected
+- **Fail** (exit code 1): Any rule has more issues → regression detected, with
+  the files that got worse listed per rule (re-save the baseline once after
+  upgrading to 0.5.1 so it carries per-file counts)
 
 ```yaml
 # GitHub Actions

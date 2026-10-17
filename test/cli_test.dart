@@ -87,4 +87,56 @@ void main() {
       expect(result.exitCode, 0, reason: '$args');
     }
   });
+
+  test(
+    '--fail-on-regression compares migrations to the saved baseline',
+    () async {
+      const config = '''
+architecture:
+  banned_symbols:
+    - paths: ["lib/**"]
+      deny: ["OldButton"]
+      suggest: AppButton
+''';
+      final root = _project({
+        'analyzer.yaml': config,
+        'lib/a.dart': 'void a() { OldButton(); }\n',
+      });
+      await _sentinel(['-o', 'migrations', '--save-baseline', '-p', root.path]);
+
+      final same = await _sentinel([
+        '-o',
+        'migrations',
+        '--fail-on-regression',
+        '-p',
+        root.path,
+      ]);
+      expect(same.exitCode, 0);
+
+      File(
+        p.join(root.path, 'lib/b.dart'),
+      ).writeAsStringSync('void b() { OldButton(); }\n');
+      final worse = await _sentinel([
+        '-o',
+        'migrations',
+        '--fail-on-regression',
+        '-p',
+        root.path,
+      ]);
+      expect(worse.exitCode, 1);
+      expect(worse.stderr, contains('OldButton'));
+    },
+  );
+
+  test('--profile flutter relaxes build-method limits', () async {
+    final root = _project({'lib/main.dart': 'void main() {}\n'});
+    final result = await _sentinel([
+      '--profile',
+      'flutter',
+      '--no-report',
+      '-p',
+      root.path,
+    ]);
+    expect(result.exitCode, 0);
+  });
 }

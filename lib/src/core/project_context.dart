@@ -65,6 +65,7 @@ class ProjectContext {
   static Future<ProjectContext> build(
     String projectRoot, {
     String? targetPath,
+    String? profile,
   }) async {
     final pubspecFile = File(p.join(projectRoot, 'pubspec.yaml'));
     final pubspecContent = pubspecFile.existsSync()
@@ -72,7 +73,7 @@ class ProjectContext {
         : '';
     final packageName = _readPackageNameFromContent(pubspecContent);
     final libRoot = p.join(projectRoot, 'lib');
-    final config = AnalyzerConfig.load(projectRoot);
+    final config = AnalyzerConfig.load(projectRoot, profile: profile);
     final excludePatterns = _buildExcludePatterns(config);
     final dirsToScan = _dirsToScan(projectRoot, libRoot, config);
     final allFiles = await _collectDartFiles(
