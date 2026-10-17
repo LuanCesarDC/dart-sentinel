@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0
+
+### Added
+
+- Six rules in the style of Dart Code Metrics:
+  `avoid-nested-conditional-expressions`, `avoid-negated-conditions`,
+  `avoid-dynamic`, `prefer-match-file-name`, `avoid-redundant-async`,
+  `avoid-unused-parameters`. `Map<String, dynamic>` type arguments, overrides,
+  closures, `main` and generated files are not reported.
+- `dart_sentinel metrics` — per-file LOC, cyclomatic complexity (max/avg) and
+  maintainability index, sortable, with `-f json`, plus an estimate of the
+  remediation time. The maintainability index approximates Halstead volume
+  from tokens: compare files within a project, not across tools.
+- Output formats `-f sarif` (GitHub Code Scanning), `-f github` (workflow
+  annotations), `-f codeclimate` (GitLab Code Quality) and `-f html` (single
+  self-contained page). Progress goes to stderr, so stdout stays parseable.
+- `--fatal-warnings` and `--fatal-infos`, as in `dart analyze`.
+
 ## 0.5.1
 
 ### Added

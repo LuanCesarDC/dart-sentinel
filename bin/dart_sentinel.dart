@@ -8,6 +8,7 @@
 // `dart_sentinel setup-hooks`              → write Claude Code hook config
 // `dart_sentinel init`                     → detect structure, write analyzer.yaml
 // `dart_sentinel doctor`                   → check PATH, config, hooks, Dart
+// `dart_sentinel metrics`                  → per-file metrics + debt estimate
 // `dart_sentinel rules`                    → list rules and their state
 import 'analyze.dart' as analyze;
 import 'doctor.dart' as doctor;
@@ -16,6 +17,7 @@ import 'hook_edit.dart' as hook_edit;
 import 'hook_stop.dart' as hook_stop;
 import 'init.dart' as init;
 import 'mcp_server.dart' as mcp;
+import 'metrics_cmd.dart' as metrics_cmd;
 import 'rules_cmd.dart' as rules_cmd;
 import 'setup_hooks.dart' as setup_hooks;
 
@@ -34,6 +36,8 @@ Future<void> main(List<String> args) async {
     await init.main(args.sublist(1));
   } else if (args.isNotEmpty && args.first == 'doctor') {
     await doctor.main(args.sublist(1));
+  } else if (args.isNotEmpty && args.first == 'metrics') {
+    await metrics_cmd.main(args.sublist(1));
   } else if (args.isNotEmpty && args.first == 'rules') {
     await rules_cmd.main(args.sublist(1));
   } else {

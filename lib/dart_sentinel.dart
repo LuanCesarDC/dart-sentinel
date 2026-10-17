@@ -37,6 +37,12 @@ export 'src/utils/template_advisor.dart';
 
 // Rules
 export 'src/rules/async_safety_rule.dart';
+export 'src/rules/avoid_nested_conditional_expressions_rule.dart';
+export 'src/rules/avoid_negated_conditions_rule.dart';
+export 'src/rules/avoid_dynamic_rule.dart';
+export 'src/rules/prefer_match_file_name_rule.dart';
+export 'src/rules/avoid_redundant_async_rule.dart';
+export 'src/rules/avoid_unused_parameters_rule.dart';
 export 'src/rules/banned_imports_rule.dart';
 export 'src/rules/banned_symbols_rule.dart';
 export 'src/rules/build_complexity_rule.dart';
@@ -73,6 +79,7 @@ export 'src/rules/flutter_anti_patterns_rule.dart';
 export 'src/rules/misused_dependencies_rule.dart';
 
 // Analysis
+export 'src/analysis/code_metrics.dart';
 export 'src/analysis/dependency_mapper.dart';
 export 'src/analysis/impact_analyzer.dart';
 export 'src/analysis/migration_baseline.dart';
@@ -82,6 +89,7 @@ export 'src/analysis/ratchet_explainer.dart';
 export 'src/analysis/l10n_scanner.dart';
 
 // Output
+export 'src/output/ci_formats.dart';
 export 'src/output/output.dart';
 
 // MCP

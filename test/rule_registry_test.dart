@@ -17,6 +17,6 @@ void main() {
     expect(names, contains('dispose-check'));
     expect(names, contains('complexity'));
     expect(names, contains('flutter-anti-patterns'));
-    expect(rules.length, 35);
+    expect(rules.length, 41);
   });
 }

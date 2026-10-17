@@ -41,6 +41,8 @@ Future<void> main(List<String> args) async {
   final profile = results['profile'] as String?;
   final failOnRegression = results['fail-on-regression'] as bool;
   final selfCheckMode = results['self-check'] as bool;
+  final fatalInfos = results['fatal-infos'] as bool;
+  final fatalWarnings = fatalInfos || results['fatal-warnings'] as bool;
 
   // Validate project
   if (!File('$projectRoot/pubspec.yaml').existsSync()) {
@@ -51,7 +53,7 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  _console.jsonMode = format == 'json';
+  _console.jsonMode = _machineFormats.contains(format);
   _console.log('🔍 Dart Sentinel — analyzing project...');
   _console.log('');
 
@@ -125,10 +127,18 @@ Future<void> main(List<String> args) async {
   );
   _console.log('');
 
-  if (issues.any((i) => i.severity == Severity.error)) {
-    exit(1);
-  }
+  if (_exceedsFatalLevel(issues, fatalWarnings, fatalInfos)) exit(1);
 }
+
+/// Errors always fail the run; `--fatal-warnings` / `--fatal-infos` extend
+/// that to warnings and infos, like `dart analyze`.
+bool _exceedsFatalLevel(List<Issue> issues, bool warnings, bool infos) =>
+    issues.any(
+      (i) =>
+          i.severity == Severity.error ||
+          (warnings && i.severity == Severity.warning) ||
+          (infos && i.severity != Severity.error),
+    );
 
 void _reportConfigProblems(ProjectContext context) {
   final config = context.config;
@@ -222,7 +232,16 @@ ArgParser _buildParser() {
       'format',
       abbr: 'f',
       help: 'Output format.',
-      allowed: ['console', 'json', 'markdown', 'mermaid'],
+      allowed: [
+        'console',
+        'json',
+        'markdown',
+        'mermaid',
+        'sarif',
+        'github',
+        'codeclimate',
+        'html',
+      ],
       defaultsTo: 'console',
     )
     ..addOption(
@@ -250,6 +269,16 @@ ArgParser _buildParser() {
       help:
           'With -o migrations: exit 1 if a migration has more usages than '
           'the saved baseline (save one with --save-baseline).',
+    )
+    ..addFlag(
+      'fatal-warnings',
+      negatable: false,
+      help: 'Exit 1 on warnings too, not only errors.',
+    )
+    ..addFlag(
+      'fatal-infos',
+      negatable: false,
+      help: 'Exit 1 on any issue, including infos (implies --fatal-warnings).',
     )
     ..addFlag(
       'self-check',
@@ -290,12 +319,23 @@ List<Issue> _runRuleAnalysis(ProjectContext context, List<String> categories) {
   return runner.runCategories(context, categories);
 }
 
+/// Formats whose stdout must stay machine-readable: progress goes to stderr.
+const _machineFormats = {'json', 'sarif', 'github', 'codeclimate', 'html'};
+
 void _printResults(List<Issue> issues, String format, Duration elapsed) {
   switch (format) {
     case 'json':
       print(JsonOutput.format(issues));
     case 'markdown':
       print(MarkdownOutput.format(issues));
+    case 'sarif':
+      print(SarifOutput.format(issues));
+    case 'github':
+      print(GithubOutput.format(issues));
+    case 'codeclimate':
+      print(CodeClimateOutput.format(issues));
+    case 'html':
+      print(HtmlOutput.format(issues, elapsed: elapsed));
     default:
       print(ConsoleOutput.format(issues, elapsed: elapsed));
   }

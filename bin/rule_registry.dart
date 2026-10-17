@@ -38,4 +38,10 @@ List<AnalyzerRule> allSentinelRules() => [
   AvoidReturningWidgetsRule(),
   FlutterAntiPatternsRule(),
   MisusedDependenciesRule(),
+  AvoidNestedConditionalExpressionsRule(),
+  AvoidNegatedConditionsRule(),
+  AvoidDynamicRule(),
+  PreferMatchFileNameRule(),
+  AvoidRedundantAsyncRule(),
+  AvoidUnusedParametersRule(),
 ];

@@ -139,4 +139,50 @@ architecture:
     ]);
     expect(result.exitCode, 0);
   });
+
+  test(
+    '--fatal-infos fails on an info that the default run tolerates',
+    () async {
+      final root = _project({
+        'lib/main.dart': 'dynamic f() => 1;\nvoid main() { f(); }\n',
+      });
+      final plain = await _sentinel([
+        '--no-report',
+        '-o',
+        'slop',
+        '-p',
+        root.path,
+      ]);
+      expect(plain.exitCode, 0);
+      final strict = await _sentinel([
+        '--no-report',
+        '-o',
+        'slop',
+        '--fatal-infos',
+        '-p',
+        root.path,
+      ]);
+      expect(strict.exitCode, 1);
+    },
+  );
+
+  test('-f sarif keeps stdout clean JSON', () async {
+    final root = _project({'lib/main.dart': 'dynamic f() => 1;\n'});
+    final result = await _sentinel([
+      '-f',
+      'sarif',
+      '--no-report',
+      '-p',
+      root.path,
+    ]);
+    expect(jsonDecode(result.stdout as String)['version'], '2.1.0');
+  });
+
+  test('metrics prints a table and a debt estimate', () async {
+    final root = _project({'lib/main.dart': 'void main() {}\n'});
+    final result = await _sentinel(['metrics', '-p', root.path]);
+    expect(result.exitCode, 0);
+    expect(result.stdout, contains('lib/main.dart'));
+    expect(result.stdout, contains('remediation'));
+  });
 }

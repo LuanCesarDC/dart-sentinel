@@ -33,6 +33,17 @@ Dart Sentinel found blocking violations in lib/ui/home/home_view.dart:
 | Just the CLI, run manually or in CI | [Installation](#installation) → [Usage](#usage) |
 | A ready-made `analyzer.yaml` for your architecture (BLoC, Riverpod, Clean, etc.) | [Architecture Templates](#architecture-templates) |
 
+## Reports, metrics and CI formats
+
+```bash
+dart_sentinel -f sarif > sentinel.sarif   # GitHub Code Scanning
+dart_sentinel -f github                   # PR annotations in Actions logs
+dart_sentinel -f codeclimate > gl-code-quality-report.json   # GitLab
+dart_sentinel -f html > report.html       # single-file report
+dart_sentinel --fatal-warnings            # exit 1 on warnings too
+dart_sentinel metrics --sort complexity   # LOC, CC, maintainability, debt estimate
+```
+
 ## Noise control
 
 - **Profiles** — `profile: strict | normal | flutter | quiet` in
