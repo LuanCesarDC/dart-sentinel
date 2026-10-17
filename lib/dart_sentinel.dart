@@ -26,6 +26,7 @@ export 'src/core/issue.dart';
 export 'src/core/project_context.dart';
 export 'src/core/rule.dart';
 export 'src/core/runner.dart';
+export 'src/core/suppressions.dart';
 
 // Config
 export 'src/config/analyzer_config.dart';

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Severity profiles: `profile: strict | normal | quiet` (default `normal`
+  demotes `untested-files`, `generic-naming`, `no-magic-number` to `info`).
+- Suppression comments: `// sentinel-ignore: rule — reason` (line) and
+  `// sentinel-ignore-file: rule` (file).
+- `flutter_official` template no longer bans Flutter imports in `domain/`
+  (found while measuring against the official `compass_app`).
+- CI: Dart stable + beta, and analyzer 10.0.0 / latest compatibility jobs.
+- Community files: SECURITY.md, CODE_OF_CONDUCT.md, issue and PR templates.
+
 ## 0.4.0
 
 ### Breaking behavior changes

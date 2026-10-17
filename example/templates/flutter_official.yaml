@@ -68,10 +68,9 @@ architecture:
   banned_imports:
     - paths: ["lib/domain/**"]
       deny:
-        - "package:flutter/**"
         - "package:dio/**"
         - "package:http/**"
-      message: "Domain deve ser puro — sem Flutter nem infraestrutura."
+      message: "Domain não deve depender de infraestrutura de rede."
     - paths: ["lib/data/**"]
       deny: ["package:flutter/material.dart", "package:flutter/widgets.dart"]
       message: "Data não conhece widgets — só a UI importa material/widgets."

@@ -4,6 +4,24 @@ Static analysis, metrics, and architecture enforcement tool for Dart/Flutter pro
 
 Requires Dart SDK `^3.9.0` (works standalone or inside any Flutter project).
 
+## 60-second start
+
+```bash
+dart pub global activate dart_sentinel   # global tool — never add it to pubspec.yaml
+cd my_flutter_app
+dart_sentinel init                       # detects lib/ layout, writes analyzer.yaml, installs Claude Code hooks
+dart_sentinel                            # run all rules
+dart_sentinel doctor                     # verify PATH, config, hooks
+```
+
+With the hooks installed, an AI agent that breaks a layer rule is blocked on
+the spot and told what to fix:
+
+```text
+Dart Sentinel found blocking violations in lib/ui/home/home_view.dart:
+  ✖ [layer-dependency] lib/ui/home/home_view.dart:3: 'ui' must not depend on 'data' directly
+```
+
 ## Where do I start?
 
 | You want... | Go to |
@@ -14,6 +32,26 @@ Requires Dart SDK `^3.9.0` (works standalone or inside any Flutter project).
 | A step-by-step guide to wire Sentinel into a new AI-assisted project | [Starting a Project with AI Agents](#starting-a-project-with-ai-agents) |
 | Just the CLI, run manually or in CI | [Installation](#installation) → [Usage](#usage) |
 | A ready-made `analyzer.yaml` for your architecture (BLoC, Riverpod, Clean, etc.) | [Architecture Templates](#architecture-templates) |
+
+## Noise control
+
+- **Profiles** — `profile: strict | normal | quiet` in `analyzer.yaml`.
+  `normal` (default) keeps `untested-files`, `generic-naming` and
+  `no-magic-number` at `info`; `quiet` turns them (and `redundant-comments`,
+  `verbose-logging`) off; `strict` reports everything. Entries under `rules:`
+  always beat the profile.
+- **Turn a rule off** — `rules: <name>: off`. `dart_sentinel rules` shows what
+  is on.
+- **Suppress one finding** — put a comment on the offending line or the line
+  above, with a reason:
+
+  ```dart
+  // sentinel-ignore: empty-catch — best-effort cleanup, failure is harmless
+  } catch (e) {}
+  ```
+
+  Silence a rule for a whole file with `// sentinel-ignore-file: rule-a, rule-b`
+  (`all` silences everything).
 
 ## Table of Contents
 

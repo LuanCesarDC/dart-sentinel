@@ -9,9 +9,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: [stable, beta]
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
 
       - name: Install dependencies
         run: dart pub get
@@ -27,3 +33,21 @@ jobs:
 
       - name: Run Dart Sentinel
         run: dart run dart_sentinel
+
+  # Run the published constraint range against its oldest and newest analyzer
+  # so an analyzer bump can't silently break the package.
+  analyzer-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        analyzer: ["10.0.0", "any"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: Pin analyzer
+        if: matrix.analyzer != 'any'
+        run: |
+          printf 'dependency_overrides:\n  analyzer: %s\n' "${{ matrix.analyzer }}" >> pubspec.yaml
+      - run: dart pub get
+      - run: dart test

@@ -28,7 +28,7 @@ void main() {
       final config = _load('rules:\n  complexity: loud\n');
       expect(config.problems.single, contains("rules.complexity"));
       expect(config.problems.single, contains("'loud'"));
-      expect(config.ruleSeverities, isEmpty);
+      expect(config.ruleSeverities, isNot(contains('complexity')));
     });
 
     test('unknown rule suggests the closest name', () {

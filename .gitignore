@@ -37,3 +37,6 @@ POC_EXPERIMENTS.md
 REBUILD_PLAN.md
 setup_poc.sh
 docs/findings/
+# Internal planning docs
+plan.md
+docs/superpowers/

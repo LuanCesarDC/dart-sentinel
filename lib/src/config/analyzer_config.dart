@@ -80,15 +80,10 @@ class AnalyzerConfig {
     final configPath = p.join(projectRoot, 'analyzer.yaml');
     final file = File(configPath);
 
-    if (!file.existsSync()) {
-      return const AnalyzerConfig();
-    }
-
-    final content = file.readAsStringSync();
-    final yaml = loadYaml(content);
-
+    // No (or empty) file still gets the default profile applied.
+    final yaml = file.existsSync() ? loadYaml(file.readAsStringSync()) : null;
     if (yaml is! YamlMap) {
-      return const AnalyzerConfig();
+      return AnalyzerConfig._fromYaml(YamlMap());
     }
 
     return AnalyzerConfig._fromYaml(yaml);
@@ -145,6 +140,17 @@ class AnalyzerConfig {
         }
         ruleSeverities[ruleName] = severity;
       }
+    }
+    final profile = _parseProfile(yaml['profile'], problems);
+    for (final entry in profile.severities.entries) {
+      if (ruleSeverities.containsKey(entry.key) ||
+          disabledRules.contains(entry.key)) {
+        continue; // an explicit `rules:` entry beats the profile
+      }
+      ruleSeverities[entry.key] = entry.value;
+    }
+    for (final ruleName in profile.disabled) {
+      if (!ruleSeverities.containsKey(ruleName)) disabledRules.add(ruleName);
     }
     final unknownKeys = [
       for (final key in yaml.keys.map((k) => k.toString()))
@@ -392,7 +398,41 @@ class AnalyzerConfig {
     );
   }
 
+  static _Profile _parseProfile(dynamic node, List<String> problems) {
+    if (node == null) return _profiles['normal']!;
+    final profile = _profiles[node.toString().toLowerCase()];
+    if (profile != null) return profile;
+    problems.add(
+      "profile: unknown profile '$node' (expected one of: "
+      '${_profiles.keys.join(', ')})',
+    );
+    return _profiles['normal']!;
+  }
+
+  /// `strict` reports everything; `normal` (default) keeps the noisiest
+  /// stylistic rules at info; `quiet` turns them off.
+  static const _profiles = {
+    'strict': _Profile(),
+    'normal': _Profile(
+      severities: {
+        'untested-files': Severity.info,
+        'generic-naming': Severity.info,
+        'no-magic-number': Severity.info,
+      },
+    ),
+    'quiet': _Profile(
+      disabled: {
+        'untested-files',
+        'generic-naming',
+        'no-magic-number',
+        'redundant-comments',
+        'verbose-logging',
+      },
+    ),
+  };
+
   static const _knownKeys = {
+    'profile',
     'exclude',
     'entrypoints',
     'extra_scan_dirs',
@@ -439,6 +479,13 @@ class AnalyzerConfig {
     }
     return defaultValue;
   }
+}
+
+class _Profile {
+  final Map<String, Severity> severities;
+  final Set<String> disabled;
+
+  const _Profile({this.severities = const {}, this.disabled = const {}});
 }
 
 /// Configuration for a single banned-symbol rule.

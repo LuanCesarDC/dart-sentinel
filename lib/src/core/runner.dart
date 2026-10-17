@@ -1,7 +1,10 @@
+import 'package:path/path.dart' as p;
+
 import '../config/analyzer_config.dart';
 import 'issue.dart';
 import 'project_context.dart';
 import 'rule.dart';
+import 'suppressions.dart';
 
 /// Category → rule names, shared by the runner and `dart_sentinel rules`.
 const Map<String, Set<String>> ruleCategories = {
@@ -83,9 +86,17 @@ class RuleRunner {
       }
     }
 
-    issues.sort();
-    return issues;
+    final visible = issues.where((issue) => !_isSilenced(issue, context));
+    return visible.toList()..sort();
   }
+
+  bool _isSilenced(Issue issue, ProjectContext context) {
+    final source = context.fileContents[_absolutePath(issue.file, context)];
+    return source != null && isSuppressed(issue, source.split('\n'));
+  }
+
+  String _absolutePath(String relative, ProjectContext context) =>
+      p.join(context.projectRoot, relative);
 
   /// Run only rules matching the given [category].
   ///
