@@ -6,6 +6,18 @@ import 'package:dart_sentinel/dart_sentinel.dart';
 
 import 'rule_registry.dart';
 
+/// In JSON mode stdout carries only the JSON document; progress goes to stderr.
+class _Console {
+  bool jsonMode = false;
+
+  void log(Object? message) {
+    final sink = jsonMode ? stderr : stdout;
+    sink.writeln(message);
+  }
+}
+
+final _console = _Console();
+
 Future<void> main(List<String> args) async {
   final parser = _buildParser();
   final results = parser.parse(args);
@@ -35,15 +47,17 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  print('🔍 Dart Sentinel — analyzing project...');
-  print('');
+  _console.jsonMode = format == 'json';
+  _console.log('🔍 Dart Sentinel — analyzing project...');
+  _console.log('');
 
   final stopwatch = Stopwatch()..start();
 
   // Build project context
   final context = await ProjectContext.build(projectRoot);
+  _reportConfigProblems(context);
 
-  print(
+  _console.log(
     '  Scanned ${context.allFiles.length} files (${context.entrypoints.length} entrypoints)',
   );
 
@@ -60,7 +74,7 @@ Future<void> main(List<String> args) async {
     final changedFiles = _getChangedFiles(projectRoot);
     if (changedFiles != null) {
       issues = issues.where((i) => changedFiles.contains(i.file)).toList();
-      print(
+      _console.log(
         '  Changed-only mode: filtering to ${changedFiles.length} changed files',
       );
     }
@@ -86,7 +100,7 @@ Future<void> main(List<String> args) async {
       elapsed: stopwatch.elapsed,
       category: category,
     ));
-    print('  Report saved to: $reportPath');
+    _console.log('  Report saved to: $reportPath');
   }
   _handleRatchet(
     issues: issues,
@@ -94,11 +108,29 @@ Future<void> main(List<String> args) async {
     save: saveBaseline,
     check: checkBaseline,
   );
-  print('');
+  _console.log('');
 
   if (issues.any((i) => i.severity == Severity.error)) {
     exit(1);
   }
+}
+
+void _reportConfigProblems(ProjectContext context) {
+  final config = context.config;
+  for (final problem in config.problems) {
+    stderr.writeln('analyzer.yaml error: $problem');
+  }
+  final warnings = [
+    ...config.validate(allSentinelRules().map((rule) => rule.name)),
+    ...layerCoverageWarnings(
+      config,
+      context.allFiles.map(context.relativePath),
+    ),
+  ];
+  for (final warning in warnings) {
+    stderr.writeln('analyzer.yaml warning: $warning');
+  }
+  if (config.problems.isNotEmpty) exit(2);
 }
 
 bool _trySpecialMode(
@@ -134,12 +166,12 @@ void _handleRatchet({
   final baselinePath = '$projectRoot/.dart_sentinel/baseline.json';
   if (save) {
     Ratchet.saveBaseline(issues, path: baselinePath);
-    print('  Baseline saved to: $baselinePath');
+    _console.log('  Baseline saved to: $baselinePath');
   }
   if (check) {
     final ratchetResult = Ratchet.check(issues, path: baselinePath);
-    print('');
-    print(ratchetResult.message);
+    _console.log('');
+    _console.log(ratchetResult.message);
     if (!ratchetResult.passed) exit(1);
   }
 }
@@ -446,13 +478,21 @@ void _writeReport(
 }
 
 void _printUsage(ArgParser parser) {
-  print(
-    '''
+  print('''
 Dart Sentinel — Static analysis & metrics for Dart/Flutter
 
-Usage: dart run dart_sentinel [options]
-       dart run dart_sentinel:analyze [options]
-       dart run bin/dart_sentinel.dart [options]  (from source)
+Usage: dart_sentinel [options]
+       dart_sentinel <command> [options]
+
+Install once with `dart pub global activate dart_sentinel`.
+Do not add it to pubspec.yaml — run `dart_sentinel doctor` to check.
+
+Commands:
+  init               Detect lib/ structure, create analyzer.yaml, set up hooks
+  doctor             Check PATH, analyzer.yaml, hooks and Dart version
+  rules              List every rule, its category and whether it is active
+  setup-hooks        Write Claude Code hooks into .claude/settings.json
+  generate-ai-config Generate AI instructions (copilot, cursor, claude, windsurf)
 
 Options:
 ${parser.usage}
@@ -469,19 +509,18 @@ Categories:
   migrations Migration tracker for banned-symbols progress
 
 Examples:
-  dart run dart_sentinel                                    # run all rules
-  dart run dart_sentinel -o arch                            # architecture only
-  dart run dart_sentinel -o metrics -f json                 # metrics as JSON
-  dart run dart_sentinel -p /path/to/project                # specify project
-  dart run dart_sentinel -o impact --files lib/src/core/issue.dart  # blast radius
-  dart run dart_sentinel -o impact                          # hot spots
-  dart run dart_sentinel -o map -f mermaid                  # Mermaid diagram
-  dart run dart_sentinel -o migrations                      # migration progress
-  dart run dart_sentinel --save-baseline                    # save ratchet baseline
-  dart run dart_sentinel --check-baseline                   # CI ratchet check
-  dart run dart_sentinel --changed-only                     # only changed files
-  dart run dart_sentinel:analyze                            # explicit script''',
-  );
+  dart_sentinel                                    # run all rules
+  dart_sentinel -o arch                            # architecture only
+  dart_sentinel -o metrics -f json                 # metrics as JSON
+  dart_sentinel -p /path/to/project                # specify project
+  dart_sentinel -o impact --files lib/src/core/issue.dart  # blast radius
+  dart_sentinel -o impact                          # hot spots
+  dart_sentinel -o map -f mermaid                  # Mermaid diagram
+  dart_sentinel -o migrations                      # migration progress
+  dart_sentinel --save-baseline                    # save ratchet baseline
+  dart_sentinel --check-baseline                   # CI ratchet check
+  dart_sentinel --changed-only                     # only changed files
+  dart_sentinel rules                                       # list rules''');
 }
 
 /// Returns the set of relative file paths changed according to git,

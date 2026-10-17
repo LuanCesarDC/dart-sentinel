@@ -33,7 +33,7 @@ class ComplexityRule extends AnalyzerRule {
 
       // --- File-level metrics ---
       final loc = _countLoc(file, context);
-      if (loc >= metrics.linesPerFileError) {
+      if (loc > metrics.linesPerFileError) {
         issues.add(
           Issue(
             rule: name,
@@ -43,7 +43,7 @@ class ComplexityRule extends AnalyzerRule {
             severity: Severity.error,
           ),
         );
-      } else if (loc >= metrics.linesPerFileWarning) {
+      } else if (loc > metrics.linesPerFileWarning) {
         issues.add(
           Issue(
             rule: name,
@@ -129,7 +129,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
 
   void _checkCyclomaticComplexity(_CallableInfo info) {
     final cc = _cyclomaticComplexity(info.body);
-    if (cc >= metrics.cyclomaticComplexityError) {
+    if (cc > metrics.cyclomaticComplexityError) {
       issues.add(
         Issue(
           rule: 'complexity',
@@ -141,7 +141,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (cc >= metrics.cyclomaticComplexityWarning) {
+    } else if (cc > metrics.cyclomaticComplexityWarning) {
       issues.add(
         Issue(
           rule: 'complexity',
@@ -158,7 +158,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
 
   void _checkLinesPerMethod(_CallableInfo info) {
     final methodLoc = _bodyLineCount(info.body);
-    if (methodLoc >= metrics.linesPerMethodError) {
+    if (methodLoc > metrics.linesPerMethodError) {
       issues.add(
         Issue(
           rule: 'complexity',
@@ -170,7 +170,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (methodLoc >= metrics.linesPerMethodWarning) {
+    } else if (methodLoc > metrics.linesPerMethodWarning) {
       issues.add(
         Issue(
           rule: 'complexity',
@@ -187,7 +187,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
 
   void _checkParameterCount(_CallableInfo info) {
     final paramCount = info.parameters?.parameters.length ?? 0;
-    if (paramCount >= metrics.maxParametersError) {
+    if (paramCount > metrics.maxParametersError) {
       issues.add(
         Issue(
           rule: 'complexity',
@@ -199,7 +199,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (paramCount >= metrics.maxParametersWarning) {
+    } else if (paramCount > metrics.maxParametersWarning) {
       issues.add(
         Issue(
           rule: 'complexity',
@@ -216,7 +216,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
 
   void _checkNestingDepth(_CallableInfo info) {
     final nesting = _maxNestingDepth(info.body);
-    if (nesting >= metrics.maxNestingError) {
+    if (nesting > metrics.maxNestingError) {
       issues.add(
         Issue(
           rule: 'complexity',
@@ -228,7 +228,7 @@ class _ComplexityVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (nesting >= metrics.maxNestingWarning) {
+    } else if (nesting > metrics.maxNestingWarning) {
       issues.add(
         Issue(
           rule: 'complexity',

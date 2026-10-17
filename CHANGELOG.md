@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.4.0
+
+### Breaking behavior changes
+
+- Metric limits are now exclusive: a value **equal** to the limit passes and
+  only values **above** it are reported, matching the `(limit: N)` in the
+  message (`complexity`, `class-metrics`, `build-complexity`, and the
+  analyzer plugin).
+- `rules: <name>: off` now really disables the rule. Previously `off` was
+  silently parsed as `warning`. An invalid severity is a fatal config error
+  (exit code 2) instead of silently becoming `warning`.
+
+### New
+
+- `dart_sentinel init` — detects the `lib/` structure, recommends a template,
+  writes `analyzer.yaml` and runs `setup-hooks` (`--template`, `--force`,
+  `--no-hooks`). Templates ship inside the package.
+- `dart_sentinel doctor` — checks Dart version, PATH, `analyzer.yaml`, Claude
+  Code hooks and the `pubspec.yaml` conflict below.
+- `dart_sentinel rules` — lists every rule, its category and whether the
+  project turns it off or changes its severity.
+- `flutter_official` template (`ui/`, `data/`, `domain/`, `routing/`).
+- `analyzer.yaml` validation: unknown top-level keys and unknown rule names
+  warn with a "did you mean" suggestion; layers that match no file and `lib/`
+  folders outside every layer warn too.
+- `setup-hooks` and `doctor` flag `dart_sentinel` listed in `dependencies` /
+  `dev_dependencies` — it is a global tool.
+- `ai_slop.no_equal_arguments.ignore` extends the built-in list of symmetric
+  constructors.
+
+### Fixes
+
+- `-f json` prints only JSON on stdout; banner and progress go to stderr.
+- `unused-code` ignores `main()` and `@pragma('vm:entry-point')`, and counts an
+  extension as used when any of its members is called.
+- `dispose-check` recognizes Riverpod `ref.onDispose(...)` (tear-off or closure).
+- `generic-naming` skips constants, fields, named parameters, constructor
+  parameters and `@override` parameters.
+- `no-equal-arguments` skips `EdgeInsets.fromLTRB`, `Offset`, `Size` and other
+  symmetric constructors.
+- `untested-files` accepts tests outside the mirrored path (widget, golden)
+  and under `integration_test/`.
+- `misused-dependencies` exempts annotation runtimes (`json_annotation`,
+  `freezed_annotation`, ...) when `build_runner` is present.
+- `--help`, `generate-ai-config` output and the AI templates tell agents to
+  install with `dart pub global activate dart_sentinel`, run `dart_sentinel`,
+  and never add it to `pubspec.yaml`.
+- Tests for these rules with good/bad fixtures (`test/rules/`, `test/helpers/`).
+
 ## 0.3.0
 
 - Add Claude Code hook integration — enforcement now runs automatically

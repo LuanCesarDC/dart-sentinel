@@ -7,6 +7,14 @@ enum Severity {
   @override
   String toString() => name;
 
+  /// Parse a severity, returning null when [value] is not a known level.
+  static Severity? tryParse(String value) {
+    for (final severity in values) {
+      if (severity.name == value.toLowerCase()) return severity;
+    }
+    return null;
+  }
+
   /// Parse a severity from a string (case-insensitive).
   static Severity fromString(String value) {
     switch (value.toLowerCase()) {

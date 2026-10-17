@@ -57,6 +57,7 @@ class UnusedCodeRule extends AnalyzerRule {
     final issues = <Issue>[];
     for (final decl in declarations) {
       if (decl.isPrivate) continue; // Skip private; only matters within file
+      if (decl.isEntryPoint) continue; // main() and @pragma('vm:entry-point')
       if (!reachable.contains(decl.file)) {
         continue; // Not reachable = dead-files handles this
       }
@@ -68,7 +69,7 @@ class UnusedCodeRule extends AnalyzerRule {
       for (final importer in importers) {
         if (importer == decl.file) continue;
         final refs = usedSymbols[importer];
-        if (refs != null && refs.contains(decl.name)) {
+        if (refs != null && decl.isReferencedIn(refs)) {
           // Check show/hide combinators
           if (_isSymbolVisibleViaImport(
             context,
@@ -85,7 +86,7 @@ class UnusedCodeRule extends AnalyzerRule {
       // Also check if used in same file (public but only used locally)
       if (!used) {
         final localRefs = usedSymbols[decl.file];
-        if (localRefs != null && localRefs.contains(decl.name)) {
+        if (localRefs != null && decl.isReferencedIn(localRefs)) {
           used = true;
         }
       }
@@ -128,6 +129,8 @@ class UnusedCodeRule extends AnalyzerRule {
             _DeclaredSymbol(
               name: decl.name.lexeme,
               file: file,
+              isEntryPoint:
+                  decl.name.lexeme == 'main' || _hasEntryPointPragma(decl),
               line: unit.lineInfo.getLocation(decl.offset).lineNumber,
               kind: decl.isGetter
                   ? 'Getter'
@@ -181,6 +184,7 @@ class UnusedCodeRule extends AnalyzerRule {
               _DeclaredSymbol(
                 name: extName.lexeme,
                 file: file,
+                memberNames: _extensionMemberNames(decl),
                 line: unit.lineInfo.getLocation(decl.offset).lineNumber,
                 kind: 'Extension',
               ),
@@ -198,6 +202,26 @@ class UnusedCodeRule extends AnalyzerRule {
       }
     }
     return symbols;
+  }
+
+  bool _hasEntryPointPragma(AnnotatedNode node) => node.metadata.any(
+    (annotation) =>
+        annotation.name.name == 'pragma' &&
+        annotation.arguments?.arguments.firstOrNull?.toSource() ==
+            "'vm:entry-point'",
+  );
+
+  /// Extension members are called through the receiver (`value.member()`),
+  /// so the extension's own name never appears at the call site.
+  Set<String> _extensionMemberNames(ExtensionDeclaration decl) {
+    final names = <String>{};
+    for (final member in decl.body.members) {
+      if (member is MethodDeclaration) names.add(member.name.lexeme);
+      if (member is FieldDeclaration) {
+        names.addAll(member.fields.variables.map((v) => v.name.lexeme));
+      }
+    }
+    return names;
   }
 
   Set<String> _collectReferences(CompilationUnit unit) {
@@ -249,13 +273,20 @@ class _DeclaredSymbol {
   final String file;
   final int line;
   final String kind;
+  final bool isEntryPoint;
+  final Set<String> memberNames;
 
   _DeclaredSymbol({
     required this.name,
     required this.file,
     required this.line,
     required this.kind,
+    this.isEntryPoint = false,
+    this.memberNames = const {},
   });
+
+  bool isReferencedIn(Set<String> references) =>
+      references.contains(name) || memberNames.any(references.contains);
 
   bool get isPrivate => name.startsWith('_');
 }

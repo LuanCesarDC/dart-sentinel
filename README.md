@@ -90,14 +90,25 @@ All single-file rules run as analysis server plugins:
 For projects using Claude Code, Dart Sentinel can enforce your architecture
 automatically — no MCP tool calls to remember, no manual CLI runs.
 
-You need an `analyzer.yaml` first — see [Configuration](#configuration) to
-write one by hand, or [Architecture Templates](#architecture-templates) to
-start from one matching your stack (BLoC, Riverpod, Clean Architecture,
-etc.). Then, from your project root:
+Fastest path — detect the structure, write `analyzer.yaml` from the matching
+[template](#architecture-templates) and install the hooks in one step:
+
+```bash
+dart_sentinel init
+```
+
+Or write `analyzer.yaml` yourself (see [Configuration](#configuration)) and
+then, from your project root:
 
 ```bash
 dart_sentinel setup-hooks
 ```
+
+Install Sentinel globally (`dart pub global activate dart_sentinel`) and
+**never add it to `pubspec.yaml`** — its analyzer constraints can conflict
+with your project's. `dart_sentinel doctor` checks the PATH, `analyzer.yaml`,
+hooks, Dart version and that conflict; `dart_sentinel rules` lists every
+rule and whether it is on or off (`rules: <name>: off` disables one).
 
 This writes two hooks into `.claude/settings.json`:
 
@@ -849,6 +860,7 @@ cp example/templates/bloc.yaml analyzer.yaml
 | [`ddd.yaml`](example/templates/ddd.yaml) | DDD | Domain/Application/Infrastructure/Presentation |
 | [`stacked.yaml`](example/templates/stacked.yaml) | Stacked (MVVM) | FilledStacks MVVM com Views/ViewModels/Services |
 | [`modular.yaml`](example/templates/modular.yaml) | Flutter Modular | Micro-frontends com módulos isolados |
+| [`flutter_official.yaml`](example/templates/flutter_official.yaml) | Flutter oficial (ui/data/domain/routing) | Estrutura recomendada pela documentação da Flutter |
 | [`getx.yaml`](example/templates/getx.yaml) | GetX | Módulos com Bindings/Controllers/Views |
 
 Each template includes:

@@ -6,11 +6,17 @@
 // `dart_sentinel hook-edit`                → Claude Code PostToolUse hook
 // `dart_sentinel hook-stop`                → Claude Code Stop hook
 // `dart_sentinel setup-hooks`              → write Claude Code hook config
+// `dart_sentinel init`                     → detect structure, write analyzer.yaml
+// `dart_sentinel doctor`                   → check PATH, config, hooks, Dart
+// `dart_sentinel rules`                    → list rules and their state
 import 'analyze.dart' as analyze;
+import 'doctor.dart' as doctor;
 import 'generate_ai_config.dart' as gen_ai;
 import 'hook_edit.dart' as hook_edit;
 import 'hook_stop.dart' as hook_stop;
+import 'init.dart' as init;
 import 'mcp_server.dart' as mcp;
+import 'rules_cmd.dart' as rules_cmd;
 import 'setup_hooks.dart' as setup_hooks;
 
 Future<void> main(List<String> args) async {
@@ -24,6 +30,12 @@ Future<void> main(List<String> args) async {
     await hook_stop.main(args.sublist(1));
   } else if (args.isNotEmpty && args.first == 'setup-hooks') {
     await setup_hooks.main(args.sublist(1));
+  } else if (args.isNotEmpty && args.first == 'init') {
+    await init.main(args.sublist(1));
+  } else if (args.isNotEmpty && args.first == 'doctor') {
+    await doctor.main(args.sublist(1));
+  } else if (args.isNotEmpty && args.first == 'rules') {
+    await rules_cmd.main(args.sublist(1));
   } else {
     await analyze.main(args);
   }

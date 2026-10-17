@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
+import 'pubspec_check.dart';
+
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
     ..addOption('project', abbr: 'p', help: 'Path to the project root.');
@@ -20,6 +22,11 @@ Future<void> main(List<String> args) async {
       'config first, then run `dart_sentinel setup-hooks` again.',
     );
     return;
+  }
+
+  final conflict = sentinelDependencySection(projectRoot);
+  if (conflict != null) {
+    stderr.writeln('⚠ ${dependencyConflictAdvice(conflict)}');
   }
 
   final settingsFile = File(p.join(projectRoot, '.claude', 'settings.json'));

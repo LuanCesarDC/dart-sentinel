@@ -25,6 +25,7 @@ class UntestedFilesRule extends AnalyzerRule {
     if (!context.directoryExists(testDir)) return [];
 
     final issues = <Issue>[];
+    final testedNames = _collectTestNames(context, testingConfig.testDir);
 
     for (final file in context.allFiles) {
       if (!file.startsWith(context.libRoot)) continue;
@@ -50,7 +51,9 @@ class UntestedFilesRule extends AnalyzerRule {
       );
 
       final testFilePath = p.join(context.projectRoot, expectedTestPath);
-      if (!context.fileExists(testFilePath)) {
+      final baseName = p.basenameWithoutExtension(relativePath);
+      if (!context.fileExists(testFilePath) &&
+          !testedNames.contains('${baseName}_test.dart')) {
         issues.add(
           Issue(
             rule: name,
@@ -65,6 +68,22 @@ class UntestedFilesRule extends AnalyzerRule {
     }
 
     return issues;
+  }
+
+  /// File names of every `*_test.dart` under the test dir and
+  /// `integration_test/`, so widget, golden and integration tests placed
+  /// outside the mirrored path still count.
+  Set<String> _collectTestNames(ProjectContext context, String testDir) {
+    final names = <String>{};
+    for (final dir in [testDir, 'integration_test']) {
+      final files = context.listFilesRecursively(
+        p.join(context.projectRoot, dir),
+      );
+      names.addAll(
+        files.where((f) => f.endsWith('_test.dart')).map(p.basename),
+      );
+    }
+    return names;
   }
 
   bool _isExcluded(String relativePath, List<String> excludes) {

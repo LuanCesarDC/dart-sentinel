@@ -292,6 +292,13 @@ void _generateMcpConfig(String root, String tool, bool dryRun) {
 
 // ── Content builders ──
 
+/// Tells the agent how Sentinel is installed. Adding it to `pubspec.yaml`
+/// makes its analyzer constraints fight the project's own dependencies.
+const _installNote =
+    'Install Sentinel globally with `dart pub global activate dart_sentinel` '
+    'and run it as `dart_sentinel`. Never add it to `pubspec.yaml` '
+    '(not even `dev_dependencies`).\n';
+
 String _buildProjectInstructions(_ProjectConfig config) {
   final buf = StringBuffer();
   buf.writeln('# Project Instructions');
@@ -301,6 +308,7 @@ String _buildProjectInstructions(_ProjectConfig config) {
     'The AI agent has access to Sentinel via MCP.',
   );
   buf.writeln();
+  buf.writeln(_installNote);
 
   // Architecture section
   if (config.hasLayers) {
@@ -419,6 +427,7 @@ String _buildSentinelInstructions(_ProjectConfig config) {
   buf.writeln();
   buf.writeln('# Dart Sentinel — Checks for Dart files');
   buf.writeln();
+  buf.writeln(_installNote);
 
   // Active rules as a compact reference
   if (config.hasRules) {

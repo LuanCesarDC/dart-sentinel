@@ -49,7 +49,7 @@ class _Visitor extends SimpleAstVisitor<void> {
 
   void _analyze(MethodDeclaration method, String className) {
     final loc = method.body.toSource().split('\n').length;
-    if (loc >= BuildComplexityPluginRule._locWarning) {
+    if (loc > BuildComplexityPluginRule._locWarning) {
       rule.reportAtNode(
         method,
         arguments: [
@@ -61,7 +61,7 @@ class _Visitor extends SimpleAstVisitor<void> {
 
     final counter = _BranchCounter();
     method.body.accept(counter);
-    if (counter.count >= BuildComplexityPluginRule._branchesWarning) {
+    if (counter.count > BuildComplexityPluginRule._branchesWarning) {
       rule.reportAtNode(
         method,
         arguments: [

@@ -163,14 +163,29 @@ class _DisposeVisitor extends RecursiveAstVisitor<void> {
     NodeList<ClassMember> members,
     Map<String, FunctionBody> methodBodies,
   ) {
+    final cleanups = <String, Set<String>>{};
     for (final member in members) {
       if (member is! MethodDeclaration) continue;
-      if (member.name.lexeme != 'dispose') continue;
-      final collector = _CleanupCollector(methodBodies);
-      collector.collectFrom(member.body);
-      return collector.cleanups;
+      if (member.name.lexeme == 'dispose') {
+        final collector = _CleanupCollector(methodBodies);
+        collector.collectFrom(member.body);
+        _mergeCleanups(cleanups, collector.cleanups);
+      }
+      // Riverpod: `ref.onDispose(x.dispose)` registers cleanup from build().
+      final onDispose = _OnDisposeVisitor();
+      member.body.accept(onDispose);
+      _mergeCleanups(cleanups, onDispose.cleanups);
     }
-    return {};
+    return cleanups;
+  }
+
+  void _mergeCleanups(
+    Map<String, Set<String>> into,
+    Map<String, Set<String>> from,
+  ) {
+    for (final entry in from.entries) {
+      into.putIfAbsent(entry.key, () => {}).addAll(entry.value);
+    }
   }
 
   Set<String> _collectAddListenerCalls(NodeList<ClassMember> members) {
@@ -375,6 +390,51 @@ class _CleanupVisitor extends RecursiveAstVisitor<void> {
       return;
     }
     super.visitExpressionStatement(node);
+  }
+}
+
+/// Collects cleanups registered through `onDispose(...)`, either as a
+/// tear-off (`ref.onDispose(controller.dispose)`) or inside a closure.
+class _OnDisposeVisitor extends RecursiveAstVisitor<void> {
+  static const _cleanupMethods = {'dispose', 'cancel', 'close'};
+
+  final Map<String, Set<String>> cleanups = {};
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    if (node.methodName.name == 'onDispose') {
+      for (final argument in node.argumentList.arguments) {
+        _collectFrom(argument);
+      }
+    }
+    super.visitMethodInvocation(node);
+  }
+
+  void _collectFrom(Expression argument) {
+    if (argument is FunctionExpression) {
+      final visitor = _CleanupVisitor();
+      argument.body.accept(visitor);
+      for (final cleanup in visitor.cleanups) {
+        cleanups.putIfAbsent(cleanup.target, () => {}).add(cleanup.method);
+      }
+      return;
+    }
+    final String? target;
+    final String? method;
+    if (argument is PrefixedIdentifier) {
+      target = argument.prefix.name;
+      method = argument.identifier.name;
+    } else if (argument is PropertyAccess) {
+      target = argument.target?.toSource();
+      method = argument.propertyName.name;
+    } else {
+      return;
+    }
+    if (target == null || !_cleanupMethods.contains(method)) return;
+    final cleanTarget = target.startsWith('this.')
+        ? target.substring(5)
+        : target;
+    cleanups.putIfAbsent(cleanTarget, () => {}).add(method);
   }
 }
 

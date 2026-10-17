@@ -45,6 +45,12 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
       return;
     }
 
+    // Skip constants and fields — their names are part of the public shape
+    if (_isConstOrField(node)) {
+      super.visitVariableDeclaration(node);
+      return;
+    }
+
     // Skip loop variables: for (final item in ...) / for (var i = ...)
     if (config.allowInLoops && _isInLoop(node)) {
       super.visitVariableDeclaration(node);
@@ -70,6 +76,11 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
     }
 
     if (config.allowInLambdas && _isInLambda(node)) {
+      super.visitSimpleFormalParameter(node);
+      return;
+    }
+
+    if (_isDictatedByFramework(node)) {
       super.visitSimpleFormalParameter(node);
       return;
     }
@@ -131,4 +142,27 @@ class _GenericNamingVisitor extends RecursiveAstVisitor<void> {
       ),
     );
   }
+}
+
+bool _isConstOrField(VariableDeclaration node) {
+  final list = node.parent;
+  if (list is! VariableDeclarationList) return false;
+  return list.isConst || list.parent is FieldDeclaration;
+}
+
+/// Named parameters are part of the caller's API, constructor parameters
+/// mirror their fields, and overrides inherit names from the supertype.
+bool _isDictatedByFramework(SimpleFormalParameter node) {
+  if (node.isNamed) return true;
+  final owner = node.thisOrAncestorMatching(
+    (ancestor) =>
+        ancestor is ConstructorDeclaration ||
+        ancestor is MethodDeclaration ||
+        ancestor is FunctionDeclaration,
+  );
+  if (owner is ConstructorDeclaration) return true;
+  if (owner is MethodDeclaration) {
+    return owner.metadata.any((a) => a.name.name == 'override');
+  }
+  return false;
 }

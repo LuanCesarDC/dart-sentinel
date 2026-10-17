@@ -1,5 +1,8 @@
 # Project Instructions — Dart Sentinel
 
+Install Sentinel globally with `dart pub global activate dart_sentinel` and run it as `dart_sentinel`.
+Never add it to `pubspec.yaml` (not even `dev_dependencies`).
+
 ## Architecture Enforcement
 
 This project uses Dart Sentinel for deterministic architecture enforcement.

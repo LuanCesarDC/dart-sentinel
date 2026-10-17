@@ -35,6 +35,21 @@ class MisusedDependenciesRule extends AnalyzerRule {
     'custom_lint',
   };
 
+  /// Runtime packages that generated code (`*.g.dart`, `*.freezed.dart`)
+  /// depends on. They may be imported only by generated files that are
+  /// excluded from analysis or not committed, so they are exempt whenever
+  /// `build_runner` is present.
+  static const _generatedCodeRuntimePackages = {
+    'json_annotation',
+    'freezed_annotation',
+    'riverpod_annotation',
+    'injectable',
+    'retrofit',
+    'hive',
+    'built_value',
+    'built_collection',
+  };
+
   @override
   List<Issue> run(ProjectContext context) {
     final content = context.pubspecContent;
@@ -70,6 +85,11 @@ class MisusedDependenciesRule extends AnalyzerRule {
 
     final issues = <Issue>[];
     const filePath = 'pubspec.yaml';
+    final usesCodeGeneration =
+        deps.contains('build_runner') || devDeps.contains('build_runner');
+    bool isIndirect(String dep) =>
+        _indirectPackages.contains(dep) ||
+        (usesCodeGeneration && _generatedCodeRuntimePackages.contains(dep));
 
     // Get the project's own package name
     final ownPackage = yaml['name']?.toString() ?? '';
@@ -77,7 +97,7 @@ class MisusedDependenciesRule extends AnalyzerRule {
     // ── unused-dependency ──
     for (final dep in deps) {
       if (dep == 'flutter' || dep == 'flutter_localizations') continue;
-      if (_indirectPackages.contains(dep)) continue;
+      if (isIndirect(dep)) continue;
       if (!libImports.contains(dep) && !testImports.contains(dep)) {
         issues.add(
           Issue(
@@ -93,7 +113,7 @@ class MisusedDependenciesRule extends AnalyzerRule {
     // ── over-promoted: dev-only packages in dependencies ──
     for (final dep in deps) {
       if (dep == 'flutter' || dep == 'flutter_localizations') continue;
-      if (_indirectPackages.contains(dep)) continue;
+      if (isIndirect(dep)) continue;
       if (!libImports.contains(dep) && testImports.contains(dep)) {
         issues.add(
           Issue(
@@ -108,7 +128,7 @@ class MisusedDependenciesRule extends AnalyzerRule {
 
     // ── under-promoted: production packages in dev_dependencies ──
     for (final dep in devDeps) {
-      if (_indirectPackages.contains(dep)) continue;
+      if (isIndirect(dep)) continue;
       if (libImports.contains(dep)) {
         issues.add(
           Issue(

@@ -64,7 +64,7 @@ class _Visitor extends SimpleAstVisitor<void> {
     AstNode reportNode,
   ) {
     final cc = _cyclomaticComplexity(body);
-    if (cc >= ComplexityPluginRule._ccWarning) {
+    if (cc > ComplexityPluginRule._ccWarning) {
       rule.reportAtNode(
         reportNode,
         arguments: [
@@ -74,7 +74,7 @@ class _Visitor extends SimpleAstVisitor<void> {
     }
 
     final lines = body.toSource().split('\n').length;
-    if (lines >= ComplexityPluginRule._linesWarning) {
+    if (lines > ComplexityPluginRule._linesWarning) {
       rule.reportAtNode(
         reportNode,
         arguments: [
@@ -84,7 +84,7 @@ class _Visitor extends SimpleAstVisitor<void> {
     }
 
     final paramCount = params?.parameters.length ?? 0;
-    if (paramCount >= ComplexityPluginRule._paramsWarning) {
+    if (paramCount > ComplexityPluginRule._paramsWarning) {
       rule.reportAtNode(
         reportNode,
         arguments: [
@@ -94,7 +94,7 @@ class _Visitor extends SimpleAstVisitor<void> {
     }
 
     final nesting = _maxNestingDepth(body);
-    if (nesting >= ComplexityPluginRule._nestingWarning) {
+    if (nesting > ComplexityPluginRule._nestingWarning) {
       rule.reportAtNode(
         reportNode,
         arguments: [

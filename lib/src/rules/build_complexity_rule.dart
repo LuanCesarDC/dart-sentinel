@@ -63,7 +63,7 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
 
     // Count LOC
     final loc = method.body.toSource().split('\n').length;
-    if (loc >= metrics.buildMethodLocError) {
+    if (loc > metrics.buildMethodLocError) {
       issues.add(
         Issue(
           rule: 'build-complexity',
@@ -76,7 +76,7 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (loc >= metrics.buildMethodLocWarning) {
+    } else if (loc > metrics.buildMethodLocWarning) {
       issues.add(
         Issue(
           rule: 'build-complexity',
@@ -96,7 +96,7 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
     method.body.accept(branchCounter);
     final branches = branchCounter.count;
 
-    if (branches >= metrics.buildMethodBranchesError) {
+    if (branches > metrics.buildMethodBranchesError) {
       issues.add(
         Issue(
           rule: 'build-complexity',
@@ -109,7 +109,7 @@ class _BuildComplexityVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (branches >= metrics.buildMethodBranchesWarning) {
+    } else if (branches > metrics.buildMethodBranchesWarning) {
       issues.add(
         Issue(
           rule: 'build-complexity',
@@ -159,6 +159,8 @@ class _BranchCounter extends RecursiveAstVisitor<void> {
     super.visitWhileStatement(node);
   }
 
+  // A switch counts once however many cases it has, so an exhaustive switch
+  // over an enum weighs less than the equivalent chain of nested ifs.
   @override
   void visitSwitchStatement(SwitchStatement node) {
     count++;

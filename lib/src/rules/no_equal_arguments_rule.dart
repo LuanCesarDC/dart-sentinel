@@ -23,7 +23,11 @@ class NoEqualArgumentsRule extends AnalyzerRule {
       final unit = entry.value;
       final relativePath = context.relativePath(file);
 
-      final visitor = _EqualArgsVisitor(relativePath, unit);
+      final visitor = _EqualArgsVisitor(
+        relativePath,
+        unit,
+        context.config.aiSlop.noEqualArguments.ignoredCalls,
+      );
       unit.accept(visitor);
       issues.addAll(visitor.issues);
     }
@@ -35,13 +39,18 @@ class NoEqualArgumentsRule extends AnalyzerRule {
 class _EqualArgsVisitor extends RecursiveAstVisitor<void> {
   final String filePath;
   final CompilationUnit unit;
+  final Set<String> ignoredCalls;
   final List<Issue> issues = [];
 
-  _EqualArgsVisitor(this.filePath, this.unit);
+  _EqualArgsVisitor(this.filePath, this.unit, this.ignoredCalls);
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    _checkArgs(node.argumentList, node.methodName.name, node.offset);
+    final target = node.target;
+    final callName = target is SimpleIdentifier
+        ? '${target.name}.${node.methodName.name}'
+        : node.methodName.name;
+    _checkArgs(node.argumentList, callName, node.offset);
     super.visitMethodInvocation(node);
   }
 
@@ -60,6 +69,7 @@ class _EqualArgsVisitor extends RecursiveAstVisitor<void> {
   void _checkArgs(ArgumentList argList, String callName, int offset) {
     final args = argList.arguments;
     if (args.length < 2) return;
+    if (_isIgnoredCall(callName)) return;
 
     // Only check positional args (named args are self-documenting)
     final positional = args.where((a) => a is! NamedExpression).toList();
@@ -86,6 +96,12 @@ class _EqualArgsVisitor extends RecursiveAstVisitor<void> {
       }
     }
   }
+
+  /// Matches either the full call (`EdgeInsets.fromLTRB`) or its type name
+  /// (`Offset`), so symmetric constructors can be listed either way.
+  bool _isIgnoredCall(String callName) =>
+      ignoredCalls.contains(callName) ||
+      ignoredCalls.contains(callName.split('.').first);
 
   bool _isTrivialLiteral(String source) {
     return source == 'null' ||

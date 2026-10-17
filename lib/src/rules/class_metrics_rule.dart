@@ -88,7 +88,7 @@ class _ClassMetricsVisitor extends RecursiveAstVisitor<void> {
     final loc = source.split('\n').length;
 
     // Check NOM
-    if (nom >= metrics.numberOfMethodsError) {
+    if (nom > metrics.numberOfMethodsError) {
       issues.add(
         Issue(
           rule: 'class-metrics',
@@ -99,7 +99,7 @@ class _ClassMetricsVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (nom >= metrics.numberOfMethodsWarning) {
+    } else if (nom > metrics.numberOfMethodsWarning) {
       issues.add(
         Issue(
           rule: 'class-metrics',
@@ -113,7 +113,7 @@ class _ClassMetricsVisitor extends RecursiveAstVisitor<void> {
     }
 
     // Check WMC
-    if (wmc >= metrics.weightedMethodsPerClassError) {
+    if (wmc > metrics.weightedMethodsPerClassError) {
       issues.add(
         Issue(
           rule: 'class-metrics',
@@ -124,7 +124,7 @@ class _ClassMetricsVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (wmc >= metrics.weightedMethodsPerClassWarning) {
+    } else if (wmc > metrics.weightedMethodsPerClassWarning) {
       issues.add(
         Issue(
           rule: 'class-metrics',
@@ -138,7 +138,7 @@ class _ClassMetricsVisitor extends RecursiveAstVisitor<void> {
     }
 
     // Check LOC per class
-    if (loc >= metrics.linesPerClassError) {
+    if (loc > metrics.linesPerClassError) {
       issues.add(
         Issue(
           rule: 'class-metrics',
@@ -149,7 +149,7 @@ class _ClassMetricsVisitor extends RecursiveAstVisitor<void> {
           severity: Severity.error,
         ),
       );
-    } else if (loc >= metrics.linesPerClassWarning) {
+    } else if (loc > metrics.linesPerClassWarning) {
       issues.add(
         Issue(
           rule: 'class-metrics',

@@ -29,6 +29,9 @@ export 'src/core/runner.dart';
 
 // Config
 export 'src/config/analyzer_config.dart';
+export 'src/config/layer_coverage.dart';
+export 'src/utils/did_you_mean.dart';
+export 'src/utils/template_advisor.dart';
 
 // Rules
 export 'src/rules/async_safety_rule.dart';

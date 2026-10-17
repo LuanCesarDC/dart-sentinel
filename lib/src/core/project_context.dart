@@ -114,6 +114,17 @@ class ProjectContext {
   /// Check if a directory exists on disk.
   bool directoryExists(String path) => Directory(path).existsSync();
 
+  /// Paths of all files under [directoryPath] (recursive), or empty if the
+  /// directory doesn't exist.
+  List<String> listFilesRecursively(String directoryPath) {
+    final directory = Directory(directoryPath);
+    if (!directory.existsSync()) return const [];
+    return [
+      for (final entity in directory.listSync(recursive: true))
+        if (entity is File) entity.path,
+    ];
+  }
+
   /// Read a file's content as a string, or null if it doesn't exist.
   String? readFile(String path) {
     final f = File(path);

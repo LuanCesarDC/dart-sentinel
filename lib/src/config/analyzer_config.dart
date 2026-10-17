@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import '../core/issue.dart';
+import '../utils/did_you_mean.dart';
 
 /// Configuration for the analyzer, loaded from `analyzer.yaml`.
 class AnalyzerConfig {
@@ -15,6 +16,15 @@ class AnalyzerConfig {
 
   /// Rule severity overrides: rule name → severity.
   final Map<String, Severity> ruleSeverities;
+
+  /// Rules switched off with `rule: off` in `analyzer.yaml`.
+  final Set<String> disabledRules;
+
+  /// Fatal problems found while parsing (invalid severities).
+  final List<String> problems;
+
+  /// Non-fatal findings while parsing (unknown top-level keys).
+  final List<String> warnings;
 
   /// Banned imports configuration.
   final List<BannedImportConfig> bannedImports;
@@ -50,6 +60,9 @@ class AnalyzerConfig {
     this.excludePatterns = const [],
     this.entrypoints = const [],
     this.ruleSeverities = const {},
+    this.disabledRules = const {},
+    this.problems = const [],
+    this.warnings = const [],
     this.bannedImports = const [],
     this.bannedSymbols = const [],
     this.layerConfig,
@@ -111,14 +124,33 @@ class AnalyzerConfig {
 
     // Rule severities
     final ruleSeverities = <String, Severity>{};
+    final disabledRules = <String>{};
+    final problems = <String>[];
     final rulesNode = yaml['rules'];
     if (rulesNode is YamlMap) {
       for (final entry in rulesNode.entries) {
-        ruleSeverities[entry.key.toString()] = Severity.fromString(
-          entry.value.toString(),
-        );
+        final ruleName = entry.key.toString();
+        final level = entry.value.toString();
+        if (level.toLowerCase() == 'off') {
+          disabledRules.add(ruleName);
+          continue;
+        }
+        final severity = Severity.tryParse(level);
+        if (severity == null) {
+          problems.add(
+            "rules.$ruleName: invalid severity '$level' "
+            '(expected one of: off, info, warning, error)',
+          );
+          continue;
+        }
+        ruleSeverities[ruleName] = severity;
       }
     }
+    final unknownKeys = [
+      for (final key in yaml.keys.map((k) => k.toString()))
+        if (!_knownKeys.contains(key))
+          "unknown key '$key'${_suggestion(key, _knownKeys)}",
+    ];
 
     // Architecture
     BannedImportConfig parseBannedImport(YamlMap m) {
@@ -344,6 +376,9 @@ class AnalyzerConfig {
       excludePatterns: excludePatterns,
       entrypoints: entrypoints,
       ruleSeverities: ruleSeverities,
+      disabledRules: disabledRules,
+      problems: problems,
+      warnings: unknownKeys,
       bannedImports: bannedImports,
       bannedSymbols: bannedSymbols,
       layerConfig: layerConfig,
@@ -355,6 +390,40 @@ class AnalyzerConfig {
       testingConfig: TestingConfig.fromYaml(yaml['testing']),
       bannedDependencies: _parseStringSet(yaml['banned_dependencies']),
     );
+  }
+
+  static const _knownKeys = {
+    'exclude',
+    'entrypoints',
+    'extra_scan_dirs',
+    'rules',
+    'architecture',
+    'metrics',
+    'ai_slop',
+    'models',
+    'testing',
+    'banned_dependencies',
+  };
+
+  /// Reports every non-fatal finding, including rule names that match none
+  /// of [knownRules] (with a suggestion when one is close).
+  List<String> validate(Iterable<String> knownRules) {
+    final known = knownRules.toSet();
+    final unknownRules = [
+      ...ruleSeverities.keys,
+      ...disabledRules,
+    ].where((name) => !known.contains(name));
+    return [
+      ...warnings,
+      for (final name in unknownRules)
+        "rules.$name: unknown rule"
+            "${_suggestion(name, known)}",
+    ];
+  }
+
+  static String _suggestion(String name, Set<String> known) {
+    final match = closestMatch(name, known);
+    return match == null ? '' : " — did you mean '$match'?";
   }
 
   static Set<String> _parseStringSet(dynamic node) {
@@ -531,6 +600,7 @@ class AiSlopConfig {
   final VerboseLoggingConfig verboseLogging;
   final SingleMethodClassConfig singleMethodClass;
   final LazyNullCheckConfig lazyNullCheck;
+  final NoEqualArgumentsConfig noEqualArguments;
 
   const AiSlopConfig({
     this.emptyCatch = const EmptyCatchConfig(),
@@ -539,6 +609,7 @@ class AiSlopConfig {
     this.verboseLogging = const VerboseLoggingConfig(),
     this.singleMethodClass = const SingleMethodClassConfig(),
     this.lazyNullCheck = const LazyNullCheckConfig(),
+    this.noEqualArguments = const NoEqualArgumentsConfig(),
   });
 
   factory AiSlopConfig.fromYaml(dynamic node) {
@@ -552,6 +623,41 @@ class AiSlopConfig {
         node['single_method_class'],
       ),
       lazyNullCheck: LazyNullCheckConfig.fromYaml(node['lazy_null_check']),
+      noEqualArguments: NoEqualArgumentsConfig.fromYaml(
+        node['no_equal_arguments'],
+      ),
+    );
+  }
+}
+
+/// Calls where passing the same argument twice is legitimate (symmetric
+/// geometry constructors). `ignore` extends the built-in list.
+class NoEqualArgumentsConfig {
+  final Set<String> ignoredCalls;
+
+  static const _defaultIgnored = {
+    'EdgeInsets.fromLTRB',
+    'EdgeInsets.symmetric',
+    'Offset',
+    'Size',
+    'Point',
+    'Rect.fromLTWH',
+    'Rect.fromLTRB',
+    'Radius.elliptical',
+    'Alignment',
+    'BoxConstraints',
+  };
+
+  const NoEqualArgumentsConfig({this.ignoredCalls = _defaultIgnored});
+
+  factory NoEqualArgumentsConfig.fromYaml(dynamic node) {
+    if (node is! YamlMap) return const NoEqualArgumentsConfig();
+    return NoEqualArgumentsConfig(
+      ignoredCalls: {
+        ..._defaultIgnored,
+        if (node['ignore'] is YamlList)
+          ...(node['ignore'] as YamlList).map((e) => e.toString()),
+      },
     );
   }
 }

@@ -1,0 +1,91 @@
+# ============================================================
+# Dart Sentinel — Estrutura oficial da Flutter (ui / data / domain)
+# ============================================================
+# Segue o guia de arquitetura recomendado pela documentação oficial
+# (MVVM + Repository + Service), como no compass_app.
+#
+# Estrutura esperada:
+#   lib/
+#     ui/
+#       core/                ← Widgets e temas compartilhados
+#       <feature>/
+#         view_models/       ← ViewModels (ChangeNotifier)
+#         widgets/           ← Views
+#     domain/
+#       models/              ← Modelos de domínio
+#       use_cases/           ← (opcional) lógica reutilizável
+#     data/
+#       repositories/        ← Fonte única da verdade
+#       services/            ← Acesso a APIs e armazenamento local
+#     routing/               ← Rotas (go_router)
+#     config/                ← Ambientes, dependências
+#     utils/                 ← Helpers puros
+# ============================================================
+
+exclude:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.mocks.dart"
+
+rules:
+  dead-files: warning
+  dead-exports: info
+  layer-dependency: error
+  import-cycles: error
+  complexity: warning
+  build-complexity: warning
+  dispose-check: warning
+  async-safety: warning
+  empty-catch: warning
+  dead-todos: info
+  generic-naming: info
+  redundant-comments: info
+  verbose-logging: info
+  untested-files: off
+  no-magic-number: off
+
+architecture:
+  layers:
+    ui:
+      paths: ["lib/ui/**"]
+      can_depend_on: ["domain", "data", "routing", "config", "utils"]
+    routing:
+      paths: ["lib/routing/**"]
+      can_depend_on: ["ui", "domain", "data", "config", "utils"]
+    domain:
+      paths: ["lib/domain/**"]
+      can_depend_on: ["utils"]
+    data:
+      paths: ["lib/data/**"]
+      can_depend_on: ["domain", "config", "utils"]
+    config:
+      paths: ["lib/config/**"]
+      can_depend_on: ["ui", "routing", "domain", "data", "utils"]
+    utils:
+      paths: ["lib/utils/**"]
+      can_depend_on: []
+
+  banned_imports:
+    - paths: ["lib/domain/**"]
+      deny:
+        - "package:flutter/**"
+        - "package:dio/**"
+        - "package:http/**"
+      message: "Domain deve ser puro — sem Flutter nem infraestrutura."
+    - paths: ["lib/data/**"]
+      deny: ["package:flutter/material.dart", "package:flutter/widgets.dart"]
+      message: "Data não conhece widgets — só a UI importa material/widgets."
+
+metrics:
+  cyclomatic_complexity:
+    warning: 10
+    error: 20
+  lines_per_file:
+    warning: 300
+    error: 600
+  lines_per_method:
+    warning: 50
+    error: 100
+  build_method_branches:
+    warning: 4
+    error: 8

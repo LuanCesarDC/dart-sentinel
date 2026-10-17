@@ -1,5 +1,8 @@
 # AI Integration Instructions — Dart Sentinel
 
+Install Sentinel globally with `dart pub global activate dart_sentinel` and run it as `dart_sentinel`.
+Never add it to `pubspec.yaml` (not even `dev_dependencies`).
+
 This is a generic template for integrating Dart Sentinel with any AI coding assistant.
 Copy the relevant sections to your AI tool's instruction file.
 
