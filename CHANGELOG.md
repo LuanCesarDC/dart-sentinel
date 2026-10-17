@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `banned_imports` now resolves relative imports (`../model/x.dart`), so one
+  `deny` entry catches both the `package:` and relative spelling.
+
 ## 0.5.0
 
 ### Breaking

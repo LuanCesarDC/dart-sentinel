@@ -1,4 +1,5 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:path/path.dart' as p;
 
 import '../config/analyzer_config.dart';
 import '../core/issue.dart';
@@ -44,7 +45,7 @@ class BannedImportsRule extends AnalyzerRule {
         if (directive is! ImportDirective) continue;
         final uri = directive.uri.stringValue;
         if (uri == null) continue;
-        if (!_matchesDeny(uri, config.deny, context)) continue;
+        if (!_matchesDeny(uri, file, config.deny, context)) continue;
 
         final line = unit.lineInfo.getLocation(directive.offset).lineNumber;
         issues.add(
@@ -65,20 +66,43 @@ class BannedImportsRule extends AnalyzerRule {
 
   bool _matchesDeny(
     String importUri,
+    String sourceFile,
     List<String> denyPatterns,
     ProjectContext context,
   ) {
-    for (final pattern in denyPatterns) {
-      // Match against the raw import URI
-      if (GlobMatcher(pattern).matches(importUri)) return true;
+    final prefix = 'package:${context.packageName}/';
+    final projectRelative = _projectRelative(importUri, sourceFile, context);
+    final canonical = _canonical(projectRelative, prefix);
 
-      // Also match against resolved relative path for package: imports
-      if (importUri.startsWith('package:${context.packageName}/')) {
-        final relative =
-            'lib/${importUri.substring('package:${context.packageName}/'.length)}';
-        if (GlobMatcher(pattern).matches(relative)) return true;
-      }
+    for (final pattern in denyPatterns) {
+      final glob = GlobMatcher(pattern);
+      if (glob.matches(importUri)) return true;
+      if (projectRelative != null && glob.matches(projectRelative)) return true;
+      if (canonical != null && glob.matches(canonical)) return true;
     }
     return false;
   }
+
+  /// Project-relative path of [importUri], or null for other packages/dart:.
+  String? _projectRelative(
+    String importUri,
+    String sourceFile,
+    ProjectContext context,
+  ) {
+    final prefix = 'package:${context.packageName}/';
+    if (!importUri.contains(':')) {
+      return context.relativePath(
+        p.normalize(p.join(p.dirname(sourceFile), importUri)),
+      );
+    }
+    if (importUri.startsWith(prefix)) {
+      return 'lib/${importUri.substring(prefix.length)}';
+    }
+    return null;
+  }
+
+  String? _canonical(String? projectRelative, String prefix) =>
+      projectRelative != null && projectRelative.startsWith('lib/')
+      ? '$prefix${projectRelative.substring('lib/'.length)}'
+      : null;
 }
