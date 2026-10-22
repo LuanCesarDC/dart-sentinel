@@ -22,6 +22,34 @@ Directory _project(Map<String, String> files) {
 }
 
 void main() {
+  test('-p . and an absolute -p report the same issues', () async {
+    final root = _project({
+      'lib/main.dart': 'void main() {}\n',
+      'lib/service.dart': 'int add(int a, int b) => a + b;\n',
+      'test/other_test.dart': 'void main() {}\n',
+    });
+    final script = p.absolute('bin/dart_sentinel.dart');
+    Future<Set<String>> rules(String projectArg) async {
+      final result = await Process.run('dart', [
+        'run',
+        script,
+        '-f',
+        'json',
+        '--no-report',
+        '--no-cache',
+        '-p',
+        projectArg,
+      ], workingDirectory: root.path);
+      final issues = (jsonDecode(result.stdout as String) as Map)['issues'];
+      return {for (final i in issues as List) '${i['rule']}:${i['file']}'};
+    }
+
+    final relative = await rules('.');
+    final absolute = await rules(root.path);
+    expect(relative, absolute);
+    expect(relative.any((i) => i.startsWith('untested-files:')), isTrue);
+  });
+
   test('-f json writes only JSON to stdout', () async {
     final root = _project({'lib/main.dart': 'void main() {}\n'});
     final result = await _sentinel([

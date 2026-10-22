@@ -67,6 +67,9 @@ class ProjectContext {
     String? targetPath,
     String? profile,
   }) async {
+    // `-p .` and `-p /abs/path` must scan the same files: scanned paths are
+    // normalized to absolute, so the roots they are compared with must be too.
+    projectRoot = p.normalize(p.absolute(projectRoot));
     final pubspecFile = File(p.join(projectRoot, 'pubspec.yaml'));
     final pubspecContent = pubspecFile.existsSync()
         ? pubspecFile.readAsStringSync()

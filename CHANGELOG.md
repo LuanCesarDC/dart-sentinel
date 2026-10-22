@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.6.1
+
+### Fixed
+
+- `-p .` (a relative project path) and an absolute `-p` now scan and report the
+  same things. With a relative path the project root was compared against
+  absolute file paths, so rules that depend on it (`untested-files` and others)
+  silently found nothing. Without `-p` the default is the absolute working
+  directory, so running `dart_sentinel` bare gave different results from CI's
+  `--project .`.
+
+### Heads up
+
+- If your CI uses `--project .` and a saved baseline, the rules that were
+  silently inactive now report. Re-save the baseline once
+  (`dart_sentinel --save-baseline`) and review the new `untested-files`
+  findings; set `untested-files: off` (or `info`) in `analyzer.yaml` if you do
+  not want them. On a 180k-line Flutter app this added 813 `untested-files`
+  findings and about 190 other warnings.
+
 ## 0.6.0
 
 ### Added
