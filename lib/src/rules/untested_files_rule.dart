@@ -103,14 +103,14 @@ class UntestedFilesRule extends AnalyzerRule {
         ? libRelativePath.substring(4)
         : libRelativePath;
 
-    final baseName = p.basenameWithoutExtension(withoutLib);
-    final dirName = p.dirname(withoutLib);
+    final baseName = p.posix.basenameWithoutExtension(withoutLib);
+    final dirName = p.posix.dirname(withoutLib);
 
     switch (convention) {
       case 'suffix':
       default:
         final testFileName = '${baseName}_test.dart';
-        return p.join(testDir, dirName, testFileName);
+        return p.posix.join(testDir, dirName, testFileName);
     }
   }
 }
