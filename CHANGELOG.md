@@ -1,15 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.6.2
 
 ### Fixed
 
-- Windows: project-relative paths now always use `/`. They came out as
+- Windows: project-relative paths now always use `/` (thanks to
+  [@CaduRomaniello](https://github.com/CaduRomaniello), #3). They came out as
   `lib\features\...`, so every check comparing against `lib/` literals broke:
   each layer was reported as "matches no file", `prefer-match-file-name` was
   skipped, and `untested-files` suggested `test\lib\...` instead of the
   mirrored test path. The runner also rebuilt absolute paths with mixed
   separators for `sentinel-ignore` lookups; it now normalizes them.
+- The same conversion now applies when matching `exclude` patterns while
+  scanning files (patterns written with `/`, such as
+  `lib/firebase_options.dart`, did not match on Windows), and it only runs on
+  Windows: on macOS/Linux a backslash is a valid file-name character and is no
+  longer rewritten. New public helper `posixRelative`.
 
 ## 0.6.1
 

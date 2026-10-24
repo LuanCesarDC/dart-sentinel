@@ -98,5 +98,6 @@ export 'src/mcp/sentinel_server.dart';
 // Utils
 export 'src/utils/glob_matcher.dart';
 export 'src/utils/graph_utils.dart';
+export 'src/utils/posix_path.dart';
 export 'src/analysis/model_generator.dart';
 export 'src/core/file_hash_cache.dart';

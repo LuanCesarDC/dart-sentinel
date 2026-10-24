@@ -8,6 +8,7 @@ import 'package:yaml/yaml.dart';
 
 import '../config/analyzer_config.dart';
 import '../utils/glob_matcher.dart';
+import '../utils/posix_path.dart';
 
 /// Shared analysis context built once and reused by all rules.
 ///
@@ -111,7 +112,7 @@ class ProjectContext {
   /// separators — rules compare it against `lib/`-style literals, which
   /// never match Windows' `lib\` paths.
   String relativePath(String absolutePath) {
-    return p.relative(absolutePath, from: projectRoot).replaceAll(r'\', '/');
+    return posixRelative(absolutePath, from: projectRoot);
   }
 
   /// Check if a file exists on disk.
@@ -193,7 +194,7 @@ class ProjectContext {
       await for (final entity in dir.list(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
         final normalized = p.normalize(entity.path);
-        final relative = p.relative(normalized, from: projectRoot);
+        final relative = posixRelative(normalized, from: projectRoot);
         if (_matchesExclude(relative, excludePatterns)) continue;
         allFiles.add(normalized);
       }
