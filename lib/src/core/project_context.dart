@@ -107,9 +107,11 @@ class ProjectContext {
   /// Raw content of pubspec.yaml, cached during build.
   final String pubspecContent;
 
-  /// Get the relative path of a file from the project root.
+  /// Get the relative path of a file from the project root, always with `/`
+  /// separators — rules compare it against `lib/`-style literals, which
+  /// never match Windows' `lib\` paths.
   String relativePath(String absolutePath) {
-    return p.relative(absolutePath, from: projectRoot);
+    return p.relative(absolutePath, from: projectRoot).replaceAll(r'\', '/');
   }
 
   /// Check if a file exists on disk.

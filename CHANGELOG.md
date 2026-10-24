@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Windows: project-relative paths now always use `/`. They came out as
+  `lib\features\...`, so every check comparing against `lib/` literals broke:
+  each layer was reported as "matches no file", `prefer-match-file-name` was
+  skipped, and `untested-files` suggested `test\lib\...` instead of the
+  mirrored test path. The runner also rebuilt absolute paths with mixed
+  separators for `sentinel-ignore` lookups; it now normalizes them.
+
 ## 0.6.1
 
 ### Fixed
