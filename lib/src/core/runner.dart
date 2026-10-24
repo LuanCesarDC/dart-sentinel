@@ -105,7 +105,7 @@ class RuleRunner {
   }
 
   String _absolutePath(String relative, ProjectContext context) =>
-      p.join(context.projectRoot, relative);
+      p.normalize(p.join(context.projectRoot, relative));
 
   /// Run only rules matching the given [category].
   ///
